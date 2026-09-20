@@ -12,7 +12,7 @@ export interface ParsedMapDesignSystemDocument {
 
 const RULE_BLOCK = /^```mapdesign-rules[ \t]*\r?\n([\s\S]*?)^```[ \t]*$/gm;
 
-/** Parses the one strict machine-readable rules block in a MAP_DESIGN.md document. */
+/** Parses the one strict machine-readable rules block in a CARTOGRAPHY.md document. */
 export function parseMapDesignSystemDocument(content: string): ParsedMapDesignSystemDocument {
   const blocks = [...content.matchAll(RULE_BLOCK)];
   if (blocks.length !== 1) throw new TypeError('expected exactly one mapdesign-rules block');

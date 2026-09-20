@@ -43,7 +43,7 @@ async function makeSystem(content: string): Promise<string> {
   cleanup.push(root);
   const directory = path.join(root, 'design-systems', 'test-system');
   await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, 'MAP_DESIGN.md'), content, 'utf8');
+  await writeFile(path.join(directory, 'CARTOGRAPHY.md'), content, 'utf8');
   return root;
 }
 
@@ -64,8 +64,8 @@ describe('MapDesign design-system loading and validation', () => {
     }
     const root = await makeSystem('placeholder');
     const systems = path.join(root, 'design-systems');
-    await rm(path.join(systems, 'test-system', 'MAP_DESIGN.md'));
-    await symlink('/tmp', path.join(systems, 'test-system', 'MAP_DESIGN.md'));
+    await rm(path.join(systems, 'test-system', 'CARTOGRAPHY.md'));
+    await symlink('/tmp', path.join(systems, 'test-system', 'CARTOGRAPHY.md'));
     await expect(loadMapDesignSystem({ projectRoot: root, designSystemId: 'test-system' })).rejects.toThrow(/design system file is outside configured root/);
   });
 

@@ -11,7 +11,7 @@ describe('MapDesign resource boundary', () => {
   it('keeps only the bundled resources required by MapDesign', () => {
     for (const required of [
       'skills/map-design/SKILL.md',
-      'design-systems/quiet-walking/MAP_DESIGN.md',
+      'design-systems/quiet-walking/CARTOGRAPHY.md',
       'assets/brand/map-design.svg',
     ]) {
       expect(existsSync(fromRoot(required)), required + ' must remain').toBe(true);

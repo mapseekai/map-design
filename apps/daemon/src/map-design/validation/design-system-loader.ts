@@ -26,7 +26,7 @@ export async function loadMapDesignSystem(input: LoadMapDesignSystemInput): Prom
     throw new TypeError('invalid design system id');
   }
   const root = path.resolve(input.projectRoot);
-  const file = path.resolve(root, 'design-systems', input.designSystemId, 'MAP_DESIGN.md');
+  const file = path.resolve(root, 'design-systems', input.designSystemId, 'CARTOGRAPHY.md');
   if (!file.startsWith(`${root}${path.sep}`)) throw new TypeError('invalid design system id');
 
   let bytes: Buffer;
