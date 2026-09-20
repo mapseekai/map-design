@@ -1,0 +1,15 @@
+<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis projectname="min" version="3.34.0">
+  <projectlayers>
+    <maplayer type="vector" id="l1">
+      <layername>roads</layername>
+      <provider>ogr</provider>
+      <datasource>/data/roads.shp</datasource>
+      <renderer-v2 type="singleSymbol">
+        <symbols><symbol type="line" name="0">
+          <layer class="SimpleLine"><prop k="line_color" v="221,136,68,255"/><prop k="line_width" v="0.26"/><prop k="line_width_unit" v="MM"/></layer>
+        </symbol></symbols>
+      </renderer-v2>
+    </maplayer>
+  </projectlayers>
+</qgis>

@@ -1,0 +1,22 @@
+{
+  "name": "@cartographymd/data-profile-skill",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "profile": "tsx scripts/generate-profile.ts"
+  },
+  "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
+    "pbf": "^5.1.2"
+  },
+  "devDependencies": {
+    "@mapbox/mvt-fixtures": "^4.0.0",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
+  }
+}

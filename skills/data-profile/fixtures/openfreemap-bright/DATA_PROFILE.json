@@ -1,0 +1,4939 @@
+{
+  "format": "cartography-data-profile/1",
+  "generatedAt": "2026-08-29T00:00:00Z",
+  "inputs": [
+    "skills/data-profile/fixtures/openfreemap-bright/style.json"
+  ],
+  "sources": {
+    "ne2_shaded": {
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/sources/ne2_shaded"
+        }
+      ],
+      "layers": {},
+      "tileTemplates": [
+        "https://tiles.openfreemap.org/natural_earth/ne2sr/{z}/{x}/{y}.png"
+      ],
+      "type": "raster"
+    },
+    "openmaptiles": {
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/sources/openmaptiles"
+        }
+      ],
+      "layers": {
+        "aerodrome_label": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/109"
+            }
+          ],
+          "fields": {
+            "iata": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/109"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/109"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:latin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/109"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:nonlatin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/109"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name_en": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/109"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 10,
+          "stableIdObserved": false
+        },
+        "aeroway": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/44"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/45"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/46"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/47"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/48"
+            }
+          ],
+          "fields": {
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/44"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/45"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/46"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/47"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/48"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 4,
+          "stableIdObserved": false
+        },
+        "boundary": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/91"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/92"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/93"
+            }
+          ],
+          "fields": {
+            "admin_level": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/91"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/92"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "claimed_by": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/91"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/92"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "disputed": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/91"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/92"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/93"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "maritime": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/91"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/92"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/93"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 5,
+          "stableIdObserved": false
+        },
+        "building": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/25"
+            }
+          ],
+          "fields": {},
+          "geometries": [
+            "unknown"
+          ],
+          "stableIdObserved": false
+        },
+        "landcover": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/1"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/11"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/12"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/23"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/24"
+            }
+          ],
+          "fields": {
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/11"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/12"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/24"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "subclass": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/1"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/23"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "stableIdObserved": false
+        },
+        "landuse": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/2"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/3"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/4"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/5"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/6"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/7"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/8"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/9"
+            }
+          ],
+          "fields": {
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/2"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/3"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/4"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/5"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/6"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/7"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/8"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/9"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "maxzoom": 10,
+          "stableIdObserved": false
+        },
+        "park": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/10"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/13"
+            }
+          ],
+          "fields": {
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/13"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "stableIdObserved": false
+        },
+        "place": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/110"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/111"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/112"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/113"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/114"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/115"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/116"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/117"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/118"
+            }
+          ],
+          "fields": {
+            "capital": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/114"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/115"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/110"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/111"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/112"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/113"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/114"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/115"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/116"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/117"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/118"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/110"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/111"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/112"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/113"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/114"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/115"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/116"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/117"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/118"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:latin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/110"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/111"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/112"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/113"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/114"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/115"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/116"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/117"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/118"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:nonlatin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/110"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/111"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/112"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/113"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/114"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/115"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/116"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/117"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/118"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name_en": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/110"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/111"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/112"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/113"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/114"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/115"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/116"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/117"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/118"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "rank": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/116"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/117"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/118"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "maxzoom": 9,
+          "minzoom": 2,
+          "stableIdObserved": false
+        },
+        "poi": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/100"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/101"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/102"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/99"
+            }
+          ],
+          "fields": {
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/102"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/102"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:latin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/102"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:nonlatin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/102"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name_en": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/102"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "rank": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "subclass": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/100"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/101"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/99"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 15,
+          "stableIdObserved": false
+        },
+        "transportation": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/27"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/28"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/29"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/30"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/31"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/32"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/33"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/34"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/35"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/36"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/37"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/38"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/39"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/40"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/41"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/42"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/43"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/49"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/50"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/51"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/52"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/53"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/54"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/55"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/56"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/57"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/58"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/59"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/60"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/61"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/62"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/63"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/64"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/65"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/66"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/67"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/68"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/69"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/70"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/71"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/72"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/73"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/74"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/75"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/76"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/77"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/78"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/79"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/80"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/81"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/82"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/83"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/84"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/85"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/86"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/87"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/88"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/89"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/90"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/94"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/95"
+            }
+          ],
+          "fields": {
+            "brunnel": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/27"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/28"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/29"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/30"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/31"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/32"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/33"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/34"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/35"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/36"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/37"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/38"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/39"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/40"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/41"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/42"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/52"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/53"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/54"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/55"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/56"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/57"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/58"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/59"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/60"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/61"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/62"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/63"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/64"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/65"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/66"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/67"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/68"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/71"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/72"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/73"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/74"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/75"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/76"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/77"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/78"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/79"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/80"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/81"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/82"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/83"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/84"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/85"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/86"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/87"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/88"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/27"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/28"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/29"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/30"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/31"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/32"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/33"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/34"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/35"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/36"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/37"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/38"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/39"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/40"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/41"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/42"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/43"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/49"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/50"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/51"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/52"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/53"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/54"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/55"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/56"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/57"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/58"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/59"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/60"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/61"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/62"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/63"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/64"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/65"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/66"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/67"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/68"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/69"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/70"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/71"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/72"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/73"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/74"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/75"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/76"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/77"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/78"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/79"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/80"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/81"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/82"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/83"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/84"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/85"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/86"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/87"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/88"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/94"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/95"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "oneway": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/94"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/95"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "ramp": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/28"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/30"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/31"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/32"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/33"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/35"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/37"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/39"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/40"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/41"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/52"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/53"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/55"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/56"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/57"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/58"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/60"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/61"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/63"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/64"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/65"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/66"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/73"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/74"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/75"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/76"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/77"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/81"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/82"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/84"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/85"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/86"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "service": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/69"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/70"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/71"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/72"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "subclass": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/89"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/90"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 4,
+          "stableIdObserved": false
+        },
+        "transportation_name": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/103"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/104"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/105"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/106"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/107"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/108"
+            }
+          ],
+          "fields": {
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/103"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/104"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/105"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/103"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/104"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/105"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:latin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/103"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/104"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/105"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:nonlatin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/103"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/104"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/105"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name_en": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/103"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/104"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/105"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "network": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/106"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/107"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/108"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "ref": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/106"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/107"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/108"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "ref_length": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/106"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/107"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/108"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 7,
+          "stableIdObserved": false
+        },
+        "water": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/21"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/22"
+            }
+          ],
+          "fields": {
+            "brunnel": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/21"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "intermittent": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/21"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/22"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "stableIdObserved": false
+        },
+        "water_name": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/97"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/98"
+            }
+          ],
+          "fields": {
+            "name": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/97"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/98"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:latin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/97"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/98"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:nonlatin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/97"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/98"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name_en": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/97"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/98"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "stableIdObserved": false
+        },
+        "waterway": {
+          "evidence": [
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/14"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/15"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/16"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/17"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/18"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/19"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/20"
+            },
+            {
+              "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+              "kind": "style-inferred",
+              "location": "#/layers/96"
+            }
+          ],
+          "fields": {
+            "brunnel": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/14"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/17"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/18"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/19"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/20"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "class": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/14"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/15"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/16"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/17"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/18"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/19"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/20"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "intermittent": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/15"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/16"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/17"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/18"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/19"
+                },
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/20"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/96"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:latin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/96"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name:nonlatin": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/96"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            },
+            "name_en": {
+              "categories": [],
+              "evidence": [
+                {
+                  "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+                  "kind": "style-inferred",
+                  "location": "#/layers/96"
+                }
+              ],
+              "missingObserved": false,
+              "nullObserved": false,
+              "types": [
+                "unknown"
+              ]
+            }
+          },
+          "geometries": [
+            "unknown"
+          ],
+          "minzoom": 10,
+          "stableIdObserved": false
+        }
+      },
+      "tileTemplates": [
+        "https://tiles.openfreemap.org/planet"
+      ],
+      "type": "vector"
+    }
+  },
+  "unresolved": [
+    {
+      "code": "dynamic-field-reference",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/109"
+        }
+      ],
+      "location": "#/layers/109",
+      "message": "A get or has expression uses a dynamic field position that cannot be profiled."
+    },
+    {
+      "code": "dynamic-field-reference",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/69"
+        }
+      ],
+      "location": "#/layers/69",
+      "message": "A get or has expression uses a dynamic field position that cannot be profiled."
+    },
+    {
+      "code": "dynamic-field-reference",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/70"
+        }
+      ],
+      "location": "#/layers/70",
+      "message": "A get or has expression uses a dynamic field position that cannot be profiled."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/109"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/aerodrome_label/fields/iata",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/109"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/aerodrome_label/fields/name",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/109"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/aerodrome_label/fields/name:latin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/109"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/aerodrome_label/fields/name:nonlatin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/109"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/aerodrome_label/fields/name_en",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/44"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/45"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/46"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/47"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/48"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/aeroway/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/91"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/92"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/boundary/fields/admin_level",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/91"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/92"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/boundary/fields/claimed_by",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/91"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/92"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/93"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/boundary/fields/disputed",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/91"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/92"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/93"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/boundary/fields/maritime",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/11"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/12"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/24"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/landcover/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/1"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/23"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/landcover/fields/subclass",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/2"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/3"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/4"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/5"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/6"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/7"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/8"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/9"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/landuse/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/13"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/park/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/114"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/115"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/capital",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/110"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/111"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/112"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/113"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/114"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/115"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/116"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/117"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/118"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/110"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/111"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/112"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/113"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/114"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/115"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/116"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/117"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/118"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/name",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/110"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/111"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/112"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/113"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/114"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/115"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/116"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/117"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/118"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/name:latin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/110"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/111"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/112"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/113"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/114"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/115"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/116"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/117"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/118"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/name:nonlatin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/110"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/111"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/112"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/113"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/114"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/115"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/116"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/117"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/118"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/name_en",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/116"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/117"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/118"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/place/fields/rank",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/102"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/102"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/name",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/102"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/name:latin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/102"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/name:nonlatin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/102"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/name_en",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/rank",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/100"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/101"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/99"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/poi/fields/subclass",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/27"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/28"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/29"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/30"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/31"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/32"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/33"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/34"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/35"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/36"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/37"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/38"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/39"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/40"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/41"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/42"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/52"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/53"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/54"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/55"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/56"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/57"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/58"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/59"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/60"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/61"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/62"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/63"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/64"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/65"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/66"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/67"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/68"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/71"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/72"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/73"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/74"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/75"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/76"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/77"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/78"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/79"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/80"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/81"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/82"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/83"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/84"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/85"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/86"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/87"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/88"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation/fields/brunnel",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/27"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/28"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/29"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/30"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/31"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/32"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/33"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/34"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/35"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/36"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/37"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/38"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/39"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/40"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/41"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/42"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/43"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/49"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/50"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/51"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/52"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/53"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/54"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/55"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/56"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/57"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/58"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/59"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/60"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/61"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/62"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/63"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/64"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/65"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/66"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/67"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/68"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/69"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/70"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/71"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/72"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/73"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/74"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/75"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/76"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/77"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/78"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/79"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/80"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/81"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/82"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/83"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/84"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/85"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/86"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/87"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/88"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/94"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/95"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/94"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/95"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation/fields/oneway",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/28"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/30"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/31"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/32"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/33"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/35"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/37"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/39"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/40"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/41"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/52"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/53"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/55"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/56"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/57"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/58"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/60"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/61"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/63"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/64"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/65"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/66"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/73"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/74"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/75"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/76"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/77"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/81"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/82"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/84"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/85"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/86"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation/fields/ramp",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/69"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/70"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/71"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/72"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation/fields/service",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/89"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/90"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation/fields/subclass",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/103"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/104"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/105"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/103"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/104"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/105"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/name",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/103"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/104"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/105"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/name:latin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/103"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/104"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/105"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/name:nonlatin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/103"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/104"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/105"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/name_en",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/106"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/107"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/108"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/network",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/106"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/107"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/108"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/ref",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/106"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/107"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/108"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/transportation_name/fields/ref_length",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/21"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/water/fields/brunnel",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/21"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/22"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/water/fields/intermittent",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/97"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/98"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/water_name/fields/name",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/97"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/98"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/water_name/fields/name:latin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/97"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/98"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/water_name/fields/name:nonlatin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/97"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/98"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/water_name/fields/name_en",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/14"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/17"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/18"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/19"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/20"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/brunnel",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/14"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/15"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/16"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/17"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/18"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/19"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/20"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/class",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/15"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/16"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/17"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/18"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/19"
+        },
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/20"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/intermittent",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/96"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/name",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/96"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/name:latin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/96"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/name:nonlatin",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "field-domain-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/layers/96"
+        }
+      ],
+      "location": "#/sources/openmaptiles/layers/waterway/fields/name_en",
+      "message": "No sampled values were observed for this field, so its data domain remains unresolved."
+    },
+    {
+      "code": "tile-contents-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/sources/ne2_shaded"
+        }
+      ],
+      "location": "#/sources/ne2_shaded",
+      "message": "No actual tile contents were observed for this source."
+    },
+    {
+      "code": "tile-contents-unobserved",
+      "evidence": [
+        {
+          "input": "skills/data-profile/fixtures/openfreemap-bright/style.json",
+          "kind": "style-inferred",
+          "location": "#/sources/openmaptiles"
+        }
+      ],
+      "location": "#/sources/openmaptiles",
+      "message": "No actual tile contents were observed for this source."
+    }
+  ]
+}

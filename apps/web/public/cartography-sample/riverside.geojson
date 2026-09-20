@@ -1,0 +1,2503 @@
+{
+  "type": "FeatureCollection",
+  "name": "cartography-riverside-sample",
+  "bbox": [
+    0,
+    0,
+    0.0215595,
+    0.014373
+  ],
+  "features": [
+    {
+      "type": "Feature",
+      "id": "water.river.001",
+      "properties": {
+        "name": "清河",
+        "name_en": "Clear River",
+        "geometry": "polygon",
+        "family": "water",
+        "role": "river",
+        "match_key": "water.river",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0102407,
+              0.0
+            ],
+            [
+              0.0113187,
+              0.0
+            ],
+            [
+              0.0115115,
+              0.0004492
+            ],
+            [
+              0.0116969,
+              0.0008983
+            ],
+            [
+              0.0118677,
+              0.0013475
+            ],
+            [
+              0.0120174,
+              0.0017966
+            ],
+            [
+              0.0121403,
+              0.0022458
+            ],
+            [
+              0.0122316,
+              0.0026949
+            ],
+            [
+              0.0122879,
+              0.0031441
+            ],
+            [
+              0.0123069,
+              0.0035932
+            ],
+            [
+              0.0122879,
+              0.0040424
+            ],
+            [
+              0.0122316,
+              0.0044916
+            ],
+            [
+              0.0121403,
+              0.0049407
+            ],
+            [
+              0.0120174,
+              0.0053899
+            ],
+            [
+              0.0118677,
+              0.005839
+            ],
+            [
+              0.0116969,
+              0.0062882
+            ],
+            [
+              0.0115115,
+              0.0067373
+            ],
+            [
+              0.0113187,
+              0.0071865
+            ],
+            [
+              0.0111259,
+              0.0076356
+            ],
+            [
+              0.0109406,
+              0.0080848
+            ],
+            [
+              0.0107697,
+              0.008534
+            ],
+            [
+              0.01062,
+              0.0089831
+            ],
+            [
+              0.0104971,
+              0.0094323
+            ],
+            [
+              0.0104058,
+              0.0098814
+            ],
+            [
+              0.0103496,
+              0.0103306
+            ],
+            [
+              0.0103306,
+              0.0107797
+            ],
+            [
+              0.0103496,
+              0.0112289
+            ],
+            [
+              0.0104058,
+              0.011678
+            ],
+            [
+              0.0104971,
+              0.0121272
+            ],
+            [
+              0.01062,
+              0.0125764
+            ],
+            [
+              0.0107697,
+              0.0130255
+            ],
+            [
+              0.0109406,
+              0.0134747
+            ],
+            [
+              0.0111259,
+              0.0139238
+            ],
+            [
+              0.0113187,
+              0.014373
+            ],
+            [
+              0.0102407,
+              0.014373
+            ],
+            [
+              0.010048,
+              0.0139238
+            ],
+            [
+              0.0098626,
+              0.0134747
+            ],
+            [
+              0.0096918,
+              0.0130255
+            ],
+            [
+              0.009542,
+              0.0125764
+            ],
+            [
+              0.0094191,
+              0.0121272
+            ],
+            [
+              0.0093278,
+              0.011678
+            ],
+            [
+              0.0092716,
+              0.0112289
+            ],
+            [
+              0.0092526,
+              0.0107797
+            ],
+            [
+              0.0092716,
+              0.0103306
+            ],
+            [
+              0.0093278,
+              0.0098814
+            ],
+            [
+              0.0094191,
+              0.0094323
+            ],
+            [
+              0.009542,
+              0.0089831
+            ],
+            [
+              0.0096918,
+              0.008534
+            ],
+            [
+              0.0098626,
+              0.0080848
+            ],
+            [
+              0.010048,
+              0.0076356
+            ],
+            [
+              0.0102407,
+              0.0071865
+            ],
+            [
+              0.0104335,
+              0.0067373
+            ],
+            [
+              0.0106189,
+              0.0062882
+            ],
+            [
+              0.0107897,
+              0.005839
+            ],
+            [
+              0.0109395,
+              0.0053899
+            ],
+            [
+              0.0110624,
+              0.0049407
+            ],
+            [
+              0.0111537,
+              0.0044916
+            ],
+            [
+              0.0112099,
+              0.0040424
+            ],
+            [
+              0.0112289,
+              0.0035932
+            ],
+            [
+              0.0112099,
+              0.0031441
+            ],
+            [
+              0.0111537,
+              0.0026949
+            ],
+            [
+              0.0110624,
+              0.0022458
+            ],
+            [
+              0.0109395,
+              0.0017966
+            ],
+            [
+              0.0107897,
+              0.0013475
+            ],
+            [
+              0.0106189,
+              0.0008983
+            ],
+            [
+              0.0104335,
+              0.0004492
+            ],
+            [
+              0.0102407,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "water.lake.002",
+      "properties": {
+        "name": "镜湖",
+        "name_en": "Mirror Lake",
+        "geometry": "polygon",
+        "family": "water",
+        "role": "lake",
+        "match_key": "water.lake",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0178764,
+              0.0112289
+            ],
+            [
+              0.0178522,
+              0.0113954
+            ],
+            [
+              0.0177807,
+              0.0115555
+            ],
+            [
+              0.0176644,
+              0.011703
+            ],
+            [
+              0.017508,
+              0.0118323
+            ],
+            [
+              0.0173175,
+              0.0119385
+            ],
+            [
+              0.0171,
+              0.0120173
+            ],
+            [
+              0.0168641,
+              0.0120659
+            ],
+            [
+              0.0166188,
+              0.0120823
+            ],
+            [
+              0.0163734,
+              0.0120659
+            ],
+            [
+              0.0161375,
+              0.0120173
+            ],
+            [
+              0.0159201,
+              0.0119385
+            ],
+            [
+              0.0157295,
+              0.0118323
+            ],
+            [
+              0.0155731,
+              0.011703
+            ],
+            [
+              0.0154569,
+              0.0115555
+            ],
+            [
+              0.0153853,
+              0.0113954
+            ],
+            [
+              0.0153611,
+              0.0112289
+            ],
+            [
+              0.0153853,
+              0.0110624
+            ],
+            [
+              0.0154569,
+              0.0109023
+            ],
+            [
+              0.0155731,
+              0.0107548
+            ],
+            [
+              0.0157295,
+              0.0106254
+            ],
+            [
+              0.0159201,
+              0.0105193
+            ],
+            [
+              0.0161375,
+              0.0104405
+            ],
+            [
+              0.0163734,
+              0.0103919
+            ],
+            [
+              0.0166188,
+              0.0103755
+            ],
+            [
+              0.0168641,
+              0.0103919
+            ],
+            [
+              0.0171,
+              0.0104405
+            ],
+            [
+              0.0173175,
+              0.0105193
+            ],
+            [
+              0.017508,
+              0.0106254
+            ],
+            [
+              0.0176644,
+              0.0107548
+            ],
+            [
+              0.0177807,
+              0.0109023
+            ],
+            [
+              0.0178522,
+              0.0110624
+            ],
+            [
+              0.0178764,
+              0.0112289
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "landuse.park.003",
+      "properties": {
+        "name": "湖滨公园",
+        "name_en": "Lakeside Park",
+        "geometry": "polygon",
+        "family": "landuse",
+        "role": "park",
+        "match_key": "landuse.park",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0130255,
+              0.0087136
+            ],
+            [
+              0.0152713,
+              0.0083543
+            ],
+            [
+              0.0193137,
+              0.0093424
+            ],
+            [
+              0.0199425,
+              0.0128458
+            ],
+            [
+              0.0172476,
+              0.013834
+            ],
+            [
+              0.0130255,
+              0.0130255
+            ],
+            [
+              0.0130255,
+              0.0087136
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "landuse.park.004",
+      "properties": {
+        "name": "街心花园",
+        "name_en": "Pocket Garden",
+        "geometry": "polygon",
+        "family": "landuse",
+        "role": "park",
+        "match_key": "landuse.park",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0004492,
+              0.0094323
+            ],
+            [
+              0.0027848,
+              0.0094323
+            ],
+            [
+              0.0027848,
+              0.0125764
+            ],
+            [
+              0.0004492,
+              0.0125764
+            ],
+            [
+              0.0004492,
+              0.0094323
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.005",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0030543,
+              0.0017068
+            ],
+            [
+              0.0034854,
+              0.0017068
+            ],
+            [
+              0.0034854,
+              0.00265
+            ],
+            [
+              0.0030543,
+              0.00265
+            ],
+            [
+              0.0030543,
+              0.0017068
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.006",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0036382,
+              0.0017068
+            ],
+            [
+              0.0040693,
+              0.0017068
+            ],
+            [
+              0.0040693,
+              0.00265
+            ],
+            [
+              0.0036382,
+              0.00265
+            ],
+            [
+              0.0036382,
+              0.0017068
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.007",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.005839,
+              0.0017068
+            ],
+            [
+              0.0062702,
+              0.0017068
+            ],
+            [
+              0.0062702,
+              0.00265
+            ],
+            [
+              0.005839,
+              0.00265
+            ],
+            [
+              0.005839,
+              0.0017068
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.008",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0064229,
+              0.0017068
+            ],
+            [
+              0.0068541,
+              0.0017068
+            ],
+            [
+              0.0068541,
+              0.00265
+            ],
+            [
+              0.0064229,
+              0.00265
+            ],
+            [
+              0.0064229,
+              0.0017068
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.009",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0076356,
+              0.0017068
+            ],
+            [
+              0.0080668,
+              0.0017068
+            ],
+            [
+              0.0080668,
+              0.00265
+            ],
+            [
+              0.0076356,
+              0.00265
+            ],
+            [
+              0.0076356,
+              0.0017068
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.010",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0082195,
+              0.0017068
+            ],
+            [
+              0.0086507,
+              0.0017068
+            ],
+            [
+              0.0086507,
+              0.00265
+            ],
+            [
+              0.0082195,
+              0.00265
+            ],
+            [
+              0.0082195,
+              0.0017068
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.011",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0030543,
+              0.0041322
+            ],
+            [
+              0.0034854,
+              0.0041322
+            ],
+            [
+              0.0034854,
+              0.0048509
+            ],
+            [
+              0.0030543,
+              0.0048509
+            ],
+            [
+              0.0030543,
+              0.0041322
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.012",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0036382,
+              0.0041322
+            ],
+            [
+              0.0040693,
+              0.0041322
+            ],
+            [
+              0.0040693,
+              0.0048509
+            ],
+            [
+              0.0036382,
+              0.0048509
+            ],
+            [
+              0.0036382,
+              0.0041322
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.013",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.005839,
+              0.0041322
+            ],
+            [
+              0.0062702,
+              0.0041322
+            ],
+            [
+              0.0062702,
+              0.0048509
+            ],
+            [
+              0.005839,
+              0.0048509
+            ],
+            [
+              0.005839,
+              0.0041322
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.014",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0064229,
+              0.0041322
+            ],
+            [
+              0.0068541,
+              0.0041322
+            ],
+            [
+              0.0068541,
+              0.0048509
+            ],
+            [
+              0.0064229,
+              0.0048509
+            ],
+            [
+              0.0064229,
+              0.0041322
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.015",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0076356,
+              0.0041322
+            ],
+            [
+              0.0080668,
+              0.0041322
+            ],
+            [
+              0.0080668,
+              0.0048509
+            ],
+            [
+              0.0076356,
+              0.0048509
+            ],
+            [
+              0.0076356,
+              0.0041322
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.016",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0082195,
+              0.0041322
+            ],
+            [
+              0.0086507,
+              0.0041322
+            ],
+            [
+              0.0086507,
+              0.0048509
+            ],
+            [
+              0.0082195,
+              0.0048509
+            ],
+            [
+              0.0082195,
+              0.0041322
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.017",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0030543,
+              0.0088933
+            ],
+            [
+              0.0034854,
+              0.0088933
+            ],
+            [
+              0.0034854,
+              0.0098365
+            ],
+            [
+              0.0030543,
+              0.0098365
+            ],
+            [
+              0.0030543,
+              0.0088933
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.018",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0036382,
+              0.0088933
+            ],
+            [
+              0.0040693,
+              0.0088933
+            ],
+            [
+              0.0040693,
+              0.0098365
+            ],
+            [
+              0.0036382,
+              0.0098365
+            ],
+            [
+              0.0036382,
+              0.0088933
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.019",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.005839,
+              0.0088933
+            ],
+            [
+              0.0062702,
+              0.0088933
+            ],
+            [
+              0.0062702,
+              0.0098365
+            ],
+            [
+              0.005839,
+              0.0098365
+            ],
+            [
+              0.005839,
+              0.0088933
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.020",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0064229,
+              0.0088933
+            ],
+            [
+              0.0068541,
+              0.0088933
+            ],
+            [
+              0.0068541,
+              0.0098365
+            ],
+            [
+              0.0064229,
+              0.0098365
+            ],
+            [
+              0.0064229,
+              0.0088933
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.021",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0076356,
+              0.0088933
+            ],
+            [
+              0.0080668,
+              0.0088933
+            ],
+            [
+              0.0080668,
+              0.0098365
+            ],
+            [
+              0.0076356,
+              0.0098365
+            ],
+            [
+              0.0076356,
+              0.0088933
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.022",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0082195,
+              0.0088933
+            ],
+            [
+              0.0086507,
+              0.0088933
+            ],
+            [
+              0.0086507,
+              0.0098365
+            ],
+            [
+              0.0082195,
+              0.0098365
+            ],
+            [
+              0.0082195,
+              0.0088933
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.023",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0030543,
+              0.0114984
+            ],
+            [
+              0.0034854,
+              0.0114984
+            ],
+            [
+              0.0034854,
+              0.012217
+            ],
+            [
+              0.0030543,
+              0.012217
+            ],
+            [
+              0.0030543,
+              0.0114984
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.024",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0036382,
+              0.0114984
+            ],
+            [
+              0.0040693,
+              0.0114984
+            ],
+            [
+              0.0040693,
+              0.012217
+            ],
+            [
+              0.0036382,
+              0.012217
+            ],
+            [
+              0.0036382,
+              0.0114984
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.025",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.005839,
+              0.0114984
+            ],
+            [
+              0.0062702,
+              0.0114984
+            ],
+            [
+              0.0062702,
+              0.012217
+            ],
+            [
+              0.005839,
+              0.012217
+            ],
+            [
+              0.005839,
+              0.0114984
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.residential.026",
+      "properties": {
+        "name": "住宅",
+        "name_en": "Residence",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "residential",
+        "match_key": "building.residential",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0064229,
+              0.0114984
+            ],
+            [
+              0.0068541,
+              0.0114984
+            ],
+            [
+              0.0068541,
+              0.012217
+            ],
+            [
+              0.0064229,
+              0.012217
+            ],
+            [
+              0.0064229,
+              0.0114984
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.public.027",
+      "properties": {
+        "name": "展览馆",
+        "name_en": "Gallery",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "public",
+        "match_key": "building.public",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0139238,
+              0.001617
+            ],
+            [
+              0.0151815,
+              0.001617
+            ],
+            [
+              0.0151815,
+              0.0030543
+            ],
+            [
+              0.0139238,
+              0.0030543
+            ],
+            [
+              0.0139238,
+              0.001617
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.public.028",
+      "properties": {
+        "name": "市民中心",
+        "name_en": "Civic Hall",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "public",
+        "match_key": "building.public",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0167086,
+              0.0017966
+            ],
+            [
+              0.0183255,
+              0.0017966
+            ],
+            [
+              0.0183255,
+              0.0028746
+            ],
+            [
+              0.0167086,
+              0.0028746
+            ],
+            [
+              0.0167086,
+              0.0017966
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.public.029",
+      "properties": {
+        "name": "图书馆",
+        "name_en": "Library",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "public",
+        "match_key": "building.public",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0195832,
+              0.0020661
+            ],
+            [
+              0.0206612,
+              0.0020661
+            ],
+            [
+              0.0206612,
+              0.0033238
+            ],
+            [
+              0.0195832,
+              0.0033238
+            ],
+            [
+              0.0195832,
+              0.0020661
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.public.030",
+      "properties": {
+        "name": "市场",
+        "name_en": "Market",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "public",
+        "match_key": "building.public",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0142831,
+              0.0046712
+            ],
+            [
+              0.0157204,
+              0.0046712
+            ],
+            [
+              0.0157204,
+              0.0057492
+            ],
+            [
+              0.0142831,
+              0.0057492
+            ],
+            [
+              0.0142831,
+              0.0046712
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "building.public.031",
+      "properties": {
+        "name": "车站",
+        "name_en": "Station",
+        "geometry": "polygon",
+        "family": "building",
+        "role": "public",
+        "match_key": "building.public",
+        "synthetic": true,
+        "height_m": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0177866,
+              0.004761
+            ],
+            [
+              0.0188645,
+              0.004761
+            ],
+            [
+              0.0188645,
+              0.0061085
+            ],
+            [
+              0.0177866,
+              0.0061085
+            ],
+            [
+              0.0177866,
+              0.004761
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.primary.032",
+      "properties": {
+        "name": "清河大道",
+        "name_en": "River Avenue",
+        "geometry": "line",
+        "family": "road",
+        "role": "primary",
+        "match_key": "road.primary",
+        "synthetic": true,
+        "level": 1
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0,
+            0.0071865
+          ],
+          [
+            0.0098814,
+            0.0071865
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.bridge.033",
+      "properties": {
+        "name": "清河桥",
+        "name_en": "River Bridge",
+        "geometry": "line",
+        "family": "road",
+        "role": "bridge",
+        "match_key": "road.bridge",
+        "synthetic": true,
+        "level": 1
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0098814,
+            0.0071865
+          ],
+          [
+            0.012217,
+            0.0071865
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.primary.034",
+      "properties": {
+        "name": "清河大道",
+        "name_en": "River Avenue",
+        "geometry": "line",
+        "family": "road",
+        "role": "primary",
+        "match_key": "road.primary",
+        "synthetic": true,
+        "level": 1
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.012217,
+            0.0071865
+          ],
+          [
+            0.0215595,
+            0.0071865
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.secondary.035",
+      "properties": {
+        "name": "街道",
+        "name_en": "Street",
+        "geometry": "line",
+        "family": "road",
+        "role": "secondary",
+        "match_key": "road.secondary",
+        "synthetic": true,
+        "level": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.001617,
+            0.0007186
+          ],
+          [
+            0.001617,
+            0.0134747
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.secondary.036",
+      "properties": {
+        "name": "街道",
+        "name_en": "Street",
+        "geometry": "line",
+        "family": "road",
+        "role": "secondary",
+        "match_key": "road.secondary",
+        "synthetic": true,
+        "level": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0053899,
+            0.0007186
+          ],
+          [
+            0.0053899,
+            0.0134747
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.secondary.037",
+      "properties": {
+        "name": "街道",
+        "name_en": "Street",
+        "geometry": "line",
+        "family": "road",
+        "role": "secondary",
+        "match_key": "road.secondary",
+        "synthetic": true,
+        "level": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0091628,
+            0.0007186
+          ],
+          [
+            0.0091628,
+            0.0134747
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.secondary.038",
+      "properties": {
+        "name": "街道",
+        "name_en": "Street",
+        "geometry": "line",
+        "family": "road",
+        "role": "secondary",
+        "match_key": "road.secondary",
+        "synthetic": true,
+        "level": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0131153,
+            0.0007186
+          ],
+          [
+            0.0131153,
+            0.0079051
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.secondary.039",
+      "properties": {
+        "name": "街道",
+        "name_en": "Street",
+        "geometry": "line",
+        "family": "road",
+        "role": "secondary",
+        "match_key": "road.secondary",
+        "synthetic": true,
+        "level": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0161696,
+            0.0007186
+          ],
+          [
+            0.0161696,
+            0.0079051
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.secondary.040",
+      "properties": {
+        "name": "街道",
+        "name_en": "Street",
+        "geometry": "line",
+        "family": "road",
+        "role": "secondary",
+        "match_key": "road.secondary",
+        "synthetic": true,
+        "level": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0211103,
+            0.0007186
+          ],
+          [
+            0.0211103,
+            0.0079051
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.041",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0003593,
+            0.001078
+          ],
+          [
+            0.0094323,
+            0.001078
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.042",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0003593,
+            0.0035932
+          ],
+          [
+            0.0094323,
+            0.0035932
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.043",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0003593,
+            0.0062882
+          ],
+          [
+            0.0094323,
+            0.0062882
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.044",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0003593,
+            0.0084441
+          ],
+          [
+            0.0094323,
+            0.0084441
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.045",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0003593,
+            0.0107797
+          ],
+          [
+            0.0094323,
+            0.0107797
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.046",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0003593,
+            0.0134747
+          ],
+          [
+            0.0094323,
+            0.0134747
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.047",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0131153,
+            0.001078
+          ],
+          [
+            0.0213798,
+            0.001078
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.048",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0131153,
+            0.0037729
+          ],
+          [
+            0.0213798,
+            0.0037729
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.local.049",
+      "properties": {
+        "name": "巷道",
+        "name_en": "Lane",
+        "geometry": "line",
+        "family": "road",
+        "role": "local",
+        "match_key": "road.local",
+        "synthetic": true,
+        "level": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0131153,
+            0.0065577
+          ],
+          [
+            0.0213798,
+            0.0065577
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.path.050",
+      "properties": {
+        "name": "滨河步道",
+        "name_en": "Riverside Walk",
+        "geometry": "line",
+        "family": "road",
+        "role": "path",
+        "match_key": "road.path",
+        "synthetic": true,
+        "level": 4
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0124067,
+            0.0013475
+          ],
+          [
+            0.0125564,
+            0.0017966
+          ],
+          [
+            0.0126793,
+            0.0022458
+          ],
+          [
+            0.0127706,
+            0.0026949
+          ],
+          [
+            0.0128269,
+            0.0031441
+          ],
+          [
+            0.0128458,
+            0.0035932
+          ],
+          [
+            0.0128269,
+            0.0040424
+          ],
+          [
+            0.0127706,
+            0.0044916
+          ],
+          [
+            0.0126793,
+            0.0049407
+          ],
+          [
+            0.0125564,
+            0.0053899
+          ],
+          [
+            0.0124067,
+            0.005839
+          ],
+          [
+            0.0122359,
+            0.0062882
+          ],
+          [
+            0.0120505,
+            0.0067373
+          ],
+          [
+            0.0118577,
+            0.0071865
+          ],
+          [
+            0.0116649,
+            0.0076356
+          ],
+          [
+            0.0114796,
+            0.0080848
+          ],
+          [
+            0.0113087,
+            0.008534
+          ],
+          [
+            0.011159,
+            0.0089831
+          ],
+          [
+            0.0110361,
+            0.0094323
+          ],
+          [
+            0.0109448,
+            0.0098814
+          ],
+          [
+            0.0108886,
+            0.0103306
+          ],
+          [
+            0.0108696,
+            0.0107797
+          ],
+          [
+            0.0108886,
+            0.0112289
+          ],
+          [
+            0.0109448,
+            0.011678
+          ],
+          [
+            0.0110361,
+            0.0121272
+          ],
+          [
+            0.011159,
+            0.0125764
+          ],
+          [
+            0.0113087,
+            0.0130255
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "road.path.051",
+      "properties": {
+        "name": "公园步道",
+        "name_en": "Park Walk",
+        "geometry": "line",
+        "family": "road",
+        "role": "path",
+        "match_key": "road.path",
+        "synthetic": true,
+        "level": 4
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.0134747,
+            0.0097018
+          ],
+          [
+            0.014912,
+            0.0100611
+          ],
+          [
+            0.0156306,
+            0.0130255
+          ],
+          [
+            0.019134,
+            0.0125764
+          ],
+          [
+            0.0192239,
+            0.0099713
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "poi.museum.052",
+      "properties": {
+        "name": "展览馆",
+        "name_en": "Gallery",
+        "geometry": "point",
+        "family": "poi",
+        "role": "museum",
+        "match_key": "poi.museum",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0147323,
+          0.0022458
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "poi.library.053",
+      "properties": {
+        "name": "图书馆",
+        "name_en": "Library",
+        "geometry": "point",
+        "family": "poi",
+        "role": "library",
+        "match_key": "poi.library",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0199425,
+          0.0026051
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "poi.station.054",
+      "properties": {
+        "name": "清河站",
+        "name_en": "River Station",
+        "geometry": "point",
+        "family": "poi",
+        "role": "station",
+        "match_key": "poi.station",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0183255,
+          0.0054797
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "poi.cafe.055",
+      "properties": {
+        "name": "湖畔咖啡",
+        "name_en": "Lake Cafe",
+        "geometry": "point",
+        "family": "poi",
+        "role": "cafe",
+        "match_key": "poi.cafe",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0144628,
+          0.0098814
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "poi.bus-stop.056",
+      "properties": {
+        "name": "河西站",
+        "name_en": "West Bank Stop",
+        "geometry": "point",
+        "family": "poi",
+        "role": "bus-stop",
+        "match_key": "poi.bus-stop",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0065577,
+          0.0076356
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "poi.viewpoint.057",
+      "properties": {
+        "name": "观景台",
+        "name_en": "Lookout",
+        "geometry": "point",
+        "family": "poi",
+        "role": "viewpoint",
+        "match_key": "poi.viewpoint",
+        "synthetic": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0173374,
+          0.0101509
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "label.district.058",
+      "properties": {
+        "name": "河西街区",
+        "name_en": "West Bank",
+        "geometry": "point",
+        "family": "label",
+        "role": "district",
+        "match_key": "label.district",
+        "synthetic": true,
+        "geometry_hint": "label"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0055695,
+          0.0100611
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "label.park.059",
+      "properties": {
+        "name": "湖滨公园",
+        "name_en": "Lakeside Park",
+        "geometry": "point",
+        "family": "label",
+        "role": "park",
+        "match_key": "label.park",
+        "synthetic": true,
+        "geometry_hint": "label"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0170679,
+          0.0141933
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "label.water.060",
+      "properties": {
+        "name": "镜湖",
+        "name_en": "Mirror Lake",
+        "geometry": "point",
+        "family": "label",
+        "role": "water",
+        "match_key": "label.water",
+        "synthetic": true,
+        "geometry_hint": "label"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0167086,
+          0.0111391
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "label.water.061",
+      "properties": {
+        "name": "清河",
+        "name_en": "Clear River",
+        "geometry": "point",
+        "family": "label",
+        "role": "water",
+        "match_key": "label.water",
+        "synthetic": true,
+        "geometry_hint": "label"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0117489,
+          0.0040424
+        ]
+      }
+    }
+  ]
+}

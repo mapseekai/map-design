@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "../../apps/web/src/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@mapseekai/components",
+    "utils": "@mapseekai/components/lib/utils",
+    "ui": "@mapseekai/components/ui",
+    "lib": "@mapseekai/components/lib",
+    "hooks": "@mapseekai/components/hooks"
+  }
+}

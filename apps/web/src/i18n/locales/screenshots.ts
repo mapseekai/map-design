@@ -1,0 +1,46 @@
+import type { Locale } from '../types';
+
+type Copy = { capture: string; capturing: string; failed: string; limit: string; remove: string; image: string };
+export const screenshotCopy: Record<Locale, Copy> = {
+  en: { capture: 'Screenshot to chat', capturing: 'Capturing…', failed: 'Could not capture the map. Wait for it to finish loading and try again.', limit: 'Up to 4 screenshots per message.', remove: 'Remove screenshot', image: 'Map screenshot' },
+  'zh-CN': { capture: '截图到聊天', capturing: '截图中…', failed: '地图截图失败，请等待地图加载完成后重试。', limit: '每条消息最多添加 4 张截图。', remove: '移除截图', image: '地图截图' },
+  'zh-TW': { capture: '截圖至聊天', capturing: '截圖中…', failed: '地圖截圖失敗，請等待地圖載入完成後重試。', limit: '每則訊息最多加入 4 張截圖。', remove: '移除截圖', image: '地圖截圖' },
+  ja: { capture: 'チャットにスクリーンショット', capturing: '撮影中…', failed: '地図を撮影できませんでした。読み込み後に再試行してください。', limit: 'メッセージごとに最大4枚です。', remove: 'スクリーンショットを削除', image: '地図のスクリーンショット' },
+  ko: { capture: '채팅에 스크린샷 추가', capturing: '캡처 중…', failed: '지도를 캡처하지 못했습니다. 로딩 후 다시 시도하세요.', limit: '메시지당 최대 4장입니다.', remove: '스크린샷 제거', image: '지도 스크린샷' },
+  de: { capture: 'Screenshot zum Chat', capturing: 'Aufnahme…', failed: 'Kartenaufnahme fehlgeschlagen. Nach dem Laden erneut versuchen.', limit: 'Bis zu 4 Screenshots pro Nachricht.', remove: 'Screenshot entfernen', image: 'Karten-Screenshot' },
+  fr: { capture: 'Capture vers le chat', capturing: 'Capture…', failed: 'Capture impossible. Réessayez une fois la carte chargée.', limit: '4 captures maximum par message.', remove: 'Retirer la capture', image: 'Capture de la carte' },
+  'es-ES': { capture: 'Captura al chat', capturing: 'Capturando…', failed: 'No se pudo capturar el mapa. Inténtalo de nuevo cuando termine de cargar.', limit: 'Hasta 4 capturas por mensaje.', remove: 'Quitar captura', image: 'Captura del mapa' },
+  'pt-BR': { capture: 'Captura para o chat', capturing: 'Capturando…', failed: 'Não foi possível capturar o mapa. Tente novamente após o carregamento.', limit: 'Até 4 capturas por mensagem.', remove: 'Remover captura', image: 'Captura do mapa' },
+  it: { capture: 'Screenshot nella chat', capturing: 'Acquisizione…', failed: 'Impossibile acquisire la mappa. Riprova al termine del caricamento.', limit: 'Massimo 4 screenshot per messaggio.', remove: 'Rimuovi screenshot', image: 'Screenshot della mappa' },
+  ru: { capture: 'Снимок в чат', capturing: 'Создание снимка…', failed: 'Не удалось сделать снимок карты. Повторите после загрузки.', limit: 'До 4 снимков в сообщении.', remove: 'Удалить снимок', image: 'Снимок карты' },
+  uk: { capture: 'Знімок у чат', capturing: 'Створення знімка…', failed: 'Не вдалося зняти карту. Повторіть після завантаження.', limit: 'До 4 знімків у повідомленні.', remove: 'Видалити знімок', image: 'Знімок карти' },
+  pl: { capture: 'Zrzut do czatu', capturing: 'Przechwytywanie…', failed: 'Nie udało się przechwycić mapy. Spróbuj po załadowaniu.', limit: 'Do 4 zrzutów na wiadomość.', remove: 'Usuń zrzut', image: 'Zrzut mapy' },
+  tr: { capture: 'Ekran görüntüsünü sohbete ekle', capturing: 'Yakalanıyor…', failed: 'Harita yakalanamadı. Yükleme tamamlandığında tekrar deneyin.', limit: 'Mesaj başına en fazla 4 görüntü.', remove: 'Ekran görüntüsünü kaldır', image: 'Harita ekran görüntüsü' },
+  ar: { capture: 'لقطة إلى المحادثة', capturing: 'جارٍ الالتقاط…', failed: 'تعذر التقاط الخريطة. حاول بعد اكتمال التحميل.', limit: 'حتى 4 لقطات لكل رسالة.', remove: 'إزالة اللقطة', image: 'لقطة الخريطة' },
+  fa: { capture: 'تصویر به گفتگو', capturing: 'در حال ثبت…', failed: 'ثبت تصویر نقشه ممکن نشد. پس از بارگیری دوباره تلاش کنید.', limit: 'حداکثر ۴ تصویر در هر پیام.', remove: 'حذف تصویر', image: 'تصویر نقشه' },
+  hu: { capture: 'Képernyőkép a csevegésbe', capturing: 'Rögzítés…', failed: 'A térkép rögzítése nem sikerült. Betöltés után próbálja újra.', limit: 'Üzenetenként legfeljebb 4 kép.', remove: 'Kép eltávolítása', image: 'Térkép képernyőképe' },
+  id: { capture: 'Tangkapan layar ke obrolan', capturing: 'Mengambil…', failed: 'Gagal mengambil peta. Coba lagi setelah selesai dimuat.', limit: 'Maksimal 4 tangkapan per pesan.', remove: 'Hapus tangkapan layar', image: 'Tangkapan layar peta' },
+  th: { capture: 'ส่งภาพหน้าจอไปยังแชต', capturing: 'กำลังจับภาพ…', failed: 'จับภาพแผนที่ไม่สำเร็จ โปรดลองอีกครั้งเมื่อโหลดเสร็จ', limit: 'แนบได้สูงสุด 4 ภาพต่อข้อความ', remove: 'ลบภาพหน้าจอ', image: 'ภาพหน้าจอแผนที่' },
+};
+
+export const imageInputErrorCopy: Record<Locale, { unsupported: string; tooLarge: string }> = {
+  en: { unsupported: 'This agent cannot read images. Choose an agent that supports screenshots.', tooLarge: 'These screenshots exceed this agent’s image limit. Send fewer or smaller screenshots, or choose another agent.' },
+  'zh-CN': { unsupported: '此智能体不支持读取图片，请选择支持截图的智能体。', tooLarge: '截图超过此智能体的图片容量限制。请减少截图数量、缩小截图，或选择其他智能体。' },
+  'zh-TW': { unsupported: '此代理程式不支援讀取圖片，請選擇支援截圖的代理程式。', tooLarge: '截圖超過此代理程式的圖片容量限制。請減少或縮小截圖，或選擇其他代理程式。' },
+  ja: { unsupported: 'このエージェントは画像に対応していません。画像対応のエージェントを選択してください。', tooLarge: '画像の上限を超えています。枚数やサイズを減らすか、別のエージェントを選択してください。' },
+  ko: { unsupported: '이 에이전트는 이미지를 읽을 수 없습니다. 이미지 지원 에이전트를 선택하세요.', tooLarge: '이미지 제한을 초과했습니다. 이미지 수나 크기를 줄이거나 다른 에이전트를 선택하세요.' },
+  de: { unsupported: 'Dieser Agent kann keine Bilder lesen. Wählen Sie einen Agenten mit Bildunterstützung.', tooLarge: 'Das Bildlimit dieses Agenten ist überschritten. Senden Sie weniger oder kleinere Bilder oder wählen Sie einen anderen Agenten.' },
+  fr: { unsupported: 'Cet agent ne peut pas lire les images. Choisissez un agent compatible.', tooLarge: 'La limite d’images de cet agent est dépassée. Réduisez leur nombre ou leur taille, ou choisissez un autre agent.' },
+  'es-ES': { unsupported: 'Este agente no puede leer imágenes. Elige uno compatible.', tooLarge: 'Las capturas superan el límite del agente. Envía menos capturas o más pequeñas, o elige otro agente.' },
+  'pt-BR': { unsupported: 'Este agente não lê imagens. Escolha um agente compatível.', tooLarge: 'As capturas excedem o limite do agente. Envie menos imagens ou imagens menores, ou escolha outro agente.' },
+  it: { unsupported: 'Questo agente non legge immagini. Scegli un agente compatibile.', tooLarge: 'Le immagini superano il limite dell’agente. Riduci quantità o dimensioni oppure scegli un altro agente.' },
+  ru: { unsupported: 'Этот агент не читает изображения. Выберите агента с поддержкой изображений.', tooLarge: 'Превышен лимит изображений агента. Уменьшите их число или размер либо выберите другого агента.' },
+  uk: { unsupported: 'Цей агент не читає зображення. Виберіть агента з підтримкою зображень.', tooLarge: 'Перевищено ліміт зображень агента. Зменште їх кількість або розмір чи виберіть іншого агента.' },
+  pl: { unsupported: 'Ten agent nie odczytuje obrazów. Wybierz agenta z ich obsługą.', tooLarge: 'Przekroczono limit obrazów agenta. Zmniejsz ich liczbę lub rozmiar albo wybierz innego agenta.' },
+  tr: { unsupported: 'Bu aracı görüntü okuyamaz. Görüntü destekleyen bir aracı seçin.', tooLarge: 'Görüntüler aracının sınırını aşıyor. Daha az veya küçük görüntü gönderin ya da başka bir aracı seçin.' },
+  ar: { unsupported: 'هذا الوكيل لا يقرأ الصور. اختر وكيلاً يدعم الصور.', tooLarge: 'تجاوزت اللقطات حد الصور لهذا الوكيل. أرسل صوراً أقل أو أصغر، أو اختر وكيلاً آخر.' },
+  fa: { unsupported: 'این عامل تصاویر را نمی‌خواند. عاملی با پشتیبانی تصویر انتخاب کنید.', tooLarge: 'تصاویر از محدودیت این عامل بیشترند. تعداد یا اندازه را کاهش دهید یا عامل دیگری انتخاب کنید.' },
+  hu: { unsupported: 'Ez az ügynök nem olvas képeket. Válasszon képtámogatással rendelkező ügynököt.', tooLarge: 'A képek túllépik az ügynök korlátját. Küldjön kevesebb vagy kisebb képet, vagy válasszon másik ügynököt.' },
+  id: { unsupported: 'Agen ini tidak dapat membaca gambar. Pilih agen yang mendukung gambar.', tooLarge: 'Gambar melampaui batas agen. Kirim lebih sedikit atau lebih kecil, atau pilih agen lain.' },
+  th: { unsupported: 'เอเจนต์นี้อ่านรูปภาพไม่ได้ โปรดเลือกเอเจนต์ที่รองรับรูปภาพ', tooLarge: 'ภาพเกินขีดจำกัดของเอเจนต์ โปรดลดจำนวนหรือขนาดภาพ หรือเลือกเอเจนต์อื่น' },
+};

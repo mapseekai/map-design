@@ -1,0 +1,10 @@
+{
+  "version": 8,
+  "name": "Mini",
+  "sources": { "basemap": { "type": "vector", "url": "https://tiles.example.com/tiles.json" } },
+  "layers": [
+    { "id": "background", "type": "background", "paint": { "background-color": "#f8f8f6" } },
+    { "id": "roads-primary", "type": "line", "source": "basemap", "source-layer": "transportation",
+      "paint": { "line-color": "#3388ff", "line-width": 2, "line-dasharray": [4, 2] } }
+  ]
+}

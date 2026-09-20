@@ -1,0 +1,81 @@
+/* MapDesign theme: DESIGN.md palette, shared by Tailwind/shadcn and map integrations. */
+:root {
+  color-scheme: light;
+  --studio-header-height: calc(var(--spacing) * 16);
+  --background: #faf9f5;
+  --foreground: #3d3d3a;
+  --card: #faf9f5;
+  --card-foreground: #3d3d3a;
+  --popover: #faf9f5;
+  --popover-foreground: #3d3d3a;
+  --primary: #a9583e;
+  --primary-foreground: #ffffff;
+  --secondary: #efe9de;
+  --secondary-foreground: #141413;
+  --muted: #f5f0e8;
+  --muted-foreground: #6c6a64;
+  --accent: #efe9de;
+  --accent-foreground: #141413;
+  --destructive: #b43c3c;
+  --destructive-foreground: #ffffff;
+  --success: #327047;
+  --warning: #8b6712;
+  --border: #e6dfd8;
+  --input: #d7cfc5;
+  --ring: #cc785c;
+  --radius: 0.625rem;
+  --sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --serif: "Cormorant Garamond", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+  --mono: "JiduMono Pro", ui-monospace, "SFMono-Regular", monospace;
+  --app-header-height: 64px;
+  /* Non-component consumers (map canvas, syntax highlighting, desktop loading shell). */
+  --bg: var(--background);
+  --bg-app: var(--background);
+  --bg-panel: var(--card);
+  --bg-subtle: var(--muted);
+  --bg-muted: var(--secondary);
+  --text: var(--foreground);
+  --text-strong: var(--accent-foreground);
+  --text-muted: var(--muted-foreground);
+  --text-faint: var(--muted-foreground);
+  --accent-strong: var(--primary);
+  --accent-contrast: var(--primary-foreground);
+  --selected: var(--ring);
+  --red: var(--destructive);
+  --green: var(--success);
+  --amber: var(--warning);
+  --code-header-bg: #252320;
+  --code-body-bg: #181715;
+  --prose-font-size: 13px;
+  --prose-line-height: 1.7;
+  --code-font-size: 13px;
+  --code-line-height: 1.65;
+}
+[data-theme="dark"], .dark {
+  color-scheme: dark;
+  --background: #20201e;
+  --foreground: #ededdf;
+  --card: #282825;
+  --card-foreground: #ededdf;
+  --popover: #282825;
+  --popover-foreground: #ededdf;
+  --primary: #e5a18a;
+  --primary-foreground: #271710;
+  --secondary: #3a3832;
+  --secondary-foreground: #faf9f5;
+  --muted: #302f2a;
+  --muted-foreground: #bcb8ad;
+  --accent: #3a3832;
+  --accent-foreground: #faf9f5;
+  --destructive: #ef8585;
+  --destructive-foreground: #271710;
+  --success: #83bb90;
+  --warning: #d2ba77;
+  --border: #44423b;
+  --input: #575349;
+  --ring: #e5a18a;
+}
+
+@media (max-width: 639px) {
+  :root { --app-header-height: 112px; }
+}

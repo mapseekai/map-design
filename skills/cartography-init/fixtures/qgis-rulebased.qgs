@@ -1,0 +1,29 @@
+<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis projectname="rb" version="3.34.0">
+  <projectlayers>
+    <maplayer type="vector" id="l1">
+      <layername>roads</layername>
+      <provider>ogr</provider>
+      <datasource>/data/roads.shp</datasource>
+      <renderer-v2 type="RuleBased">
+        <rules>
+          <rule filter="&quot;highway&quot; = 'primary'" symbol="0" label="主干道"/>
+          <rule filter="&quot;highway&quot; = 'residential'" symbol="1" label="居住区道路"/>
+        </rules>
+        <symbols>
+          <symbol type="line" name="0">
+            <layer class="SimpleLine">
+              <prop k="line_color" v="221,136,68,255"/><prop k="line_width" v="0.5"/><prop k="line_width_unit" v="MM"/>
+              <data_defined_properties><Option type="Map">
+                <Option name="width" type="Map"><Option name="active" value="1" type="bool"/><Option name="expression" value="&quot;lanes&quot; * 0.8" type="QString"/></Option>
+              </Option></data_defined_properties>
+            </layer>
+          </symbol>
+          <symbol type="line" name="1">
+            <layer class="SimpleLine"><prop k="line_color" v="153,153,153,255"/><prop k="line_width" v="0.2"/><prop k="line_width_unit" v="MM"/></layer>
+          </symbol>
+        </symbols>
+      </renderer-v2>
+    </maplayer>
+  </projectlayers>
+</qgis>

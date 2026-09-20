@@ -1,0 +1,310 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { build } from "esbuild";
+import { describe, expect, it } from "vitest";
+
+import {
+  MAC_DAEMON_PREBUNDLE_ESM_REQUIRE_BANNER,
+  MAC_PREBUNDLE_COPIED_RUNTIME_DEPENDENCIES,
+  MAC_PREBUNDLE_ESBUILD_TARGET,
+  MAC_PREBUNDLE_POLICIES,
+  MAC_PREBUNDLE_RUNTIME_DEPENDENCIES,
+  MAC_PREBUNDLED_MAP_DESIGN_MCP_CLI_RELATIVE_PATH,
+  MAC_PREBUNDLED_DAEMON_CLI_RELATIVE_PATH,
+  MAC_PREBUNDLED_DAEMON_SIDECAR_RELATIVE_PATH,
+  MAC_PREBUNDLED_WEB_SIDECAR_RELATIVE_PATH,
+  assertMacPrebundleMetafile,
+  findForbiddenMacPrebundleInputs,
+  renderMacPackagedMainEntry,
+  renderMacDaemonSidecarPrebundleEntry,
+  shouldInstallInternalPackageForMacPrebundle,
+  shouldUseMacStandalonePrebundle,
+} from "../src/mac-prebundle.js";
+
+describe("mac standalone prebundle policy", () => {
+  it("is enabled only for standalone web output", () => {
+    expect(shouldUseMacStandalonePrebundle("standalone")).toBe(true);
+    expect(shouldUseMacStandalonePrebundle("server")).toBe(false);
+  });
+
+  it("keeps server-mode package topology unchanged", () => {
+    expect(
+      shouldInstallInternalPackageForMacPrebundle({
+        packageName: "@mapseekai/web",
+        webOutputMode: "server",
+      }),
+    ).toBe(true);
+    expect(
+      shouldInstallInternalPackageForMacPrebundle({
+        packageName: "@mapseekai/packaged",
+        webOutputMode: "server",
+      }),
+    ).toBe(true);
+  });
+
+  it("excludes internal packages replaced by mac standalone prebundles", () => {
+    for (const packageName of [
+      "@mapseekai/daemon",
+      "@mapseekai/desktop",
+      "@mapseekai/packaged",
+      "@mapseekai/sidecar",
+      "@mapseekai/sidecar-proto",
+      "@mapseekai/web",
+    ]) {
+      expect(
+        shouldInstallInternalPackageForMacPrebundle({
+          packageName,
+          webOutputMode: "standalone",
+        }),
+      ).toBe(false);
+    }
+    expect(
+      shouldInstallInternalPackageForMacPrebundle({
+      packageName: "@mapseekai/contracts",
+      webOutputMode: "standalone",
+    }),
+  ).toBe(true);
+  expect(
+    shouldInstallInternalPackageForMacPrebundle({
+      packageName: "@mapseekai/platform",
+      webOutputMode: "standalone",
+    }),
+  ).toBe(true);
+  });
+
+  it("documents the explicit code-level bundle boundaries", () => {
+    expect(MAC_PREBUNDLE_ESBUILD_TARGET).toBe("node24");
+    expect(MAC_PREBUNDLE_POLICIES.packagedMain.externals).toEqual(["electron"]);
+    expect(MAC_PREBUNDLE_POLICIES.daemonCli.externals).toEqual([
+      "better-sqlite3",
+      "blake3-wasm",
+      "fsevents",
+      "node-pty",
+    ]);
+    expect(MAC_PREBUNDLE_POLICIES.daemonSidecar.externals).toEqual([
+      "better-sqlite3",
+      "blake3-wasm",
+      "fsevents",
+      "node-pty",
+    ]);
+    expect(MAC_PREBUNDLE_POLICIES.mapDesignMcpCli.externals).toEqual([
+      "better-sqlite3",
+      "blake3-wasm",
+      "fsevents",
+      "node-pty",
+    ]);
+    expect(MAC_PREBUNDLE_POLICIES.webSidecar.externals).toEqual([]);
+    expect(MAC_DAEMON_PREBUNDLE_ESM_REQUIRE_BANNER).toContain("createRequire");
+    // Must match apps/daemon/package.json / the pnpm lockfile, or
+    // electron-builder's collector drops the module from the shipped app and
+    // the daemon dies at boot with ERR_MODULE_NOT_FOUND (issue #4638).
+    expect(MAC_PREBUNDLE_RUNTIME_DEPENDENCIES).toEqual({
+      "better-sqlite3": "12.10.0",
+      "blake3-wasm": "2.1.5",
+      "node-pty": "1.1.0",
+    });
+    expect(MAC_PREBUNDLE_COPIED_RUNTIME_DEPENDENCIES).toEqual({ "fsevents": "2.3.3" });
+    expect(MAC_PREBUNDLED_DAEMON_CLI_RELATIVE_PATH).toBe("app/prebundled/daemon/daemon-cli.mjs");
+    expect(MAC_PREBUNDLED_DAEMON_SIDECAR_RELATIVE_PATH).toBe("app/prebundled/daemon/daemon-sidecar.mjs");
+    expect(MAC_PREBUNDLED_MAP_DESIGN_MCP_CLI_RELATIVE_PATH).toBe("app/prebundled/daemon/map-design-mcp-cli.mjs");
+    expect(MAC_PREBUNDLED_WEB_SIDECAR_RELATIVE_PATH).toBe("app/prebundled/web-sidecar.mjs");
+  });
+
+  it.skipIf(process.platform !== "darwin")(
+    "keeps chokidar's native fsevents binding outside pack bundles",
+    async () => {
+      const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+      const result = await build({
+        banner: { js: MAC_DAEMON_PREBUNDLE_ESM_REQUIRE_BANNER },
+        bundle: true,
+        external: [...MAC_PREBUNDLE_POLICIES.daemonSidecar.externals],
+        format: "esm",
+        logLevel: "silent",
+        metafile: true,
+        platform: "node",
+        stdin: {
+          contents: 'import "chokidar";',
+          loader: "js",
+          resolveDir: join(workspaceRoot, "tools", "pack"),
+        },
+        target: MAC_PREBUNDLE_ESBUILD_TARGET,
+        write: false,
+      });
+
+      expect(Object.keys(result.metafile.inputs).some((input) => input.includes("/node_modules/fsevents/"))).toBe(
+        false,
+      );
+    },
+  );
+
+});
+
+describe("renderMacDaemonSidecarPrebundleEntry", () => {
+  it("sets the absolute private MCP sibling before daemon startup", () => {
+    const entry = renderMacDaemonSidecarPrebundleEntry("../../daemon-sidecar.js");
+    expect(entry).toContain('process.env.MAP_DESIGN_MCP_CLI_PATH = resolve(dirname(selfPath), "map-design-mcp-cli.mjs")');
+    expect(entry).toContain('await import("../../daemon-sidecar.js")');
+    expect(entry.indexOf("MAP_DESIGN_MCP_CLI_PATH")).toBeLessThan(entry.indexOf("await import"));
+  });
+});
+
+describe("findForbiddenMacPrebundleInputs", () => {
+  it("matches forbidden dependency roots after path normalization", () => {
+    expect(
+      findForbiddenMacPrebundleInputs({
+        forbiddenInputs: MAC_PREBUNDLE_POLICIES.webSidecar.forbiddenInputs,
+        inputs: [
+          "src/index.ts",
+          "C:\\repo\\node_modules\\next\\dist\\server.js",
+          "/repo/node_modules/openai/index.mjs",
+        ],
+      }),
+    ).toEqual([
+      "C:/repo/node_modules/next/dist/server.js",
+      "/repo/node_modules/openai/index.mjs",
+    ]);
+  });
+});
+
+describe("assertMacPrebundleMetafile", () => {
+  it("requires a stable MCP entry whose SDK is bundled", async () => {
+    const root = await mkdtemp(join(tmpdir(), "map-design-mac-prebundle-"));
+    const metafilePath = join(root, "mcp.json");
+    try {
+      await writeFile(
+        metafilePath,
+        JSON.stringify({
+          inputs: { "/repo/apps/daemon/dist/map-design-mcp-cli.js": {} },
+          outputs: {
+            "/out/app/prebundled/daemon/map-design-mcp-cli.mjs": {
+              entryPoint: "/repo/apps/daemon/dist/map-design-mcp-cli.js",
+            },
+          },
+        }),
+        "utf8",
+      );
+      await expect(assertMacPrebundleMetafile({
+        metafilePath,
+        policyName: "mapDesignMcpCli",
+      })).rejects.toThrow("MapDesign MCP CLI prebundle must include @modelcontextprotocol/sdk.");
+
+      await writeFile(
+        metafilePath,
+        JSON.stringify({
+          inputs: {
+            "/repo/apps/daemon/dist/map-design-mcp-cli.js": {},
+            "/repo/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js": {},
+          },
+          outputs: {
+            "/out/app/prebundled/daemon/map-design-mcp-cli.mjs": {
+              entryPoint: "/repo/apps/daemon/dist/map-design-mcp-cli.js",
+            },
+          },
+        }),
+        "utf8",
+      );
+      await expect(assertMacPrebundleMetafile({
+        metafilePath,
+        policyName: "mapDesignMcpCli",
+      })).resolves.toBeUndefined();
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("accepts a safe web sidecar metafile", async () => {
+    const root = await mkdtemp(join(tmpdir(), "map-design-mac-prebundle-"));
+    const metafilePath = join(root, "safe.json");
+
+    try {
+      await writeFile(
+        metafilePath,
+        JSON.stringify({ inputs: { "/repo/apps/web/sidecar/index.ts": {} } }),
+        "utf8",
+      );
+
+      await expect(
+        assertMacPrebundleMetafile({ metafilePath, policyName: "webSidecar" }),
+      ).resolves.toBeUndefined();
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects a packaged main metafile that pulled in web runtime closure", async () => {
+    const root = await mkdtemp(join(tmpdir(), "map-design-mac-prebundle-"));
+    const metafilePath = join(root, "unsafe.json");
+
+    try {
+      await writeFile(
+        metafilePath,
+        JSON.stringify({ inputs: { "/repo/node_modules/@mapseekai/web/dist/sidecar/index.js": {} } }),
+        "utf8",
+      );
+
+      await expect(
+        assertMacPrebundleMetafile({ metafilePath, policyName: "packagedMain" }),
+      ).rejects.toThrow(/packaged main prebundle included forbidden inputs/);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects a daemon metafile that bundled wasm-backed runtime dependencies", async () => {
+    const root = await mkdtemp(join(tmpdir(), "map-design-mac-prebundle-"));
+    const metafilePath = join(root, "unsafe-daemon.json");
+
+    try {
+      await writeFile(
+        metafilePath,
+        JSON.stringify({ inputs: { "/repo/node_modules/blake3-wasm/dist/node/index.js": {} } }),
+        "utf8",
+      );
+
+      await expect(
+        assertMacPrebundleMetafile({ metafilePath, policyName: "daemonSidecar" }),
+      ).rejects.toThrow(/daemon sidecar prebundle included forbidden inputs/);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects a daemon metafile that bundled native runtime dependencies", async () => {
+    const root = await mkdtemp(join(tmpdir(), "map-design-mac-prebundle-"));
+    const metafilePath = join(root, "unsafe-native-daemon.json");
+
+    try {
+      await writeFile(
+        metafilePath,
+        JSON.stringify({
+          inputs: {
+            "/repo/node_modules/fsevents/fsevents.js": {},
+            "/repo/node_modules/node-pty/lib/index.js": {},
+          },
+        }),
+        "utf8",
+      );
+
+      await expect(
+        assertMacPrebundleMetafile({ metafilePath, policyName: "daemonSidecar" }),
+      ).rejects.toThrow(/daemon sidecar prebundle included forbidden inputs/);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+});
+
+describe("renderMacPackagedMainEntry", () => {
+  it("renders the prebundled runtime entry shim", () => {
+    expect(renderMacPackagedMainEntry(true)).toContain("./prebundled/packaged-main.mjs");
+    expect(renderMacPackagedMainEntry(true)).not.toContain("@mapseekai/packaged");
+  });
+
+  it("renders the package entry shim for non-prebundled mode", () => {
+    expect(renderMacPackagedMainEntry(false)).toContain("@mapseekai/packaged");
+    expect(renderMacPackagedMainEntry(false)).not.toContain("./prebundled/packaged-main.mjs");
+  });
+});

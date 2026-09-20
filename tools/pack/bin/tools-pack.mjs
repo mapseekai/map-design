@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+
+import { access } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const entryDir = dirname(fileURLToPath(import.meta.url));
+const toolRoot = resolve(entryDir, "..");
+const distEntry = resolve(toolRoot, "dist/index.mjs");
+
+try {
+  await access(distEntry);
+} catch {
+  throw new Error(`tools-pack build is missing: run "pnpm --filter @mapseekai/tools-pack build" before using tools-pack.`);
+}
+
+await import(pathToFileURL(distEntry).href);

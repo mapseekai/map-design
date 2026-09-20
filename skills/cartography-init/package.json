@@ -1,0 +1,35 @@
+{
+  "name": "@cartographymd/init-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generate a CARTOGRAPHY.md draft from existing map styles (style.json, QGIS, ArcGIS, SLD).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "init": "tsx scripts/init.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@mapseekai/cartography.md": "0.4.0",
+    "better-sqlite3": "12.10.0",
+    "fast-xml-parser": "^5.3.2",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

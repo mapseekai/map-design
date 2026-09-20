@@ -1,0 +1,72 @@
+name: mapdesign-e2e
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Exact git ref to validate.
+        required: true
+        type: string
+      suite:
+        description: Retained for release-workflow compatibility; MapDesign is the only suite.
+        required: false
+        default: map-design
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Optional git ref; empty uses the dispatched ref.
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mapdesign-e2e-${{ inputs.ref || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  map_design:
+    name: MapDesign Playwright
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+        with:
+          package-json-path: e2e/package.json
+          install-command: pnpm -C e2e exec playwright install --with-deps chromium
+
+      - name: Prebuild workspace type declarations
+        run: |
+          pnpm --filter @mapseekai/daemon build
+          pnpm --filter @mapseekai/desktop build
+          pnpm --filter @mapseekai/web build:sidecar
+
+      - name: Run MapDesign browser tests
+        run: |
+          pnpm -C e2e exec tsx scripts/playwright.ts clean
+          pnpm -C e2e exec playwright test -c playwright.config.ts ui/map-design-studio.test.ts ui/map-design-home-layout.test.ts
+
+      - name: Upload Playwright diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mapdesign-e2e-${{ github.run_id }}
+          path: |
+            e2e/ui/reports/playwright-html-report
+            e2e/ui/reports/test-results
+            e2e/ui/reports/results.json
+          if-no-files-found: ignore
+          retention-days: 7

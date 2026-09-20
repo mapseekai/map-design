@@ -1,0 +1,37 @@
+{
+  "type": "CIMLayerDocument",
+  "layerDefinitions": [
+    {
+      "type": "CIMFeatureLayer",
+      "name": "roads",
+      "renderer": {
+        "type": "CIMSimpleRenderer",
+        "symbol": {
+          "type": "CIMSymbolReference",
+          "symbol": {
+            "type": "CIMLineSymbol",
+            "symbolLayers": [
+              { "type": "CIMSolidStroke", "color": { "type": "CIMRGBColor", "values": [51, 136, 255] }, "width": 1.5, "capStyle": "Round" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "CIMFeatureLayer",
+      "name": "water",
+      "renderer": {
+        "type": "CIMSimpleRenderer",
+        "symbol": {
+          "type": "CIMSymbolReference",
+          "symbol": {
+            "type": "CIMPolygonSymbol",
+            "symbolLayers": [
+              { "type": "CIMSolidFill", "color": { "type": "CIMRGBColor", "values": [216, 236, 255] } }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

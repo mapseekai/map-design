@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc">
+  <NamedLayer><Name>roads</Name><UserStyle><Name>roads</Name>
+    <FeatureTypeStyle>
+      <Rule><Name>Primary</Name>
+        <ogc:Filter><ogc:PropertyIsEqualTo>
+          <ogc:PropertyName>highway</ogc:PropertyName><ogc:Literal>primary</ogc:Literal>
+        </ogc:PropertyIsEqualTo></ogc:Filter>
+        <MinScaleDenominator>5000</MinScaleDenominator>
+        <MaxScaleDenominator>50000</MaxScaleDenominator>
+        <LineSymbolizer><Stroke>
+          <CssParameter name="stroke">#FF6600</CssParameter>
+          <CssParameter name="stroke-width">2</CssParameter>
+        </Stroke></LineSymbolizer>
+      </Rule>
+    </FeatureTypeStyle>
+  </UserStyle></NamedLayer>
+</StyledLayerDescriptor>

@@ -1,0 +1,237 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v-prefixed tag to package and release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  prepare:
+    name: Validate release
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Validate tag and workspace versions
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          if [[ "$RELEASE_TAG" != "v$version" ]]; then
+            echo "Release tag $RELEASE_TAG does not match package version v$version." >&2
+            exit 1
+          fi
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const rootVersion = require('./package.json').version;
+          const manifests = [
+            'apps/daemon/package.json',
+            'apps/desktop/package.json',
+            'apps/packaged/package.json',
+            'apps/web/package.json',
+            'e2e/package.json',
+            'packages/contracts/package.json',
+            'packages/map-design-contracts/package.json',
+            'packages/platform/package.json',
+            'packages/sidecar/package.json',
+            'packages/sidecar-proto/package.json',
+            'tools/dev/package.json',
+            'tools/pack/package.json',
+          ];
+          const mismatches = manifests.flatMap((manifest) => {
+            const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+            return pkg.version === rootVersion ? [] : [`${manifest}: ${pkg.version}`];
+          });
+          if (mismatches.length) {
+            throw new Error(`Workspace versions must match ${rootVersion}:\n${mismatches.join('\n')}`);
+          }
+          NODE
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release source
+        run: |
+          pnpm guard
+          pnpm typecheck
+          pnpm --filter @mapseekai/tools-pack test
+          pnpm --filter @mapseekai/packaged test
+
+  mac:
+    name: Package macOS
+    needs: prepare
+    runs-on: macos-14
+    env:
+      CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
+      CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_NOTARY_KEYCHAIN_PROFILE: ${{ secrets.APPLE_NOTARY_KEYCHAIN_PROFILE }}
+      APPLE_NOTARY_KEYCHAIN: ${{ secrets.APPLE_NOTARY_KEYCHAIN }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+      - name: Install dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Build macOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(mac build --to all --portable --app-version "${{ needs.prepare.outputs.version }}")
+          if [[ -n "${CSC_LINK:-}" && -n "${CSC_KEY_PASSWORD:-}" ]]; then
+            args+=(--signed)
+            if [[ -n "${APPLE_NOTARY_KEYCHAIN_PROFILE:-}" || ( -n "${APPLE_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ) ]]; then
+              args+=(--notarize)
+            fi
+          fi
+          pnpm tools-pack "${args[@]}"
+      - name: Collect macOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          find .tmp/tools-pack/out/mac -type f \( -name '*.dmg' -o -name '*.zip' \) -exec cp {} release-artifacts/ \;
+          test -n "$(find release-artifacts -type f -print -quit)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mapdesign-${{ needs.prepare.outputs.version }}-macos
+          path: release-artifacts/*
+          if-no-files-found: error
+
+  windows:
+    name: Package Windows
+    needs: prepare
+    runs-on: windows-2025
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Build Windows artifacts
+        shell: pwsh
+        run: pnpm tools-pack win build --to all --portable --app-version "${{ needs.prepare.outputs.version }}"
+      - name: Collect Windows artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-artifacts | Out-Null
+          Get-ChildItem .tmp/tools-pack/out/win -Recurse -File | Where-Object { $_.Name -like '*-setup.exe' -or $_.Name -like '*-portable.zip' } | Copy-Item -Destination release-artifacts
+          if (-not (Get-ChildItem release-artifacts -File)) { throw 'No Windows release artifacts found.' }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mapdesign-${{ needs.prepare.outputs.version }}-windows
+          path: release-artifacts/*
+          if-no-files-found: error
+
+  linux:
+    name: Package Linux
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+      - name: Install dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Build Linux artifact
+        run: pnpm tools-pack linux build --to appimage --portable --app-version "${{ needs.prepare.outputs.version }}"
+      - name: Collect Linux artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          find .tmp/tools-pack/out/linux -type f -name '*.AppImage' -exec cp {} release-artifacts/ \;
+          test -n "$(find release-artifacts -type f -print -quit)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mapdesign-${{ needs.prepare.outputs.version }}-linux
+          path: release-artifacts/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [prepare, mac, windows, linux]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: mapdesign-${{ needs.prepare.outputs.version }}-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-artifacts
+          sha256sum * > SHA256SUMS.txt
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t artifacts < <(find release-artifacts -maxdepth 1 -type f -print | sort)
+          test "${#artifacts[@]}" -gt 1
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${artifacts[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${artifacts[@]}" --verify-tag --generate-notes --title "MapDesign $RELEASE_TAG"
+          fi

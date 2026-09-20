@@ -1,0 +1,10 @@
+export { Input } from "./ui/input";
+export { Textarea } from "./ui/textarea";
+export { Select } from "./ui/select";
+import type { ComponentProps } from "react";
+import type { Input } from "./ui/input";
+import type { Textarea } from "./ui/textarea";
+import type { Select } from "./ui/select";
+export type InputProps = ComponentProps<typeof Input>;
+export type TextareaProps = ComponentProps<typeof Textarea>;
+export type SelectProps = ComponentProps<typeof Select>;

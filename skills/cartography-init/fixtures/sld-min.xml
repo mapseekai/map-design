@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc">
+  <NamedLayer><Name>roads</Name><UserStyle><Name>roads</Name>
+    <FeatureTypeStyle>
+      <Rule><Name>PrimaryRoad</Name>
+        <LineSymbolizer><Stroke>
+          <CssParameter name="stroke">#FF6600</CssParameter>
+          <CssParameter name="stroke-width">2</CssParameter>
+          <CssParameter name="stroke-dasharray">4 2</CssParameter>
+        </Stroke></LineSymbolizer>
+      </Rule>
+      <Rule><Name>WaterArea</Name>
+        <PolygonSymbolizer><Fill><CssParameter name="fill">#d8ecff</CssParameter>
+          <CssParameter name="fill-opacity">0.8</CssParameter></Fill></PolygonSymbolizer>
+      </Rule>
+    </FeatureTypeStyle>
+  </UserStyle></NamedLayer>
+</StyledLayerDescriptor>

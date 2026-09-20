@@ -1,0 +1,147 @@
+{
+  "name": "Riverside sample",
+  "synthetic": true,
+  "crs": "WGS84 / EPSG:4326",
+  "bbox": [
+    0,
+    0,
+    0.0215595,
+    0.014373
+  ],
+  "featureCount": 61,
+  "roles": [
+    {
+      "match_key": "building.public",
+      "geometry": "Polygon",
+      "family": "building",
+      "role": "public",
+      "count": 5
+    },
+    {
+      "match_key": "building.residential",
+      "geometry": "Polygon",
+      "family": "building",
+      "role": "residential",
+      "count": 22
+    },
+    {
+      "match_key": "label.district",
+      "geometry": "Point",
+      "family": "label",
+      "role": "district",
+      "count": 1
+    },
+    {
+      "match_key": "label.park",
+      "geometry": "Point",
+      "family": "label",
+      "role": "park",
+      "count": 1
+    },
+    {
+      "match_key": "label.water",
+      "geometry": "Point",
+      "family": "label",
+      "role": "water",
+      "count": 2
+    },
+    {
+      "match_key": "landuse.park",
+      "geometry": "Polygon",
+      "family": "landuse",
+      "role": "park",
+      "count": 2
+    },
+    {
+      "match_key": "poi.bus-stop",
+      "geometry": "Point",
+      "family": "poi",
+      "role": "bus-stop",
+      "count": 1
+    },
+    {
+      "match_key": "poi.cafe",
+      "geometry": "Point",
+      "family": "poi",
+      "role": "cafe",
+      "count": 1
+    },
+    {
+      "match_key": "poi.library",
+      "geometry": "Point",
+      "family": "poi",
+      "role": "library",
+      "count": 1
+    },
+    {
+      "match_key": "poi.museum",
+      "geometry": "Point",
+      "family": "poi",
+      "role": "museum",
+      "count": 1
+    },
+    {
+      "match_key": "poi.station",
+      "geometry": "Point",
+      "family": "poi",
+      "role": "station",
+      "count": 1
+    },
+    {
+      "match_key": "poi.viewpoint",
+      "geometry": "Point",
+      "family": "poi",
+      "role": "viewpoint",
+      "count": 1
+    },
+    {
+      "match_key": "road.bridge",
+      "geometry": "LineString",
+      "family": "road",
+      "role": "bridge",
+      "count": 1
+    },
+    {
+      "match_key": "road.local",
+      "geometry": "LineString",
+      "family": "road",
+      "role": "local",
+      "count": 9
+    },
+    {
+      "match_key": "road.path",
+      "geometry": "LineString",
+      "family": "road",
+      "role": "path",
+      "count": 2
+    },
+    {
+      "match_key": "road.primary",
+      "geometry": "LineString",
+      "family": "road",
+      "role": "primary",
+      "count": 2
+    },
+    {
+      "match_key": "road.secondary",
+      "geometry": "LineString",
+      "family": "road",
+      "role": "secondary",
+      "count": 6
+    },
+    {
+      "match_key": "water.lake",
+      "geometry": "Polygon",
+      "family": "water",
+      "role": "lake",
+      "count": 1
+    },
+    {
+      "match_key": "water.river",
+      "geometry": "Polygon",
+      "family": "water",
+      "role": "river",
+      "count": 1
+    }
+  ]
+}

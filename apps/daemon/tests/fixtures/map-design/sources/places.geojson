@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Shanghai" },
+      "geometry": { "type": "Point", "coordinates": [121.4737, 31.2304] }
+    }
+  ]
+}

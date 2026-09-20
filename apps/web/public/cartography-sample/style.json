@@ -1,0 +1,637 @@
+{
+  "version": 8,
+  "name": "Riverside sample — reference style",
+  "center": [
+    0.01077975,
+    0.0071865
+  ],
+  "zoom": 14.6,
+  "sources": {
+    "sample": {
+      "type": "geojson",
+      "data": "/cartography-sample/riverside.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "canvas",
+      "type": "background",
+      "paint": {
+        "background-color": "#f6f2e9"
+      }
+    },
+    {
+      "id": "landuse.park",
+      "type": "fill",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "landuse"
+        ]
+      ],
+      "paint": {
+        "fill-color": "#cfddc2"
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "water"
+        ]
+      ],
+      "paint": {
+        "fill-color": "#b0ced9"
+      }
+    },
+    {
+      "id": "water-outline",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "water"
+        ]
+      ],
+      "paint": {
+        "line-color": "#8fb7c7",
+        "line-width": 1
+      }
+    },
+    {
+      "id": "building",
+      "type": "fill",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "building"
+        ]
+      ],
+      "paint": {
+        "fill-color": [
+          "match",
+          [
+            "get",
+            "role"
+          ],
+          "public",
+          "#d3bfa8",
+          "#e2dbcf"
+        ],
+        "fill-outline-color": "#c9c0b3"
+      }
+    },
+    {
+      "id": "road.local.casing",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "local"
+        ]
+      ],
+      "paint": {
+        "line-color": "#c5b9a9",
+        "line-width": 5
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 14
+    },
+    {
+      "id": "road.local",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "local"
+        ]
+      ],
+      "paint": {
+        "line-color": "#ffffff",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          1.7999999999999998,
+          17,
+          5.4
+        ]
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 14
+    },
+    {
+      "id": "road.secondary.casing",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "secondary"
+        ]
+      ],
+      "paint": {
+        "line-color": "#c5b9a9",
+        "line-width": 7
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "road.secondary",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "secondary"
+        ]
+      ],
+      "paint": {
+        "line-color": "#fffaf1",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          3.0,
+          17,
+          9.0
+        ]
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "road.primary.casing",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "primary"
+        ]
+      ],
+      "paint": {
+        "line-color": "#c5b9a9",
+        "line-width": 10
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "road.primary",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "primary"
+        ]
+      ],
+      "paint": {
+        "line-color": "#e2b786",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          4.8,
+          17,
+          14.4
+        ]
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "road.bridge.casing",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "bridge"
+        ]
+      ],
+      "paint": {
+        "line-color": "#c5b9a9",
+        "line-width": 10
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "road.bridge",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "bridge"
+        ]
+      ],
+      "paint": {
+        "line-color": "#e2b786",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          4.8,
+          17,
+          14.4
+        ]
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "road.path",
+      "type": "line",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "road"
+        ],
+        [
+          "==",
+          [
+            "get",
+            "role"
+          ],
+          "path"
+        ]
+      ],
+      "paint": {
+        "line-color": "#8b9776",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          1.2,
+          17,
+          3.6
+        ],
+        "line-dasharray": [
+          2,
+          2
+        ]
+      },
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "minzoom": 0
+    },
+    {
+      "id": "poi",
+      "type": "circle",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "poi"
+        ]
+      ],
+      "paint": {
+        "circle-radius": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          3,
+          17,
+          6
+        ],
+        "circle-color": "#9b5940",
+        "circle-stroke-color": "#fffaf1",
+        "circle-stroke-width": 1.5
+      }
+    },
+    {
+      "id": "labels",
+      "type": "symbol",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "label"
+        ]
+      ],
+      "paint": {
+        "text-color": "#3e4947",
+        "text-halo-color": "#faf7ef",
+        "text-halo-width": 1.5
+      },
+      "layout": {
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "sans-serif"
+        ],
+        "text-size": [
+          "match",
+          [
+            "get",
+            "role"
+          ],
+          "district",
+          18,
+          14
+        ],
+        "text-padding": 5
+      }
+    },
+    {
+      "id": "poi-labels",
+      "type": "symbol",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "==",
+          [
+            "get",
+            "family"
+          ],
+          "poi"
+        ]
+      ],
+      "paint": {
+        "text-color": "#3e4947",
+        "text-halo-color": "#faf7ef",
+        "text-halo-width": 1.5
+      },
+      "layout": {
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "sans-serif"
+        ],
+        "text-size": 12,
+        "text-anchor": "top",
+        "text-offset": [
+          0,
+          0.9
+        ],
+        "text-padding": 3
+      },
+      "minzoom": 14
+    },
+    {
+      "id": "road-labels",
+      "type": "symbol",
+      "source": "sample",
+      "filter": [
+        "all",
+        [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "family"
+            ],
+            "road"
+          ]
+        ],
+        [
+          "in",
+          [
+            "get",
+            "role"
+          ],
+          [
+            "literal",
+            [
+              "primary",
+              "bridge",
+              "path"
+            ]
+          ]
+        ]
+      ],
+      "paint": {
+        "text-color": "#3e4947",
+        "text-halo-color": "#faf7ef",
+        "text-halo-width": 1.5
+      },
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "sans-serif"
+        ],
+        "text-size": 11,
+        "symbol-spacing": 200
+      },
+      "minzoom": 14
+    }
+  ]
+}

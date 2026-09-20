@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "map-design-design-system-fallback/v1",
+  "noMatch": {
+    "action": "request-human-confirmation",
+    "allowInventComponent": false,
+    "outputMarker": "data-ds-fallback=\"no-match\""
+  },
+  "multipleMatches": {
+    "action": "prefer-priority-then-request-human",
+    "allowInventComponent": false
+  }
+}

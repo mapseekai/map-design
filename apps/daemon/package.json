@@ -1,0 +1,73 @@
+{
+  "name": "@mapseekai/daemon",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "bin": {
+    "md": "./bin/md.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
+    },
+    "./package.json": "./package.json",
+    "./sidecar": {
+      "types": "./dist/sidecar/index.d.ts",
+      "default": "./dist/sidecar/index.js"
+    }
+  },
+  "files": [
+    "bin",
+    "dist",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "daemon": "pnpm run build && node dist/cli.js --no-open",
+    "dev": "pnpm run build && node dist/cli.js --no-open",
+    "start": "pnpm run build && node dist/cli.js",
+    "pretest": "pnpm --filter '@mapseekai/daemon^...' --workspace-concurrency=4 --if-present run build",
+    "test": "vitest run -c vitest.config.ts",
+    "typecheck": "pnpm --filter @mapseekai/contracts build && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "4.0.49",
+    "@ai-sdk/openai": "4.0.60",
+    "@ai-sdk/openai-compatible": "3.0.44",
+    "@cartographymd/init-skill": "workspace:*",
+    "@mapseekai/cartography.md": "0.4.0",
+    "@mapseekai/contracts": "workspace:*",
+    "@mapseekai/map-design-contracts": "workspace:*",
+    "@mapseekai/platform": "workspace:*",
+    "@mapseekai/sidecar": "workspace:*",
+    "@mapseekai/sidecar-proto": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@placemarkio/check-geojson": "0.1.14",
+    "ai": "7.0.93",
+    "better-sqlite3": "12.10.0",
+    "blake3-wasm": "2.1.5",
+    "express": "5.2.1",
+    "maplibre-style-tools": "0.3.0",
+    "multer": "2.2.0",
+    "node-pty": "1.1.0",
+    "pmtiles": "4.5.0",
+    "undici": "7.29.0",
+    "zod": "4.4.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/express": "5.0.6",
+    "@types/multer": "2.1.0",
+    "@types/node": "20.19.39",
+    "jsdom": "29.1.1",
+    "typebox": "1.3.7",
+    "typescript": "5.9.3",
+    "vitest": "4.1.6"
+  },
+  "engines": {
+    "node": "~24"
+  }
+}

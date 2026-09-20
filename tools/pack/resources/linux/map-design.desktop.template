@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=MapDesign (@@NAMESPACE@@)
+GenericName=MapDesign
+Comment=MapDesign cartographic workspace (@@NAMESPACE@@)
+Exec=env -u ELECTRON_RUN_AS_NODE MAP_DESIGN_NAMESPACE=@@NAMESPACE@@ @@EXEC_PATH@@ --appimage-extract-and-run %U
+Icon=@@ICON_PATH@@
+Categories=Development;Utility;
+StartupWMClass=MapDesign
+StartupNotify=true
+Terminal=false
+MimeType=x-scheme-handler/map-design;
