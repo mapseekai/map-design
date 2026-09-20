@@ -1,3 +1,5 @@
+import {LEGACY_QUIET_WALKING_ID, LEGACY_QUIET_WALKING_DIGEST, loadLegacyDesignSystem} from '../../../src/map-design/validation/legacy-design-system.js';
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -31,24 +33,9 @@ import { MapDesignSqliteProjectRepository } from '../../../src/map-design/storag
 import type { LoadedMapDesignSystem } from '../../../src/map-design/validation/design-system-loader.js';
 
 const NOW = '2026-09-01T00:00:00.000Z';
-const HISTORICAL_SYSTEM: LoadedMapDesignSystem = {
-  id: 'historical-system',
-  digest: 'd'.repeat(64),
-  humanGuidance: '',
-  rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 },
-};
-const CURRENT_SYSTEM: LoadedMapDesignSystem = {
-  id: 'current-system',
-  digest: 'e'.repeat(64),
-  humanGuidance: '',
-  rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 },
-};
-const IMPORT_SYSTEM: LoadedMapDesignSystem = {
-  id: 'quiet-walking',
-  digest: 'c'.repeat(64),
-  humanGuidance: '',
-  rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 },
-};
+const HISTORICAL_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'historical-system', digest: 'd'.repeat(64) });
+const CURRENT_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'current-system', digest: 'e'.repeat(64) });
+const IMPORT_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'quiet-atlas', digest: 'c'.repeat(64) });
 const systems = new Map([
   [HISTORICAL_SYSTEM.id, HISTORICAL_SYSTEM],
   [CURRENT_SYSTEM.id, CURRENT_SYSTEM],
@@ -168,6 +155,35 @@ describe('MapRevisionService historical snapshots', () => {
     });
   });
 
+  it.each(['restore', 'discard'] as const)('keeps the migrated standard binding when %s reads legacy evidence', async (operation) => {
+    const legacy = loadLegacyDesignSystem(LEGACY_QUIET_WALKING_ID, LEGACY_QUIET_WALKING_DIGEST)!;
+    const revision = repository.getRevision('project-a', 0)!;
+    const original = await blobStore.getJson<Record<string, unknown>>('project-a', 'attestations', revision.attestationDigest);
+    await replaceAttestation('project-a', 0, createMapImportAttestation({
+      ...original, designSystemId: legacy.id, designSystemDigest: legacy.digest,
+    }));
+    db.prepare('UPDATE map_design_revisions SET design_system_digest = ? WHERE project_id = ? AND revision = 0').run(legacy.digest, 'project-a');
+    if (operation === 'discard') db.prepare('UPDATE map_design_projects SET committed_revision = 0 WHERE project_id = ?').run('project-a');
+    const historyBefore = repository.listRevisions('project-a');
+    const service = new MapRevisionService({
+      db, blobStore,
+      loadDesignSystem: async (binding) => loadLegacyDesignSystem(binding.id, binding.digest) ?? loadDesignSystem(binding),
+      runStore: {get: (runId) => ({runId, projectId: 'project-a', runtime: {id: 'codex', version: '1.0.0', adapter: 'native'}, model: {id: 'gpt-5', provider: 'openai'}})},
+      eventBus: eventBus(publishedEnvelopes), now: () => NOW,
+    });
+    const snapshot = await service.getSnapshot('project-a', 0);
+    expect(snapshot.revision.designSystemDigest).toBe(legacy.digest);
+    expect(snapshot.validation.findings).toContainEqual(expect.objectContaining({code: 'DESIGN_SYSTEM_VIOLATION', scope: {kind: 'design-system', id: legacy.id}}));
+    if (operation === 'restore') await service.restore(uiContext('legacy-restore'), 0, restoreInput());
+    else await service.discard({projectId: 'project-a', runId: 'legacy-discard'}, {expectedRevision: 7, idempotencyKey: 'legacy-discard', intentSummary: 'Discard the migrated draft'});
+    expect(repository.get('project-a')).toMatchObject({
+      designSystemId: CURRENT_SYSTEM.id, designSystemDigest: CURRENT_SYSTEM.digest,
+      draftRevision: 8, draftStyleDigest: revision.styleDigest,
+    });
+    expect(repository.listRevisions('project-a')).toEqual(historyBefore);
+    expect((await service.getSnapshot('project-a', 0)).revision.designSystemDigest).toBe(legacy.digest);
+  });
+
   it('rejects an import attestation attached to a runtime revision', async () => {
     const revision = repository.getRevision('project-a', 1)!;
     await replaceAttestation('project-a', 1, createMapImportAttestation({
@@ -179,7 +195,7 @@ describe('MapRevisionService historical snapshots', () => {
       styleDigest: revision.styleDigest,
       styleHash: revision.styleHash,
       semanticDigest: revision.semanticDigest,
-      designSystemId: 'quiet-walking',
+      designSystemId: 'quiet-atlas',
       designSystemDigest: revision.designSystemDigest,
       importedAt: revision.createdAt,
     }));
@@ -904,7 +920,7 @@ describe('MapRevisionService historical snapshots', () => {
       styleDigest: styleBlob.digest,
       styleHash,
       semanticDigest: semanticBlob.digest,
-      designSystemId: 'quiet-walking',
+      designSystemId: 'quiet-atlas',
       designSystemDigest: IMPORT_SYSTEM.digest,
       importedAt: NOW,
     });

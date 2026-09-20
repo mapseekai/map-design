@@ -36,7 +36,7 @@ export interface MapImportAttestation {
   styleDigest: string;
   styleHash: string;
   semanticDigest: string;
-  designSystemId: 'quiet-walking';
+  designSystemId: string;
   designSystemDigest: string;
   importedAt: string;
 }
@@ -99,8 +99,7 @@ export const MapImportAttestationSchema = {
       'version', 'kind', 'projectId', 'revision', 'sourceManifestDigest', 'styleDigest',
       'styleHash', 'semanticDigest', 'designSystemId', 'designSystemDigest', 'importedAt',
     ]);
-    if (value.version !== 1 || value.kind !== 'import' || value.revision !== 0
-      || value.designSystemId !== 'quiet-walking') invalidAttestation();
+    if (value.version !== 1 || value.kind !== 'import' || value.revision !== 0) invalidAttestation();
     return {
       version: 1,
       kind: 'import',
@@ -110,7 +109,7 @@ export const MapImportAttestationSchema = {
       styleDigest: MapDigestSchema.parse(value.styleDigest),
       styleHash: StyleHashSchema.parse(value.styleHash),
       semanticDigest: MapDigestSchema.parse(value.semanticDigest),
-      designSystemId: 'quiet-walking',
+      designSystemId: MapIdentifierSchema.parse(value.designSystemId),
       designSystemDigest: MapDigestSchema.parse(value.designSystemDigest),
       importedAt: MapTimestampSchema.parse(value.importedAt),
     };

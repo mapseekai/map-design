@@ -205,7 +205,7 @@ describe('browser-safe project reads', () => {
       projectId: 'project-1',
       lifecycle: 'failed' as const,
       sourceKind: null,
-      designSystemId: 'quiet-walking',
+      designSystemId: 'quiet-atlas',
       designSystemDigest: DIGEST,
       draftRevision: 7,
       committedRevision: 1,
@@ -924,7 +924,7 @@ describe('project import and Studio transport contracts', () => {
       projectId: 'project-1', title: 'Walking map', lifecycle: 'ready' as const, sourceKind: 'style' as const,
       draftRevision: 3, committedRevision: 2, validationStatus: 'valid' as const, updatedAt: TIMESTAMP,
     };
-    expect(DEFAULT_MAP_DESIGN_SYSTEM_ID).toBe('quiet-walking');
+    expect(DEFAULT_MAP_DESIGN_SYSTEM_ID).toBe('quiet-atlas');
     expect(MapDesignProjectSummarySchema.parse(summary)).toEqual(summary);
     expect(MapDesignProjectListOutputSchema.parse({ projects: [summary] })).toEqual({ projects: [summary] });
     expect(() => MapDesignProjectListOutputSchema.parse({ projects: [{ ...summary, url: source.url }] })).toThrow();
@@ -963,7 +963,7 @@ describe('atomic MapDesign project creation contracts', () => {
     projectId: 'map-123',
     lifecycle: 'ready' as const,
     sourceKind: 'style' as const,
-    designSystemId: 'quiet-walking',
+    designSystemId: 'quiet-atlas',
     designSystemDigest: DIGEST,
     draftRevision: 1,
     committedRevision: null,
@@ -995,7 +995,7 @@ describe('atomic MapDesign project creation contracts', () => {
     })).toThrow();
     expect(() => MapDesignProjectCreateInputSchema.parse({
       ...createInput,
-      designSystemId: 'quiet-walking',
+      designSystemId: 'quiet-atlas',
     })).toThrow();
     expect(() => MapDesignProjectCreateInputSchema.parse({
       ...createInput,

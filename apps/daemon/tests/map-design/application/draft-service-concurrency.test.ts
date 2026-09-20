@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Database from 'better-sqlite3';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -41,10 +42,10 @@ describe('MapDraftService concurrent writers', () => {
     primary.prepare(`INSERT INTO projects (id, title, runtime_json, created_at, updated_at)
       VALUES (?, ?, '{}', ?, ?)`).run(PROJECT_ID, PROJECT_ID, NOW, NOW);
     primary.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, source_kind, source_manifest_digest, design_system_id, design_system_digest, draft_revision, draft_style_digest, draft_style_hash, draft_semantic_digest, created_at, updated_at)
-      VALUES (?, 'ready', 'style', ?, 'quiet-walking', ?, 4, ?, ?, ?, ?, ?)`).run(PROJECT_ID, manifestBlob.digest, 'd'.repeat(64), styleBlob.digest, await sha256CanonicalJson(style), semanticBlob.digest, NOW, NOW);
+      VALUES (?, 'ready', 'style', ?, 'quiet-atlas', ?, 4, ?, ?, ?, ?, ?)`).run(PROJECT_ID, manifestBlob.digest, 'd'.repeat(64), styleBlob.digest, await sha256CanonicalJson(style), semanticBlob.digest, NOW, NOW);
     const second = new Database(path.join(tempDir, 'map-design.sqlite'));
     second.pragma('journal_mode = WAL'); second.pragma('foreign_keys = ON');
-    const system = async () => ({ id: 'quiet-walking', digest: 'd'.repeat(64), humanGuidance: '', rules: { version: 1 as const, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 } });
+    const system = async () => (testDesignSystem({ id: 'quiet-atlas', digest: 'd'.repeat(64) }));
     const request = (key: string, color: string) => ({ expectedRevision: 4, idempotencyKey: key, intentSummary: `Set ${color}`, transaction: { operations: [{ op: 'setLayerProperties', layerId: 'roads', paint: { 'line-color': color } }] } });
     const events = new InMemoryMapDraftEventBus();
     const beforeImmediate = createBarrier();
@@ -83,11 +84,11 @@ describe('MapDraftService concurrent writers', () => {
     primary.prepare(`INSERT INTO projects (id, title, runtime_json, created_at, updated_at)
       VALUES (?, ?, '{}', ?, ?)`).run(PROJECT_ID, PROJECT_ID, NOW, NOW);
     primary.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, source_kind, source_manifest_digest, design_system_id, design_system_digest, draft_revision, draft_style_digest, draft_style_hash, draft_semantic_digest, created_at, updated_at)
-      VALUES (?, 'ready', 'style', ?, 'quiet-walking', ?, 4, ?, ?, ?, ?, ?)`).run(PROJECT_ID, manifestBlob.digest, 'd'.repeat(64), styleBlob.digest, await sha256CanonicalJson(style), semanticBlob.digest, NOW, NOW);
+      VALUES (?, 'ready', 'style', ?, 'quiet-atlas', ?, 4, ?, ?, ?, ?, ?)`).run(PROJECT_ID, manifestBlob.digest, 'd'.repeat(64), styleBlob.digest, await sha256CanonicalJson(style), semanticBlob.digest, NOW, NOW);
     const second = new Database(path.join(tempDir, 'map-design.sqlite'));
     second.pragma('journal_mode = WAL'); second.pragma('foreign_keys = ON');
     const events = new InMemoryMapDraftEventBus();
-    const system = async () => ({ id: 'quiet-walking', digest: 'd'.repeat(64), humanGuidance: '', rules: { version: 1 as const, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 } });
+    const system = async () => (testDesignSystem({ id: 'quiet-atlas', digest: 'd'.repeat(64) }));
     const request = { expectedRevision: 4, idempotencyKey: 'same-request', intentSummary: 'Set blue', transaction: { operations: [{ op: 'setLayerProperties', layerId: 'roads', paint: { 'line-color': '#3366ff' } }] } };
     const beforeImmediate = createBarrier();
     const one = new MapDraftService({ db: primary, blobStore: store, eventBus: events, loadDesignSystem: system, now: () => NOW, beforeImmediate });

@@ -140,9 +140,7 @@ export const CERTAIN_EXEMPT_PREFIXES = [
   ".github/ISSUE_TEMPLATE/",
 ] as const;
 
-// LICENSE and CODEOWNERS are GitHub/legal metadata; the consumption guard scan
-// proves no gate-lane source reads them.
-export const CERTAIN_EXEMPT_EXACT = ["LICENSE", ".github/CODEOWNERS"] as const;
+export const CERTAIN_EXEMPT_EXACT = ["LICENSE"] as const;
 
 export const CERTAIN_DAEMON_CORE_EXACT = ["docs/agent-adapters.md"] as const;
 
@@ -208,8 +206,6 @@ const MEDIUM_EXEMPT_PREFIXES = [] as const;
 const MEDIUM_EXEMPT_EXACT = [
   ".gitignore",
   ".editorconfig",
-  ".github/workflows/autofix.atom.yml",
-  ".github/workflows/comment.atom.yml",
 ] as const;
 
 const EXEMPT_REGEXES = [/\.(?:md|mdx|txt)$/] as const;
@@ -388,27 +384,11 @@ export const scopeRules: readonly ScopeRule[] = [
         "e2e/playwright.visual.config.ts",
         "e2e/scripts/playwright.ts",
         "pnpm-lock.yaml",
-        ".github/scripts/handoff.py",
         ".github/workflows/ci.yml",
-        ".github/workflows/comment.atom.yml",
-      ],
+            ],
       regexes: [/^e2e\/ui\/visual-[^/]+\.test\.ts$/],
     },
     effects: ["visual_validation_required"],
-    confidence: "medium",
-  },
-  {
-    // Trusted write-capable rerun atom + its topology/self-check coverage.
-    // web_tests_required arms run_e2e_vitest so PR CI exercises the helper
-    // self-check and packaged-smoke topology assertions before the merge queue.
-    id: "ci-rerun-infra-cancel-surface",
-    match: {
-      exact: [
-        ".github/workflows/rerun.atom.yml",
-        ".github/scripts/rerun_infra_cancel.py",
-      ],
-    },
-    effects: ["web_tests_required", "workspace_validation_required"],
     confidence: "medium",
   },
   {

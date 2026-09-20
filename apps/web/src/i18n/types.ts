@@ -87,10 +87,7 @@ export interface Dict {
   'mapDesign.recent.emptyDetail': string;
   'mapDesign.recent.open': string;
   'mapDesign.recent.retry': string;
-  'mapDesign.recent.revision': string;
-  'mapDesign.recent.sourcePending': string;
   'mapDesign.recent.title': string;
-  'mapDesign.recent.validation': string;
   'mapDesign.recent.viewAll': string;
   'mapDesign.composer.label': string;
   'mapDesign.composer.limit': string;

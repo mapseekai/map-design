@@ -1,5 +1,5 @@
 # GitHub automation
 
-Workflows validate MapDesign source, packages, and end-to-end behavior. Read the workflow and its helper scripts before changing automation.
+Workflows validate MapDesign source, packages, browser behavior, and tagged desktop releases. Read the workflow and its local composite actions before changing automation.
 
-Keep privileged workflow actions behind explicit, data-only handoffs. Do not execute pull-request code in a privileged workflow. Run the checks required by the changed workflow when practical.
+Keep CI portable on GitHub-hosted runners, keep release permissions narrow, and run actionlint plus the repository guard after workflow changes.

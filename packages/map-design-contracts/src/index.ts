@@ -1,4 +1,3 @@
-export * from './design-system.js';
 export * from './cartography.js';
 export * from './cartography-edit.js';
 export * from './cartography-sample.js';

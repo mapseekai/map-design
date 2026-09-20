@@ -49,7 +49,7 @@ function createProject(
   db.prepare(`INSERT INTO map_design_projects (
     project_id, lifecycle_state, design_system_id, design_system_digest,
     draft_revision, created_at, updated_at
-  ) VALUES (?, 'importing', 'quiet-walking', ?, 0, ?, ?)`)
+  ) VALUES (?, 'importing', 'quiet-atlas', ?, 0, ?, ?)`)
     .run(projectId, 'a'.repeat(64), '2026-08-27T00:00:00.000Z', '2026-08-27T00:00:00.000Z');
 }
 

@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { describe, expect, it } from 'vitest';
 import { applyStyleTransaction, validateStyleDocument } from 'maplibre-style-tools/core';
 
@@ -13,17 +14,7 @@ import path from 'node:path';
 
 const NOW = '2026-08-14T00:00:00.000Z';
 const PROJECT_ID = 'source-builders-project';
-const DESIGN_SYSTEM: LoadedMapDesignSystem = {
-  id: 'source-builders',
-  digest: 'd'.repeat(64),
-  humanGuidance: '',
-  rules: {
-    version: 1,
-    requiredSemanticRoles: [],
-    maxLabelLayerCount: 256,
-    minimumContrastRatio: 1,
-  },
-};
+const DESIGN_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'source-builders', digest: 'd'.repeat(64) });
 
 describe('MapDesign source builders', () => {
   it('uses source-preview gateway paths for Style, TileJSON, and GeoJSON builds', async () => {
@@ -380,7 +371,7 @@ describe('MapDesign source builders', () => {
     }
   });
 
-  it('returns valid warning-only evidence for a structurally valid design-system violation', async () => {
+  it('does not require data for every standard visual component', async () => {
     const build = await buildStyleSource({
       projectId: PROJECT_ID,
       source: {
@@ -396,22 +387,16 @@ describe('MapDesign source builders', () => {
       approvedFinalUrl: new URL('https://maps.example.test/maps/style.json'),
       etag: null,
       capturedAt: NOW,
-      designSystem: {
-        ...DESIGN_SYSTEM,
-        rules: { ...DESIGN_SYSTEM.rules, requiredSemanticRoles: ['park'] },
-      },
+      designSystem: testDesignSystem({ id: 'source-builders', source: DESIGN_SYSTEM.source.replace('elements:',
+        'elements:\n  park:\n    geometry: polygon\n    role: park\n    fillColor: "#008800"') }),
     });
 
     expect(validateStyleDocument(build.style).ok).toBe(true);
     expect(build.sourceManifest.resourceCount).toBe(1);
     expect(build.validation).toMatchObject({
       ok: true,
-      summary: { status: 'valid', errors: 0, warnings: 1 },
+      summary: { status: 'valid', errors: 0, warnings: 0 },
     });
-    expect(build.validation.findings).toContainEqual(expect.objectContaining({
-      severity: 'warning',
-      code: 'DESIGN_SYSTEM_VIOLATION',
-      scope: { kind: 'design-system', id: 'source-builders' },
-    }));
+    expect(build.validation.findings.some((finding) => /Required semantic role/.test(finding.message))).toBe(false);
   });
 });

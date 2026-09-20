@@ -46,7 +46,7 @@ describe('MapPreviewRequestServiceImpl cancellation commit point', () => {
       project_id, lifecycle_state, source_kind, source_manifest_digest,
       design_system_id, design_system_digest, draft_revision,
       draft_style_digest, draft_style_hash, draft_semantic_digest, created_at, updated_at
-    ) VALUES (?, 'ready', 'style', ?, 'quiet-walking', ?, 4, ?, ?, ?, ?, ?)`).run(
+    ) VALUES (?, 'ready', 'style', ?, 'quiet-atlas', ?, 4, ?, ?, ?, ?, ?)`).run(
       PROJECT_ID,
       'd'.repeat(64),
       'e'.repeat(64),

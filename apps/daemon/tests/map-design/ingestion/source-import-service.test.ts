@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { describe, expect, it } from 'vitest';
 
 import { MapSourceImportServiceImpl } from '../../../src/map-design/ingestion/source-import-service.js';
@@ -10,17 +11,7 @@ import type { LoadedMapDesignSystem } from '../../../src/map-design/validation/d
 
 const STYLE_URL = new URL('https://maps.example.test/style.json');
 const NOW = '2026-09-04T03:00:00.000Z';
-const DESIGN_SYSTEM: LoadedMapDesignSystem = {
-  id: 'quiet-walking',
-  digest: 'd'.repeat(64),
-  humanGuidance: '',
-  rules: {
-    version: 1,
-    requiredSemanticRoles: [],
-    maxLabelLayerCount: 256,
-    minimumContrastRatio: 1,
-  },
-};
+const DESIGN_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'quiet-atlas', digest: 'd'.repeat(64) });
 
 function fetched(input: {
   status: number;
@@ -47,7 +38,7 @@ function service(input: {
     db: {} as never,
     blobStore: {} as never,
     transport: input.transport,
-    designSystem: { id: 'quiet-walking', digest: DESIGN_SYSTEM.digest },
+    designSystem: { id: 'quiet-atlas', digest: DESIGN_SYSTEM.digest },
     loadDesignSystem: async () => DESIGN_SYSTEM,
     ...(input.now ? { now: input.now } : {}),
   });

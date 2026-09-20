@@ -29,40 +29,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  runners:
-    name: Resolve runner profiles
-    # Resolve on the Nexu ARC fleet for trusted branches, but preserve the
-    # hosted bootstrap path for external forks and explicit economic mode.
-    runs-on: >-
-      ${{ ((github.event_name == 'pull_request'
-        && github.event.pull_request.head.repo.full_name != github.repository)
-        || vars.MAP_DESIGN_CI_RUNNER_MODE == 'economic')
-        && 'ubuntu-24.04'
-        || 'nexu-runners-small' }}
-    outputs:
-      runs_on: ${{ steps.runners.outputs.runs_on }}
-      decision: ${{ steps.runners.outputs.decision }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.2
-
-      - name: Resolve runner profiles
-        id: runners
-        env:
-          # Fork PRs cannot rely on repository variables, so keep their required
-          # validation on GitHub-hosted runners even when private pools are down.
-          MAP_DESIGN_CI_RUNNER_MODE: >-
-            ${{ github.event_name == 'pull_request'
-              && github.event.pull_request.head.repo.full_name != github.repository
-              && 'economic'
-              || vars.MAP_DESIGN_CI_RUNNER_MODE }}
-        run: python3 .github/scripts/runners.py
-
   scopes:
     name: Detect validation scopes
-    needs: [runners]
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).control }}
+    runs-on: ubuntu-24.04
     outputs:
       ci_mode: ${{ steps.detect.outputs.ci_mode }}
       daemon_tests_required: ${{ steps.detect.outputs.daemon_tests_required }}
@@ -101,8 +70,7 @@ jobs:
 
   static_gate:
     name: Static gate
-    needs: [runners]
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).control }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       ACTIONLINT_VERSION: 1.7.12
@@ -192,9 +160,9 @@ jobs:
 
   preflight:
     name: Preflight
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_preflight == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).general_medium }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
@@ -206,8 +174,6 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).general_medium) }}
 
       # `scripts/postinstall.mjs` only prebuilds package/tool entrypoints that
       # are needed immediately after install for linked bins and shared
@@ -242,9 +208,9 @@ jobs:
 
   workspace_unit_tests:
     name: Workspace unit tests
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_workspace_unit_tests == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).workspace_unit }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -256,13 +222,10 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).workspace_unit) }}
 
       - name: Workspace unit tests
         run: |
           pnpm --filter @mapseekai/contracts test
-          pnpm --filter @mapseekai/host test
           pnpm --filter @mapseekai/platform test
           pnpm --filter @mapseekai/sidecar test
           pnpm --filter @mapseekai/sidecar-proto test
@@ -279,9 +242,9 @@ jobs:
 
   daemon_unit_tests:
     name: Daemon tests (${{ matrix.shard }}/4)
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.daemon_tests_required == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).workspace_unit }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -297,8 +260,6 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).workspace_unit) }}
 
       - name: Run daemon test shard
         env:
@@ -307,9 +268,9 @@ jobs:
 
   windows_tools_pack_payload_tests:
     name: Windows tools-pack payload tests
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_windows_tools_pack_payload_tests == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).windows_tools }}
+    runs-on: windows-2025
     timeout-minutes: 20
 
     steps:
@@ -318,17 +279,15 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).windows_tools) }}
 
       - name: Windows launcher payload archive tests
         run: pnpm --filter @mapseekai/tools-pack exec vitest run tests/launcher-payload.test.ts
 
   web_workspace_tests:
     name: Web workspace tests (${{ matrix.shard }}/2)
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_web_workspace_tests == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).js_hot }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -344,8 +303,6 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).js_hot) }}
 
       - name: Prebuild web sidecar declarations
         run: pnpm --filter @mapseekai/web build:sidecar
@@ -355,9 +312,9 @@ jobs:
 
   e2e_vitest:
     name: E2E Vitest
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_e2e_vitest == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).js_hot }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -369,15 +326,12 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).js_hot) }}
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
         with:
           package-json-path: e2e/package.json
           install-command: pnpm -C e2e exec playwright install --with-deps chromium
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).js_hot) }}
 
       - name: Prebuild workspace type declarations
         run: |
@@ -390,9 +344,9 @@ jobs:
 
   playwright_critical:
     name: Playwright critical (${{ matrix.group }})
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_playwright_critical == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).ui_hot }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -410,15 +364,12 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).ui_hot) }}
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
         with:
           package-json-path: e2e/package.json
           install-command: pnpm -C e2e exec playwright install --with-deps chromium
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).ui_hot) }}
 
       - name: Prebuild workspace type declarations
         run: |
@@ -436,9 +387,9 @@ jobs:
 
   ui_p0:
     name: UI P0 (${{ matrix.name }})
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_ui_p0 == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).ui_p0 }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -454,15 +405,12 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).ui_p0) }}
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
         with:
           package-json-path: e2e/package.json
           install-command: pnpm -C e2e exec playwright install --with-deps chromium
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).ui_p0) }}
 
       - name: Prebuild workspace type declarations
         run: |
@@ -491,9 +439,9 @@ jobs:
 
   playwright_visual:
     name: Playwright visual (${{ matrix.name }})
-    needs: [scopes, runners]
+    needs: [scopes]
     if: ${{ needs.scopes.outputs.run_playwright_visual == 'true' }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).visual_hot }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -509,15 +457,12 @@ jobs:
 
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-        with:
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).visual_hot) }}
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
         with:
           package-json-path: e2e/package.json
           install-command: pnpm -C e2e exec playwright install --with-deps chromium
-          runner-labels: ${{ toJSON(fromJSON(needs.runners.outputs.runs_on).visual_hot) }}
 
       - name: Prebuild workspace type declarations
         run: |
@@ -553,7 +498,6 @@ jobs:
     name: Validate workspace
     needs:
       - scopes
-      - runners
       - static_gate
       - preflight
       - workspace_unit_tests
@@ -565,21 +509,10 @@ jobs:
       - ui_p0
       - playwright_visual
     if: ${{ always() }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).control }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     steps:
-      # The merge-blocking label gate below produces a `handoff/comment` artifact when it ejects a
-      # queued PR, and that production goes through `.github/scripts/handoff.py` (the only
-      # sanctioned source of handoff names and layout). Only the merge_group context can eject,
-      # so pull_request runs skip the checkout entirely.
-      - name: Checkout handoff helper
-        if: ${{ github.event_name == 'merge_group' }}
-        uses: actions/checkout@v6.0.2
-        with:
-          sparse-checkout: .github
-          sparse-checkout-cone-mode: true
-
       - name: Check workspace validation jobs
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
@@ -621,184 +554,12 @@ jobs:
             exit 1
           fi
 
-      - name: Block merge while a merge-blocking label is present
-        id: merge_blocking_label_gate
-        # Hard gate: a PR that still carries `needs-validation` or `needs-maintainer-check` must
-        # not merge. Enforced ONLY in the merge_group (merge-queue) context — never on
-        # pull_request. main requires the merge queue, so every merge passes through merge_group;
-        # a labeled entry fails this step there and is ejected from the queue, so it can never land.
-        #
-        # Why not also fail on pull_request: that turns the PR's own required `Validate workspace`
-        # check red, and a deliberately-red required check is indistinguishable from a real CI
-        # failure to everything downstream — it flips the PR's mergeStateStatus to BLOCKED and
-        # reads as ci_status=failure to the review bot, which deadlocks the very QA/validation that
-        # is supposed to clear the label (QA never gets requested → label never removed → blocked
-        # forever). The merge_group run executes on the queue's transient ref, so this failure does
-        # NOT appear in the PR head's status rollup; the PR stays green until the label is cleared.
-        # Fails closed: any label-lookup error blocks rather than silently waving the merge through.
-        # `skip-validation` continues to override only the `needs-validation` producer; it has no
-        # effect on the independent maintainer-check policy.
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          REPO: ${{ github.repository }}
-          # Resolving the queued PR via commits/<sha>/pulls alone is unreliable: the merge queue
-          # squashes, so the queued commits are NEW synthetic SHAs GitHub does not associate back
-          # to the PR — that found nothing and waved a needs-validation PR through (#4736). So we
-          # resolve each merge-group commit to a PR from several signals, per commit (see below).
-          MERGE_GROUP_REF: ${{ github.event.merge_group.head_ref }}
-          BASE_SHA: ${{ github.event.merge_group.base_sha }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          set -euo pipefail
-          if [ "$EVENT_NAME" != "merge_group" ]; then
-            echo "Merge-blocking labels are gated in the merge_group context; nothing to enforce on $EVENT_NAME (PR check stays green)."
-          else
-            # An ejection is invisible from the PR: this failure runs on the queue's transient
-            # ref, the PR's own checks stay green, and `mergeQueueEntry` just goes null. Leave a
-            # visible trace by producing a `handoff/comment` artifact for the labeled PR; the
-            # trusted `comment.atom.yml` consumer upserts it as a PR comment after this run
-            # completes. Best-effort: a handoff failure must never soften the block itself.
-            emit_ejection_notice() {
-              local pr="$1"
-              local blocking_label="$2"
-              local pr_json pr_head pr_base handoff_id handoff_root handoff_dir marker next_step
-              pr_json="$(gh api "repos/$REPO/pulls/$pr")"
-              pr_head="$(jq -r '.head.sha' <<< "$pr_json")"
-              pr_base="$(jq -r '.base.sha' <<< "$pr_json")"
-              case "$blocking_label" in
-                needs-validation)
-                  handoff_id="needs-validation-pr-$pr"
-                  marker="<!-- merge-queue-needs-validation -->"
-                  # Markdown code spans are intentional literal text.
-                  # shellcheck disable=SC2016
-                  next_step='To land this PR: complete the QA pass the label is tracking, remove the `needs-validation` label, then add the PR back to the merge queue.'
-                  ;;
-                needs-maintainer-check)
-                  handoff_id="needs-maintainer-check-pr-$pr"
-                  marker="<!-- merge-queue-needs-maintainer-check -->"
-                  # Markdown code spans are intentional literal text.
-                  # shellcheck disable=SC2016
-                  next_step='To land this PR: have a maintainer complete the check, remove the `needs-maintainer-check` label, then add the PR back to the merge queue.'
-                  ;;
-                *)
-                  echo "Unsupported merge-blocking label: $blocking_label" >&2
-                  return 1
-                  ;;
-              esac
-              handoff_root="$RUNNER_TEMP/handoff-comment-$handoff_id"
-              handoff_dir="$(python3 .github/scripts/handoff.py dir comment "$handoff_id" --root "$handoff_root")"
-              mkdir -p "$handoff_dir"
-              # Markdown code spans are intentionally literal in these single-quoted strings.
-              # shellcheck disable=SC2016
-              {
-                printf '%s\n' "$marker"
-                printf 'Ejected from the merge queue: this PR still carries the `%s` label.\n\n' "$blocking_label"
-                printf 'The merge queue gate ([run %s](%s/%s/actions/runs/%s)) blocked the queued group because of the label. That failure runs on the queue'"'"'s transient ref, so it never appears in this PR'"'"'s own checks — they stay green, and this notice is the only visible trace on the PR.\n\n' "$RUN_ID" "$GITHUB_SERVER_URL" "$REPO" "$RUN_ID"
-                printf '%s\n' "$next_step"
-              } > "$handoff_dir/body.md"
-              jq -n \
-                --arg kind "comment" \
-                --arg id "$handoff_id" \
-                --arg head "$pr_head" \
-                --arg base "$pr_base" \
-                --arg marker "$marker" \
-                --argjson schema_version 1 \
-                --argjson pr_number "$pr" \
-                --argjson run_id "$RUN_ID" \
-                '{schema_version: $schema_version, kind: $kind, id: $id, pr_number: $pr_number, head_sha: $head, base_sha: $base, run_id: $run_id, marker: $marker}' \
-                > "$handoff_dir/metadata.json"
-              python3 .github/scripts/handoff.py validate comment "$handoff_dir" >/dev/null
-              {
-                echo "comment_created=true"
-                echo "comment_name=$(python3 .github/scripts/handoff.py artifact-name comment "$handoff_id")"
-                echo "comment_path=$handoff_root"
-              } >> "$GITHUB_OUTPUT"
-            }
-            # Resolve EVERY merge-group commit to at least one real PR and check its labels.
-            # Each queued entry can be recovered from up to three signals:
-            #   1. ref `.../pr-<N>-<sha>` — names the (tip) entry only; squash-safe.
-            #   2. the commit subject's trailing `(#N)` — the queue appends each entry's own PR
-            #      number, so this recovers the NON-tip PRs of a batched group.
-            #   3. commits/<sha>/pulls — covers a non-squash queue where commits map back directly.
-            # A `(#N)` can also be a spurious reference — e.g. #4833, titled "... (#4828)", where
-            # 4828 is the fixed ISSUE, not a PR; `gh pr view 4828` then fails with "Could not
-            # resolve to a PullRequest". We must NOT fail closed on that (it ejected a clean,
-            # label-free PR from the queue forever) — but we must also NOT blindly skip it, or a
-            # batched non-tip PR whose only recovered number is such a reference would go unchecked
-            # and a needs-validation entry could slip through (#4736). So we resolve PER COMMIT:
-            # ignore a non-PR candidate only when its commit is still covered by another candidate
-            # that DOES resolve to a real PR; a commit that resolves to no PR fails closed.
-            compare_json="$(gh api "repos/$REPO/compare/$BASE_SHA...$HEAD_SHA")"
-            ref_prs="$(printf '%s\n' "$MERGE_GROUP_REF" | grep -oE 'pr-[0-9]+' | grep -oE '[0-9]+' || true)"
-            commit_shas="$(printf '%s' "$compare_json" | jq -r '.commits[].sha')"
-            if [ -z "$commit_shas" ]; then
-              echo "::error::merge_group compare $BASE_SHA...$HEAD_SHA returned no commits — cannot resolve queued PRs; blocking merge (fail closed)."
-              exit 1
-            fi
-            checked=""
-            for sha in $commit_shas; do
-              subject="$(printf '%s' "$compare_json" | jq -r --arg s "$sha" '.commits[] | select(.sha==$s) | .commit.message | split("\n")[0]')"
-              subj_prs="$(printf '%s' "$subject" | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' || true)"
-              # Required assignment (no `|| true`): a transient API failure must block, not
-              # silently shrink this commit's candidate set.
-              assoc_prs="$(gh api "repos/$REPO/commits/$sha/pulls" --jq '.[].number')"
-              ref_for_commit=""
-              [ "$sha" = "$HEAD_SHA" ] && ref_for_commit="$ref_prs"
-              candidates="$(printf '%s\n%s\n%s\n' "$subj_prs" "$assoc_prs" "$ref_for_commit" | grep -E '^[0-9]+$' | sort -u || true)"
-              covered=0
-              for pr in $candidates; do
-                if ! labels="$(gh pr view "$pr" --repo "$REPO" --json labels --jq '.labels[].name' 2>/tmp/pr_view_err)"; then
-                  if grep -q 'Could not resolve to a PullRequest' /tmp/pr_view_err; then
-                    echo "commit $sha: candidate #$pr is not a pull request (e.g. an issue reference) — ignoring this candidate."
-                    continue
-                  fi
-                  echo "::error::label lookup for #$pr (commit $sha) failed — blocking merge (fail closed):"
-                  cat /tmp/pr_view_err
-                  exit 1
-                fi
-                covered=1
-                case " $checked " in *" $pr "*) ;; *) checked="$checked $pr";; esac
-                blocking_label=""
-                if printf '%s\n' "$labels" | grep -qx 'needs-maintainer-check'; then
-                  blocking_label="needs-maintainer-check"
-                elif printf '%s\n' "$labels" | grep -qx 'needs-validation'; then
-                  blocking_label="needs-validation"
-                fi
-                if [ -n "$blocking_label" ]; then
-                  echo "::error::PR #$pr still has '$blocking_label' — blocking merge."
-                  # Fail-fast keeps this per-run notice on the FIRST labeled PR found; every
-                  # labeled entry also fails its own queue run, so each still gets its own notice.
-                  emit_ejection_notice "$pr" "$blocking_label" || echo "::warning::could not produce the ejection-notice handoff for PR #$pr; the block itself still stands."
-                  exit 1
-                fi
-                echo "PR #$pr: no merge-blocking label."
-              done
-              if [ "$covered" -eq 0 ]; then
-                echo "::error::merge-group commit $sha resolved to no pull request (candidates: ${candidates:-none}) — cannot verify merge-blocking labels; blocking merge (fail closed)."
-                exit 1
-              fi
-            done
-            echo "No merge-blocking label in the queued group ($checked ) — clear to merge."
-          fi
-
-      # `failure()` is required: the gate exits 1 on the very path that produces the handoff,
-      # and the default `success()` condition would skip this upload exactly when it matters.
-      - name: Upload merge-queue ejection notice handoff
-        if: ${{ failure() && steps.merge_blocking_label_gate.outputs.comment_created == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.merge_blocking_label_gate.outputs.comment_name }}
-          path: ${{ steps.merge_blocking_label_gate.outputs.comment_path }}
-
   runtime_summary:
     name: Runtime summary
     needs:
-      - runners
       - validate
     if: ${{ always() }}
-    runs-on: ${{ fromJSON(needs.runners.outputs.runs_on).control }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     continue-on-error: true
 

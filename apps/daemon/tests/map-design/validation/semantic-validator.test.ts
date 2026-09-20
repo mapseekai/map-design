@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { describe, expect, it } from 'vitest';
 
 import { MapValidateOutputSchema, type MapSourceManifest, type SemanticDocument } from '@mapseekai/map-design-contracts';
@@ -81,10 +82,7 @@ describe('MapDesign semantic validation', () => {
         { id: 'orphan', type: 'fill', source: 'absent' },
       ],
     } as StyleDocument;
-    const designSystem: LoadedMapDesignSystem = {
-      id: 'quiet-walking', digest: 'b'.repeat(64), humanGuidance: 'Human guidance only.',
-      rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 3, minimumContrastRatio: 1 },
-    };
+    const designSystem: LoadedMapDesignSystem = testDesignSystem({ id: 'quiet-atlas', digest: 'b'.repeat(64) });
 
     const first = validateMapDesign({ style: invalidStyle, semantics, sourceManifest, designSystem });
     const second = validateMapDesign({ style: invalidStyle, semantics, sourceManifest, designSystem });
@@ -96,10 +94,7 @@ describe('MapDesign semantic validation', () => {
   });
 
   it('marks an executed clean validation as valid and digests every canonical input', () => {
-    const designSystem: LoadedMapDesignSystem = {
-      id: 'quiet-walking', digest: 'b'.repeat(64), humanGuidance: 'Human guidance only.',
-      rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 3, minimumContrastRatio: 1 },
-    };
+    const designSystem: LoadedMapDesignSystem = testDesignSystem({ id: 'quiet-atlas', digest: 'b'.repeat(64) });
     const clean = validateMapDesign({ style, semantics, sourceManifest, designSystem });
     const styleChanged = validateMapDesign({
       style: { ...style, layers: [{ ...style.layers[0], paint: { 'fill-color': '#3d7a5f' } }, ...style.layers.slice(1)] } as StyleDocument,

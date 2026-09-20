@@ -1,8 +1,8 @@
+import { selectProjectCartography, type CartographyBinding } from '../storage/cartography-bindings.js';
 import { randomUUID } from 'node:crypto';
 
 import type Database from 'better-sqlite3';
 import {
-  DEFAULT_MAP_DESIGN_SYSTEM_ID,
   MapDesignProjectReadSchema,
   MapProjectImportInputSchema,
   MapProjectRetryInputSchema,
@@ -69,7 +69,7 @@ export interface MapSourceImportServiceDependencies {
   db: SqliteDb;
   blobStore: MapDesignBlobStore;
   transport: PinnedTransport;
-  designSystem: { id: typeof DEFAULT_MAP_DESIGN_SYSTEM_ID; digest: string };
+  designSystem: { id: string; digest: string };
   loadDesignSystem(input: { id: string; digest: string }): Promise<LoadedMapDesignSystem>;
   outbox?: Pick<MapDesignEventOutbox, 'appendInTransaction' | 'drainPending'>;
   now?: () => string;
@@ -234,13 +234,14 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
     try { parsed = MapProjectImportInputSchema.parse(input); } catch { throw invalidInput(); }
     const sourceUrl = new URL(parsed.source.url);
     if (sourceUrl.username || sourceUrl.password) throw invalidInput();
+    const binding = selectProjectCartography(db, projectId, this.deps.designSystem);
     const json = canonicalJson(parsed);
     const digest = requestDigest(parsed);
     db.prepare(`INSERT INTO map_design_projects (
       project_id, lifecycle_state, design_system_id, design_system_digest,
       draft_revision, created_at, updated_at
     ) VALUES (?, 'importing', ?, ?, 0, ?, ?)`).run(
-      projectId, this.deps.designSystem.id, this.deps.designSystem.digest, now, now,
+      projectId, binding.id, binding.digest, now, now,
     );
     db.prepare(`INSERT INTO map_design_import_jobs (
       project_id, status, import_request_json, import_request_digest, attempt, queued_at
@@ -334,8 +335,10 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
       const { response, source } = await fetchInitialSource(
         transport, new URL(request.source.url), signal,
       );
-      const designSystem = await this.deps.loadDesignSystem(this.deps.designSystem);
-      if (designSystem.id !== this.deps.designSystem.id || designSystem.digest !== this.deps.designSystem.digest) {
+      const project = this.readProject(this.deps.db, projectId);
+      const binding = { id: project.designSystemId, digest: project.designSystemDigest };
+      const designSystem = await this.deps.loadDesignSystem(binding);
+      if (designSystem.id !== binding.id || designSystem.digest !== binding.digest) {
         throw new TypeError('design system binding mismatch');
       }
       const capturedAt = this.timestamp();
@@ -358,14 +361,14 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
         styleDigest: styleBlob.digest,
         styleHash,
         semanticDigest: semanticBlob.digest,
-        designSystemId: this.deps.designSystem.id,
-        designSystemDigest: this.deps.designSystem.digest,
+        designSystemId: binding.id,
+        designSystemDigest: binding.digest,
         importedAt: capturedAt,
       });
       const attestationBlob = await this.deps.blobStore.putJson(projectId, 'attestations', attestation);
       signal.throwIfAborted();
       this.commitReady({
-        projectId, build, capturedAt, styleDigest: styleBlob.digest, styleHash,
+        projectId, build, capturedAt, designSystem: binding, styleDigest: styleBlob.digest, styleHash,
         semanticDigest: semanticBlob.digest, sourceDigest: sourceBlob.digest,
         attestationDigest: attestationBlob.digest, validationDigest: validationBlob.digest,
         validationStatus: build.validation.summary.status === 'invalid' ? 'invalid' : 'valid',
@@ -465,7 +468,7 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
   private commitReady(input: {
     projectId: string; build: InitialMapBuild; capturedAt: string; styleDigest: string;
     styleHash: string; semanticDigest: string; sourceDigest: string; attestationDigest: string;
-    validationDigest: string; validationStatus: 'valid' | 'invalid';
+    validationDigest: string; validationStatus: 'valid' | 'invalid'; designSystem: CartographyBinding;
   }): void {
     const transaction = this.deps.db.transaction(() => {
       const jobStatus = this.deps.db.prepare(`SELECT status FROM map_design_import_jobs WHERE project_id = ?`)
@@ -477,17 +480,18 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
         source_manifest_digest, design_system_digest, preview_id, attestation_digest, run_id, created_at
       ) VALUES (?, 0, 0, ?, ?, ?, ?, ?, NULL, ?, NULL, ?)`).run(
         input.projectId, input.styleDigest, input.styleHash, input.semanticDigest, input.sourceDigest,
-        this.deps.designSystem.digest, input.attestationDigest, input.capturedAt,
+        input.designSystem.digest, input.attestationDigest, input.capturedAt,
       );
       const project = this.deps.db.prepare(`UPDATE map_design_projects SET
         lifecycle_state = 'ready', source_kind = ?, source_manifest_digest = ?,
         draft_style_digest = ?, draft_style_hash = ?, draft_semantic_digest = ?,
         initial_validation_status = ?, initial_validation_digest = ?,
         committed_revision = 0, failure_code = NULL, failure_message = NULL, updated_at = ?
-        WHERE project_id = ? AND lifecycle_state = 'importing'`).run(
+        WHERE project_id = ? AND lifecycle_state = 'importing'
+          AND design_system_id = ? AND design_system_digest = ?`).run(
         input.build.sourceManifest.kind, input.sourceDigest, input.styleDigest, input.styleHash,
         input.semanticDigest, input.validationStatus, input.validationDigest,
-        input.capturedAt, input.projectId,
+        input.capturedAt, input.projectId, input.designSystem.id, input.designSystem.digest,
       );
       const jobUpdate = this.deps.db.prepare(`UPDATE map_design_import_jobs SET
         status = 'succeeded', finished_at = ?, failure_code = NULL, failure_message = NULL

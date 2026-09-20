@@ -1,3 +1,5 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
+import {pinCartographyDocument, selectProjectCartography} from '../../../src/map-design/storage/cartography-bindings.js';
 import { createHmac, randomBytes } from 'node:crypto';
 import express, { type Express } from 'express';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -58,11 +60,14 @@ function setup(options: { verifyWorkingDirectoryGrant?: (grant: { path: string; 
     store,
     sourceImportService: {
       prepareImportInTransaction(database: Database.Database, projectId: string) {
-        database.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', 'quiet-walking', ?, 0, ?, ?)`)
-          .run(projectId, 'a'.repeat(64), NOW, NOW);
+        const source = testDesignSystem();
+        const fallback = pinCartographyDocument(database, source.id, source.source);
+        const binding = selectProjectCartography(database, projectId, fallback);
+        database.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', ?, ?, 0, ?, ?)`)
+          .run(projectId, binding.id, binding.digest, NOW, NOW);
         database.prepare(`INSERT INTO map_design_import_jobs (project_id, status, import_request_json, import_request_digest, attempt, queued_at) VALUES (?, 'queued', '{}', 'a', 1, ?)`)
           .run(projectId, NOW);
-        return { projectId, lifecycle: 'importing' as const, sourceKind: null, designSystemId: 'quiet-walking', designSystemDigest: 'a'.repeat(64), draftRevision: 0, committedRevision: null, failure: null, createdAt: NOW, updatedAt: NOW };
+        return { projectId, lifecycle: 'importing' as const, sourceKind: null, designSystemId: binding.id, designSystemDigest: binding.digest, draftRevision: 0, committedRevision: null, failure: null, createdAt: NOW, updatedAt: NOW };
       },
     } as never,
     importJobRunner: { enqueue: vi.fn(() => true) },
@@ -71,8 +76,7 @@ function setup(options: { verifyWorkingDirectoryGrant?: (grant: { path: string; 
         projectId,
         lifecycle: 'importing' as const,
         sourceKind: null,
-        designSystemId: 'quiet-walking',
-        designSystemDigest: 'a'.repeat(64),
+        ...(db.prepare('SELECT design_system_id AS designSystemId, design_system_digest AS designSystemDigest FROM map_design_projects WHERE project_id = ?').get(projectId) as {designSystemId: string; designSystemDigest: string}),
         draftRevision: 0,
         committedRevision: null,
         failure: null,

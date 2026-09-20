@@ -108,7 +108,7 @@ describe('MapDesignHome', () => {
         }],
       }));
       if (url.endsWith('/retry-import')) return Promise.resolve(json({
-        projectId: 'failed-map', lifecycle: 'importing', sourceKind: 'style', designSystemId: 'quiet-walking',
+        projectId: 'failed-map', lifecycle: 'importing', sourceKind: 'style', designSystemId: 'quiet-atlas',
         designSystemDigest: 'a'.repeat(64), draftRevision: 0, committedRevision: null, failure: null,
         createdAt: '2026-08-26T00:00:00.000Z', updatedAt: '2026-08-26T01:00:00.000Z',
       }));
@@ -161,7 +161,7 @@ describe('MapDesignHome', () => {
     expect(screen.getByText('Beta map')).toBeVisible();
 
     betaRetry.resolve(json({
-      ...project('beta-map', 'Beta map'), lifecycle: 'importing', designSystemId: 'quiet-walking',
+      ...project('beta-map', 'Beta map'), lifecycle: 'importing', designSystemId: 'quiet-atlas',
       designSystemDigest: 'a'.repeat(64), failure: null, createdAt: '2026-08-26T00:00:00.000Z',
     }));
     await waitFor(() => expect(within(betaCard!).queryByRole('alert')).toBeNull());

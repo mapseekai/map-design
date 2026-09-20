@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,17 +26,7 @@ import {
 
 const PROJECT_ID = 'native-tools-project';
 const NOW = '2026-08-31T00:00:00.000Z';
-const DESIGN_SYSTEM: LoadedMapDesignSystem = {
-  id: 'quiet-walking',
-  digest: 'd'.repeat(64),
-  humanGuidance: '',
-  rules: {
-    version: 1,
-    requiredSemanticRoles: [],
-    maxLabelLayerCount: 10,
-    minimumContrastRatio: 1,
-  },
-};
+const DESIGN_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'quiet-atlas' });
 const STYLE: StyleDocument = {
   version: 8,
   sources: {

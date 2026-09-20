@@ -27,7 +27,8 @@ import {
 } from './map-design/resources/resource-service.js';
 import { createMapDesignBlobStore } from './map-design/storage/blob-store.js';
 import { MapDesignSqliteProjectRepository } from './map-design/storage/project-repository.js';
-import { loadMapDesignSystem, type LoadedMapDesignSystem } from './map-design/validation/design-system-loader.js';
+import type { LoadedMapDesignSystem } from './map-design/validation/design-system-loader.js';
+import { loadPinnedCartography, migrateLegacyCartographyBindings, pinCartographyDocument, registerBundledCartography } from './map-design/storage/cartography-bindings.js';
 
 export interface MapDesignProjectServices {
   queryService: MapDesignQueryService;
@@ -89,15 +90,12 @@ export function createMapDesignProjectServices(input: {
   const pinnedTransport = input.transport ?? createPinnedTransport({
     allowProxyVirtualAddresses: shouldAllowMapDesignProxyVirtualAddresses(),
   });
-  const loadPinnedDesignSystem = async ({ id, digest }: { id: string; digest: string }) => {
-    if (id === input.designSystem.id) {
-      if (input.designSystem.digest !== digest) throw new TypeError('design system digest mismatch');
-      return input.designSystem;
-    }
-    const designSystem = await loadMapDesignSystem({ projectRoot: input.projectRoot, designSystemId: id });
-    if (designSystem.digest !== digest) throw new TypeError('design system digest mismatch');
-    return designSystem;
-  };
+  if (input.designSystem.format !== 'cartography') throw new TypeError('Startup requires a standard CARTOGRAPHY.md.');
+  const defaultDocument = pinCartographyDocument(input.db, input.designSystem.id, input.designSystem.source);
+  if (defaultDocument.digest !== input.designSystem.digest) throw new TypeError('Default cartography digest mismatch.');
+  registerBundledCartography(input.db, defaultDocument);
+  migrateLegacyCartographyBindings(input.db, defaultDocument);
+  const loadPinnedDesignSystem = async (binding: { id: string; digest: string }) => loadPinnedCartography(input.db, binding);
   const validationService = new MapDesignValidationService({ repository, blobStore, loadDesignSystem: loadPinnedDesignSystem });
   const queryService = new MapDesignQueryService({
     db: input.db,
@@ -162,7 +160,7 @@ export function createMapDesignProjectServices(input: {
     db: input.db,
     blobStore,
     transport: pinnedTransport,
-    designSystem: { id: 'quiet-walking', digest: input.designSystem.digest },
+    designSystem: { id: defaultDocument.id, digest: defaultDocument.digest },
     loadDesignSystem: loadPinnedDesignSystem,
     outbox,
   });

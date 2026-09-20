@@ -1,3 +1,5 @@
+import {pinCartographyDocument, selectProjectCartography} from '../../../src/map-design/storage/cartography-bindings.js';
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -24,7 +26,7 @@ function project(projectId = 'project-1') {
 }
 
 function importing(projectId: string): MapDesignProjectRead {
-  return { projectId, lifecycle: 'importing', sourceKind: null, designSystemId: 'quiet-walking', designSystemDigest: 'a'.repeat(64), draftRevision: 0, committedRevision: null, failure: null, createdAt: NOW, updatedAt: NOW };
+  return { projectId, lifecycle: 'importing', sourceKind: null, designSystemId: 'quiet-atlas', designSystemDigest: 'a'.repeat(64), draftRevision: 0, committedRevision: null, failure: null, createdAt: NOW, updatedAt: NOW };
 }
 
 function openFixture(options: { enqueue?: () => boolean; verifyWorkingDirectoryGrant?: () => Promise<string>; prepare?: (db: Database.Database, projectId: string) => MapDesignProjectRead } = {}) {
@@ -34,11 +36,14 @@ function openFixture(options: { enqueue?: () => boolean; verifyWorkingDirectoryG
   const store = createMapDesignLocalStore(db);
   const prepare = vi.fn((database: Database.Database, projectId: string) => {
     if (options.prepare) return options.prepare(database, projectId);
-    database.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', 'quiet-walking', ?, 0, ?, ?)`)
-      .run(projectId, 'a'.repeat(64), NOW, NOW);
+    const source = testDesignSystem();
+    const fallback = pinCartographyDocument(database, source.id, source.source);
+    const binding = selectProjectCartography(database, projectId, fallback);
+    database.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', ?, ?, 0, ?, ?)`)
+      .run(projectId, binding.id, binding.digest, NOW, NOW);
     database.prepare(`INSERT INTO map_design_import_jobs (project_id, status, import_request_json, import_request_digest, attempt, queued_at) VALUES (?, 'queued', '{}', 'a', 1, ?)`)
       .run(projectId, NOW);
-    return importing(projectId);
+    return { ...importing(projectId), designSystemId: binding.id, designSystemDigest: binding.digest };
   });
   const queryService = { getProject: vi.fn() };
   const service = new MapDesignProjectService({
@@ -245,7 +250,7 @@ describe('MapDesignQueryService current snapshot compatibility', () => {
         project_id, lifecycle_state, source_kind, source_manifest_digest,
         design_system_id, design_system_digest, draft_revision, draft_style_digest,
         draft_style_hash, draft_semantic_digest, created_at, updated_at
-      ) VALUES (?, 'ready', 'style', ?, 'quiet-walking', ?, 4, ?, ?, ?, ?, ?)`).run(
+      ) VALUES (?, 'ready', 'style', ?, 'quiet-atlas', ?, 4, ?, ?, ?, ?, ?)`).run(
         projectId,
         sourceBlob.digest,
         'd'.repeat(64),
@@ -259,10 +264,7 @@ describe('MapDesignQueryService current snapshot compatibility', () => {
         db,
         repository: new MapDesignSqliteProjectRepository(db),
         blobStore,
-        loadDesignSystem: async () => ({
-          id: 'quiet-walking', digest: 'd'.repeat(64), humanGuidance: '',
-          rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 },
-        }),
+        loadDesignSystem: async () => (testDesignSystem({ id: 'quiet-atlas', digest: 'd'.repeat(64) })),
         validationService: { validate: vi.fn() } as never,
       });
 

@@ -36,3 +36,10 @@ window and HTTP(S) destinations open externally.
 
 Map-source content and agent output are untrusted input and must be validated
 before they affect local state or rendering.
+## Cartographic design documents
+
+The runtime uses the standard CARTOGRAPHY.md format 0.4.0 with the official
+0.4.1 parser/linter, pins each project's full document source, and keeps runtime
+quality policy separate from document format validation. See
+[Cartography runtime integration](cartography-runtime.md) for selection,
+content digests, compatibility, and migration details.

@@ -9,7 +9,7 @@ const STANDARD_CONFIG = {
   model: 'default',
   agentId: 'codex',
   skillId: 'map-design',
-  designSystemId: 'quiet-walking',
+  designSystemId: 'quiet-atlas',
   onboardingCompleted: true,
   agentModels: {},
   privacyDecisionAt: 1,

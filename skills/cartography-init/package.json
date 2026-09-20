@@ -14,7 +14,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@mapseekai/cartography.md": "0.4.0",
+    "@mapseekai/cartography.md": "0.4.1",
     "better-sqlite3": "12.10.0",
     "fast-xml-parser": "^5.3.2",
     "fflate": "^0.8.2"

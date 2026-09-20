@@ -1,31 +1,43 @@
 import type { MapValidationFinding, SemanticDocument } from '@mapseekai/map-design-contracts';
 import type { StyleDocument } from 'maplibre-style-tools/core';
 
-import type { LoadedMapDesignSystem } from './design-system-loader.js';
-
-export interface DesignSystemValidationInput {
-  style: StyleDocument;
-  semantics: SemanticDocument;
-  designSystem: LoadedMapDesignSystem;
+/** Output checks are application policy, not CARTOGRAPHY.md schema fields. */
+export interface CartographicQualityPolicy {
+  version: 1;
+  requiredSemanticRoles: readonly string[];
+  maxLabelLayerCount: number;
+  minimumContrastRatio: number;
 }
 
-export function validateDesignSystemRules(input: DesignSystemValidationInput): MapValidationFinding[] {
-  const { designSystem, semantics, style } = input;
+export const DEFAULT_CARTOGRAPHIC_QUALITY_POLICY: CartographicQualityPolicy = Object.freeze({
+  version: 1, requiredSemanticRoles: Object.freeze([] as string[]),
+  maxLabelLayerCount: 80, minimumContrastRatio: 4.5,
+});
+
+export interface CartographicQualityValidationInput {
+  style: StyleDocument;
+  semantics: SemanticDocument;
+  policy?: CartographicQualityPolicy;
+  scope?: MapValidationFinding['scope'];
+}
+
+export function validateCartographicQuality(input: CartographicQualityValidationInput): MapValidationFinding[] {
+  const { semantics, style, policy = DEFAULT_CARTOGRAPHIC_QUALITY_POLICY } = input;
   const findings: MapValidationFinding[] = [];
-  const scope = { kind: 'design-system' as const, id: designSystem.id };
+  const scope = input.scope ?? { kind: 'runtime' as const };
   const roles = new Set(semantics.groups.map((group) => group.role));
-  designSystem.rules.requiredSemanticRoles.forEach((role, index) => {
+  policy.requiredSemanticRoles.forEach((role, index) => {
     if (!roles.has(role)) {
-      findings.push(violation(`Required semantic role "${role}" is not mapped.`, scope, `/rules/requiredSemanticRoles/${index}`));
+      findings.push(violation(`Required semantic role "${role}" is not mapped.`, scope, `/runtimePolicy/requiredSemanticRoles/${index}`));
     }
   });
   const labelLayers = style.layers.filter((layer) => layer.type === 'symbol'
     && isPlainObject(layer.layout) && Object.hasOwn(layer.layout, 'text-field'));
-  if (labelLayers.length > designSystem.rules.maxLabelLayerCount) {
+  if (labelLayers.length > policy.maxLabelLayerCount) {
     findings.push(violation(
-      `Label layer count ${labelLayers.length} exceeds maximum ${designSystem.rules.maxLabelLayerCount}.`,
+      `Label layer count ${labelLayers.length} exceeds maximum ${policy.maxLabelLayerCount}.`,
       scope,
-      '/rules/maxLabelLayerCount',
+      '/runtimePolicy/maxLabelLayerCount',
     ));
   }
   if (labelLayers.length === 0) return findings;
@@ -43,11 +55,11 @@ export function validateDesignSystemRules(input: DesignSystemValidationInput): M
       return;
     }
     const renderedText = composite(textColor, textOpacity, surface.color);
-    if (contrastRatio(renderedText, surface.color) < designSystem.rules.minimumContrastRatio) {
+    if (contrastRatio(renderedText, surface.color) < policy.minimumContrastRatio) {
       findings.push(violation(
-        `Label color contrast is below ${designSystem.rules.minimumContrastRatio}.`,
+        `Label color contrast is below ${policy.minimumContrastRatio}.`,
         scope,
-        '/rules/minimumContrastRatio',
+        '/runtimePolicy/minimumContrastRatio',
       ));
     }
   });
@@ -55,7 +67,7 @@ export function validateDesignSystemRules(input: DesignSystemValidationInput): M
 }
 
 function violation(message: string, scope: MapValidationFinding['scope'], jsonPointer: string): MapValidationFinding {
-  return { severity: 'warning', code: 'DESIGN_SYSTEM_VIOLATION', message, scope, jsonPointer };
+  return { severity: 'warning', code: 'CARTOGRAPHIC_QUALITY_WARNING', message, scope, jsonPointer };
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -102,7 +114,7 @@ function unverifiable(reason: string, scope: MapValidationFinding['scope']): Map
   return violation(
     `Minimum contrast could not be verified: ${reason}.`,
     scope,
-    '/rules/minimumContrastRatio',
+    '/runtimePolicy/minimumContrastRatio',
   );
 }
 

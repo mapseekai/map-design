@@ -75,7 +75,7 @@ const project = {
   context: {
     lifecycle: 'ready' as const,
     source: { kind: 'style' as const, digest: 'a'.repeat(64), status: 'available' as const, resourceCount: 1 },
-    designSystem: { id: 'quiet-walking', name: 'Quiet Walking', digest: 'd'.repeat(64) }, draftRevision: 4,
+    designSystem: { id: 'quiet-atlas', name: 'Quiet Atlas', digest: 'd'.repeat(64) }, draftRevision: 4,
     committedRevision: null, styleHash: 'b'.repeat(64),
     styleSummary: { layerCount: 1, sourceCount: 1, layerTypes: ['line' as const] },
     semanticSummary: { version: 1 as const, groupCount: 0, mappedLayerCount: 0, mappedSourceCount: 0 },
@@ -84,7 +84,7 @@ const project = {
   currentContext: {
     lifecycle: 'ready' as const,
     source: { kind: 'style' as const, digest: 'a'.repeat(64), status: 'available' as const, resourceCount: 1 },
-    designSystem: { id: 'quiet-walking', name: 'Quiet Walking', digest: 'd'.repeat(64) }, draftRevision: 4,
+    designSystem: { id: 'quiet-atlas', name: 'Quiet Atlas', digest: 'd'.repeat(64) }, draftRevision: 4,
     committedRevision: null, styleHash: 'b'.repeat(64),
     styleSummary: { layerCount: 1, sourceCount: 1, layerTypes: ['line' as const] },
     semanticSummary: { version: 1 as const, groupCount: 0, mappedLayerCount: 0, mappedSourceCount: 0 },

@@ -1,3 +1,4 @@
+import {canonicalJson} from '../../../src/map-design/storage/canonical-json.js';
 import { describe, expect, it } from 'vitest';
 import { cartographyPreview } from '../../../src/map-design/application/cartography-preview.js';
 
@@ -86,4 +87,15 @@ elements:
   expect(result.elements).toHaveLength(2);
   expect(result.elements?.[0]).toMatchObject({ strokeWidth: 4, strokeColor: '#123456', dash: [6, 3] });
   expect(result.elements?.[1]?.unsupported).toContain('symbol');
+});
+
+
+it('produces canonical JSON for standard elements with omitted family/role and preserves explicit zero', () => {
+  const source = '---\nversion: "0.4.0"\nname: Minimal\nelements:\n  hidden-point:\n    geometry: point\n    color: "#123456"\n    size: 0px\n    opacity: 0\n---\n\n## Overview\n\nMinimal reusable visual identity.\n';
+  const preview = cartographyPreview(source);
+  expect(() => canonicalJson(preview)).not.toThrow();
+  expect(JSON.parse(canonicalJson(preview))).toEqual(preview);
+  expect(preview.elements?.[0]).toMatchObject({name: 'hidden-point', size: 0, opacity: 0});
+  expect(Object.hasOwn(preview.elements?.[0] ?? {}, 'family')).toBe(false);
+  expect(Object.hasOwn(preview.elements?.[0] ?? {}, 'role')).toBe(false);
 });

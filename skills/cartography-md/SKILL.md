@@ -43,3 +43,9 @@ Do not invent unavailable runtime facts. State what is known, what remains unres
 ## MapDesign integration
 
 In this repository, run document lint with `pnpm --filter @mapseekai/daemon exec cartographymd lint /absolute/path/to/CARTOGRAPHY.md`. Use absolute document paths because the command runs in the daemon package directory. The CARTOGRAPHY.md manager creates reviewable drafts; format validation does not imply completed design review or bindings triage.
+
+MapDesign pins the complete document source for each project. The default is
+`design-systems/quiet-atlas/CARTOGRAPHY.md`; an explicitly selected library
+document takes precedence. The published validator is version 0.4.1 and the
+front-matter format remains 0.4.0. Do not recreate the retired `mapdesign-rules`
+block: quality policy belongs to the runtime, not to this portable document.

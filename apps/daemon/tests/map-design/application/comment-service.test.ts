@@ -1,3 +1,5 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
+import {pinCartographyDocument} from '../../../src/map-design/storage/cartography-bindings.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,11 +19,13 @@ function fixture() {
   const dir = mkdtempSync(join(tmpdir(), 'map-comments-'));
   const db = openMapDesignDatabase(dir);
   cleanups.push(() => { if (db.open) db.close(); rmSync(dir, { recursive: true, force: true }); });
+  const standard = testDesignSystem();
+  pinCartographyDocument(db, standard.id, standard.source);
   for (const id of ['project-a', 'project-b']) {
     db.prepare("INSERT INTO projects (id,title,runtime_json,created_at,updated_at) VALUES (?, 'Test','{}','now','now')").run(id);
     db.prepare(`INSERT INTO map_design_projects
       (project_id,lifecycle_state,source_kind,design_system_id,design_system_digest,draft_revision,draft_style_digest,draft_style_hash,draft_semantic_digest,created_at,updated_at)
-      VALUES (?, 'ready','geojson','quiet-walking',?,3,?,?,?,'now','now')`).run(id, 'a'.repeat(64), 'a'.repeat(64), 'a'.repeat(64), 'a'.repeat(64));
+      VALUES (?, 'ready','geojson','quiet-atlas',?,3,?,?,?,'now','now')`).run(id, standard.digest, 'a'.repeat(64), 'a'.repeat(64), 'a'.repeat(64));
   }
   const style = { version: 8 as const, sources: { streets: { type: 'geojson' as const, data: {
     type: 'FeatureCollection' as const, features: [{ type: 'Feature' as const, id: 0,

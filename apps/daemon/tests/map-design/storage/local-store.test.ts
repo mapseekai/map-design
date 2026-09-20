@@ -357,7 +357,7 @@ describe('MapDesignLocalStore', () => {
         db.prepare('INSERT INTO projects (id, title, runtime_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(id, id, '{"agentId":"claude"}', String(index), String(index));
         const offset = 100 - index;
         const lifecycleUpdatedAt = `2026-08-25T00:${String(Math.floor(offset / 60)).padStart(2, '0')}:${String(offset % 60).padStart(2, '0')}.000Z`;
-        db.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', 'quiet-walking', 'digest', 0, ?, ?)`).run(id, String(index), lifecycleUpdatedAt);
+        db.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', 'quiet-atlas', 'digest', 0, ?, ?)`).run(id, String(index), lifecycleUpdatedAt);
       }
       const projects = store.listProjects();
       expect(projects).toHaveLength(100);

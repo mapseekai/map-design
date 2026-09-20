@@ -3,7 +3,7 @@ import { validateStyleDocument, type StyleDocument } from 'maplibre-style-tools/
 
 import { blake3Digest, canonicalJsonBytes } from '../storage/canonical-json.js';
 import type { LoadedMapDesignSystem } from './design-system-loader.js';
-import { validateDesignSystemRules } from './design-system-validator.js';
+import { DEFAULT_CARTOGRAPHIC_QUALITY_POLICY, validateCartographicQuality, type CartographicQualityPolicy } from './cartographic-quality-validator.js';
 import { summarizeFindings } from './findings.js';
 import { validateSemanticMapping, type MapSemanticMapping } from './semantic-validator.js';
 
@@ -12,6 +12,7 @@ export interface MapValidationInput {
   semantics: MapSemanticMapping;
   sourceManifest: MapSourceManifest;
   designSystem: LoadedMapDesignSystem;
+  runtimePolicy?: CartographicQualityPolicy;
 }
 
 export interface MapValidationResult {
@@ -23,12 +24,23 @@ export interface MapValidationResult {
 
 export function validateMapDesign(input: MapValidationInput): MapValidationResult {
   const styleResult = validateStyleDocument(input.style);
+  const legacy = input.designSystem.format === 'legacy-mapdesign';
+  const policy = input.designSystem.format === 'legacy-mapdesign'
+    ? input.designSystem.policy : input.runtimePolicy ?? DEFAULT_CARTOGRAPHIC_QUALITY_POLICY;
+  const quality = validateCartographicQuality({
+    style: input.style, semantics: input.semantics, policy,
+    ...(legacy ? { scope: { kind: 'design-system' as const, id: input.designSystem.id } } : {}),
+  });
   const findings: MapValidationFinding[] = [
     ...styleResult.errors.map((error) => styleFinding('error', error.message, error.path)),
     ...styleResult.warnings.map((warning) => styleFinding('warning', warning.message, warning.path)),
     ...validateSemanticMapping(input.style, input.semantics, input.sourceManifest),
     ...zoomFindings(input.style),
-    ...validateDesignSystemRules({ style: input.style, semantics: input.semantics, designSystem: input.designSystem }),
+    ...(input.designSystem.format === 'cartography' ? input.designSystem.documentFindings : []),
+    ...quality.map((finding) => legacy ? {
+      ...finding, code: 'DESIGN_SYSTEM_VIOLATION',
+      ...(finding.jsonPointer ? { jsonPointer: finding.jsonPointer.replace('/runtimePolicy/', '/rules/') } : {}),
+    } : finding),
   ];
   const result = summarizeFindings(findings);
   return {
@@ -40,6 +52,8 @@ export function validateMapDesign(input: MapValidationInput): MapValidationResul
       semantics: input.semantics,
       sourceManifest: input.sourceManifest,
       designSystemDigest: input.designSystem.digest,
+      // A policy change invalidates a preview even when its findings are unchanged.
+      ...(legacy ? {} : { runtimePolicy: policy }),
       findings: result.findings,
       summary: result.summary,
     })),

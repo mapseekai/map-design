@@ -60,7 +60,7 @@ function seedMapDesignProject(
   db.prepare(`INSERT INTO map_design_projects (
     project_id, lifecycle_state, design_system_id, design_system_digest,
     draft_revision, created_at, updated_at
-  ) VALUES (?, 'importing', 'quiet-walking', ?, 0, ?, ?)`).run(projectId, `${projectId}-design`, now, now);
+  ) VALUES (?, 'importing', 'quiet-atlas', ?, 0, ?, ?)`).run(projectId, `${projectId}-design`, now, now);
   db.prepare(`INSERT INTO map_design_resources (
     project_id, resource_id, kind, storage_kind, media_type,
     byte_length, content_digest, metadata_json

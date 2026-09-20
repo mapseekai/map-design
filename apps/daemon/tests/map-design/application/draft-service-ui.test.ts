@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,10 +31,10 @@ describe('MapDraftService UI mutations', () => {
     ]);
     db.prepare("INSERT INTO projects (id,title,runtime_json,created_at,updated_at) VALUES (?,?,'{}',?,?)").run(PROJECT_ID, PROJECT_ID, NOW, NOW);
     db.prepare(`INSERT INTO map_design_projects (project_id,lifecycle_state,source_kind,source_manifest_digest,design_system_id,design_system_digest,draft_revision,draft_style_digest,draft_style_hash,draft_semantic_digest,created_at,updated_at)
-      VALUES (?,'ready','style',?,'quiet-walking',?,4,?,?,?,?,?)`).run(PROJECT_ID, manifestBlob.digest, 'd'.repeat(64), styleBlob.digest, await sha256CanonicalJson(style), semanticBlob.digest, NOW, NOW);
+      VALUES (?,'ready','style',?,'quiet-atlas',?,4,?,?,?,?,?)`).run(PROJECT_ID, manifestBlob.digest, 'd'.repeat(64), styleBlob.digest, await sha256CanonicalJson(style), semanticBlob.digest, NOW, NOW);
     const events = new InMemoryMapDraftEventBus();
     const service = new MapDraftService({ db, blobStore, eventBus: events,
-      loadDesignSystem: async () => ({ id: 'quiet-walking', digest: 'd'.repeat(64), humanGuidance: '', rules: { version: 1 as const, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 } }),
+      loadDesignSystem: async () => (testDesignSystem({ id: 'quiet-atlas', digest: 'd'.repeat(64) })),
       now: () => NOW, ...(beforeImmediate ? { beforeImmediate } : {}) });
     return { db, events, service };
   }

@@ -31,7 +31,7 @@ function setup(options: { running?: boolean; policy?: ConversationRuntimeChoiceP
     primaryConversationId: 'conversation-1', verifiedWorkingDirectory: null,
   });
   db.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at)
-    VALUES (?, 'importing', 'quiet-walking', ?, 0, ?, ?)`).run('project-1', 'a'.repeat(64), NOW, NOW);
+    VALUES (?, 'importing', 'quiet-atlas', ?, 0, ?, ?)`).run('project-1', 'a'.repeat(64), NOW, NOW);
   roots.push({ db, root });
   return {
     db, store,
@@ -167,7 +167,7 @@ describe('MapDesignConversationRuntimeService', () => {
       primaryConversationId: 'conversation-2', verifiedWorkingDirectory: null,
     });
     db.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at)
-      VALUES (?, 'importing', 'quiet-walking', ?, 0, ?, ?)`).run('project-2', 'b'.repeat(64), NOW, NOW);
+      VALUES (?, 'importing', 'quiet-atlas', ?, 0, ?, ?)`).run('project-2', 'b'.repeat(64), NOW, NOW);
 
     expect(() => service.get('project-1', 'conversation-2')).toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
     expect(() => service.update('project-1', 'conversation-1', {

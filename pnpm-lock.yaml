@@ -69,8 +69,8 @@ importers:
         specifier: workspace:*
         version: link:../../skills/cartography-init
       '@mapseekai/cartography.md':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.4.1
+        version: 0.4.1
       '@mapseekai/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -490,8 +490,8 @@ importers:
   skills/cartography-init:
     dependencies:
       '@mapseekai/cartography.md':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.4.1
+        version: 0.4.1
       better-sqlite3:
         specifier: 12.10.0
         version: 12.10.0
@@ -1637,8 +1637,8 @@ packages:
   '@maplibre/vt-pbf@4.3.2':
     resolution: {integrity: sha512-j6p0AdjvAR19Z3XaCysle7A4ZSo08tYOzxD0Y9NQylwPAkwJJeYub5b2eVucdeDh7erhv69DahoLOevDRERRUw==}
 
-  '@mapseekai/cartography.md@0.4.0':
-    resolution: {integrity: sha512-huR0VproY/1nrist5tY7whroEOBn4wPAQOvEDgHBu5Us+600SmkWTSVA1vquv5UJvrsLubzX5TOZOq0/0EkrOw==}
+  '@mapseekai/cartography.md@0.4.1':
+    resolution: {integrity: sha512-yAM/iSHJehIwpL3wlrFJ4dkIWvGDt8QwX9fr+t1EVt703rM8B6cTVdonuUUGGQZpXDlDSg60A/3Up6ZScJBRuw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -6328,7 +6328,7 @@ snapshots:
       '@types/geojson': 7946.0.16
       pbf: 5.1.2
 
-  '@mapseekai/cartography.md@0.4.0':
+  '@mapseekai/cartography.md@0.4.1':
     dependencies:
       citty: 0.1.6
       colorjs.io: 0.7.1

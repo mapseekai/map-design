@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -59,7 +60,7 @@ describe('API map agent', () => {
     const db = openMapDesignDatabase(root);
     const services = createMapDesignProjectServices({ db, dataRoot: root, projectRoot: repo,
       runStore: { get: (runId) => runId === 'api-run' ? { runId, projectId: 'api-map', runtime: { id: 'api', version: '7', adapter: 'ai-sdk' }, model: { id: 'test', provider: 'openai' } } : null },
-      designSystem: { id: 'api-test', digest: 'd'.repeat(64), humanGuidance: '', rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 10, minimumContrastRatio: 1 } },
+      designSystem: testDesignSystem({ id: 'api-test' }),
     });
     try {
       const projectId = 'api-map';
@@ -70,7 +71,7 @@ describe('API map agent', () => {
         services.blobStore.putJson(projectId, 'sources', { kind: 'style', digest: 'a'.repeat(64), mediaType: 'application/json', byteLength: 1, resourceCount: 1, capturedAt: '2026-09-07T00:00:00Z' }),
       ]);
       db.prepare('INSERT INTO projects (id,title,runtime_json,created_at,updated_at) VALUES (?,?,?,?,?)').run(projectId, 'API test', '{}', '2026-09-07', '2026-09-07');
-      db.prepare(`INSERT INTO map_design_projects (project_id,lifecycle_state,source_kind,source_manifest_digest,design_system_id,design_system_digest,draft_revision,draft_style_digest,draft_style_hash,draft_semantic_digest,created_at,updated_at) VALUES (?,'ready','style',?,'api-test',?,0,?,?,?,'2026-09-07','2026-09-07')`).run(projectId,manifest.digest,'d'.repeat(64),styleBlob.digest,await sha256CanonicalJson(style),semantics.digest);
+      db.prepare(`INSERT INTO map_design_projects (project_id,lifecycle_state,source_kind,source_manifest_digest,design_system_id,design_system_digest,draft_revision,draft_style_digest,draft_style_hash,draft_semantic_digest,created_at,updated_at) VALUES (?,'ready','style',?,'api-test',?,0,?,?,?,'2026-09-07','2026-09-07')`).run(projectId,manifest.digest,testDesignSystem({ id: 'api-test' }).digest,styleBlob.digest,await sha256CanonicalJson(style),semantics.digest);
       const model = new MockLanguageModelV4({ doStream: [
         toolStep('read_design_reference', { name: 'cartography-md' }, 'reference-1'),
         toolStep('map_get_context', {}, 'context-1'),

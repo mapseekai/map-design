@@ -1,3 +1,4 @@
+import { DEFAULT_MAP_DESIGN_SYSTEM_ID } from '@mapseekai/map-design-contracts';
 import { CartographyEditService } from './map-design/application/cartography-edit-service.js';
 import { MapTextAttachmentService } from './map-design/application/text-attachment-service.js';
 import http from 'node:http';
@@ -101,7 +102,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     const config = createMapDesignConfigStore(dataDir);
     const projectRoot = resolveProjectRoot(fileURLToPath(new URL('.', import.meta.url)));
     const store = createMapDesignLocalStore(db);
-    const designSystem = await loadMapDesignSystem({ projectRoot, designSystemId: 'quiet-walking' });
+    const designSystem = await loadMapDesignSystem({ projectRoot, designSystemId: DEFAULT_MAP_DESIGN_SYSTEM_ID });
     let runService: MapDesignRunService | null = null;
     let initialRuns: MapInitialRunService | null = null;
     mapServices = createMapDesignProjectServices({

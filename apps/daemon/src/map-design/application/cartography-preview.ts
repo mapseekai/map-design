@@ -12,7 +12,9 @@ export function cartographyPreview(source: string): CartographyPreview {
     for (const [name, raw] of Object.entries(record(config.elements)).slice(0, 256)) {
       const element = record(raw);
       if (element.state && element.state !== 'default') continue;
-      const normalized: Record<string, unknown> = { name, geometry: element.geometry, family: element.family, role: element.role, unsupported: [] };
+      const normalized: Record<string, unknown> = { name, geometry: element.geometry, unsupported: [] };
+      // Optional standard fields must be absent, not undefined, in canonical receipts.
+      for (const key of ['family', 'role']) if (element[key] !== undefined) normalized[key] = element[key];
       const unsupported = normalized.unsupported as string[];
       for (const key of ['color', 'fillColor', 'strokeColor', 'outlineColor', 'casingColor', 'haloColor']) {
         if (element[key] === undefined) continue;

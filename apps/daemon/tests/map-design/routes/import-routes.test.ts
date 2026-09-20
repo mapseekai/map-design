@@ -136,7 +136,7 @@ function importingProject(projectId: string) {
     projectId,
     lifecycle: 'importing' as const,
     sourceKind: null,
-    designSystemId: 'quiet-walking',
+    designSystemId: 'quiet-atlas',
     designSystemDigest: 'a'.repeat(64),
     draftRevision: 0,
     committedRevision: null,

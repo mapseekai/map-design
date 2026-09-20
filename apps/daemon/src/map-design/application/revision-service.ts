@@ -226,17 +226,17 @@ export class MapRevisionService {
       loadDesignSystem: this.deps.loadDesignSystem,
     });
     assertProjectIdle(trustedContext);
+    const project = this.readProject(trustedContext.projectId);
+    this.assertReady(project);
+    this.assertDraftRevision(project, parsed.expectedDraftRevision);
+    const designSystem = await this.designSystemForRestore(project, evidence);
     const validation = validateMapDesign({
       style: evidence.style,
       semantics: evidence.semantics,
       sourceManifest: evidence.sourceManifest,
-      designSystem: evidence.designSystem,
+      designSystem,
     });
     assertValidRevision(validation.findings);
-
-    const project = this.readProject(trustedContext.projectId);
-    this.assertReady(project);
-    this.assertDraftRevision(project, parsed.expectedDraftRevision);
     const occurredAt = this.timestamp();
     const output = parseOutput(MapRestoreRevisionOutputSchema.parse, {
       draftRevision: increment(project.draftRevision),
@@ -259,6 +259,7 @@ export class MapRevisionService {
       digest,
       project,
       evidence,
+      designSystem,
       output,
       occurredAt,
     });
@@ -394,11 +395,12 @@ export class MapRevisionService {
       blobStore: this.deps.blobStore,
       loadDesignSystem: this.deps.loadDesignSystem,
     });
+    const designSystem = await this.designSystemForRestore(project, committed);
     assertValidRevision(validateMapDesign({
       style: committed.style,
       semantics: committed.semantics,
       sourceManifest: committed.sourceManifest,
-      designSystem: committed.designSystem,
+      designSystem,
     }).findings);
     const occurredAt = this.timestamp();
     const output = parseOutput(MapDiscardDraftOutputSchema.parse, {
@@ -415,7 +417,7 @@ export class MapRevisionService {
       idempotencyKey: parsed.idempotencyKey,
       requestDigest: digest,
     });
-    const persisted = this.persistDiscard({ context, parsed, digest, project, committed, output, occurredAt });
+    const persisted = this.persistDiscard({ context, parsed, digest, project, committed, designSystem, output, occurredAt });
     if (!persisted.replayed) {
       this.publishAfterCommit({
         projectId: context.projectId,
@@ -437,12 +439,23 @@ export class MapRevisionService {
     return persisted.output;
   }
 
+  /** Old evidence stays immutable; restoring it must not reactivate the retired preset. */
+  private async designSystemForRestore(project: ProjectRow, evidence: VerifiedRevisionEvidence): Promise<LoadedMapDesignSystem> {
+    if (evidence.designSystem.format !== 'legacy-mapdesign') return evidence.designSystem;
+    const current = await this.deps.loadDesignSystem({ id: project.designSystemId, digest: project.designSystemDigest });
+    if (current.format !== 'cartography' || current.id !== project.designSystemId || current.digest !== project.designSystemDigest) {
+      throw new MapDraftError('DESIGN_SYSTEM_VIOLATION', 'Restore requires the migrated project CARTOGRAPHY.md.');
+    }
+    return current;
+  }
+
   private persistRestore(args: {
     context: Extract<MapRevisionMutationContext, { kind: 'ui' }>;
     parsed: MapRestoreRevisionInput;
     digest: string;
     project: ProjectRow;
     evidence: VerifiedRevisionEvidence;
+    designSystem: LoadedMapDesignSystem;
     output: MapRestoreRevisionOutput;
     occurredAt: string;
   }): PersistedResult<MapRestoreRevisionOutput> {
@@ -462,6 +475,9 @@ export class MapRevisionService {
       if (current.committedRevision !== args.project.committedRevision) {
         throw committedPointerConflict(current);
       }
+      if (current.designSystemId !== args.project.designSystemId || current.designSystemDigest !== args.project.designSystemDigest) {
+        throw draftConflict(current);
+      }
       const revision = this.evidenceRepository.getRevision(
         current.projectId,
         args.evidence.revision.revision,
@@ -473,7 +489,7 @@ export class MapRevisionService {
         style: args.evidence.style,
         semantics: args.evidence.semantics,
         sourceManifest: args.evidence.sourceManifest,
-        designSystem: args.evidence.designSystem,
+        designSystem: args.designSystem,
       });
       assertValidRevision(validation.findings);
       if (increment(current.draftRevision) !== args.output.draftRevision
@@ -494,8 +510,8 @@ export class MapRevisionService {
           AND draft_revision = ? AND committed_revision IS ?`).run(
         args.evidence.sourceManifest.kind,
         revision.sourceManifestDigest,
-        args.evidence.designSystem.id,
-        revision.designSystemDigest,
+        args.designSystem.id,
+        args.designSystem.digest,
         args.output.draftRevision,
         revision.styleDigest,
         revision.styleHash,
@@ -616,6 +632,7 @@ export class MapRevisionService {
     digest: string;
     project: ProjectRow;
     committed: VerifiedRevisionEvidence;
+    designSystem: LoadedMapDesignSystem;
     output: MapDiscardDraftOutput;
     occurredAt: string;
   }): PersistedResult<MapDiscardDraftOutput> {
@@ -634,6 +651,9 @@ export class MapRevisionService {
       this.assertDraftRevision(current, args.parsed.expectedRevision);
       if (current.committedRevision === null) throw noCommittedRevision();
       if (current.committedRevision !== args.project.committedRevision) throw committedPointerConflict(current);
+      if (current.designSystemId !== args.project.designSystemId || current.designSystemDigest !== args.project.designSystemDigest) {
+        throw draftConflict(current);
+      }
       const committed = this.evidenceRepository.getRevision(current.projectId, current.committedRevision);
       if (!committed || canonicalJson(committed) !== canonicalJson(args.committed.revision)) {
         throw historicalEvidenceChanged();
@@ -642,7 +662,7 @@ export class MapRevisionService {
         style: args.committed.style,
         semantics: args.committed.semantics,
         sourceManifest: args.committed.sourceManifest,
-        designSystem: args.committed.designSystem,
+        designSystem: args.designSystem,
       }).findings);
       if (increment(current.draftRevision) !== args.output.draftRevision) throw draftConflict(current);
 
@@ -655,8 +675,8 @@ export class MapRevisionService {
           AND draft_revision = ? AND committed_revision IS ?`).run(
         args.committed.sourceManifest.kind,
         committed.sourceManifestDigest,
-        args.committed.designSystem.id,
-        committed.designSystemDigest,
+        args.designSystem.id,
+        args.designSystem.digest,
         args.output.draftRevision,
         committed.styleDigest,
         committed.styleHash,

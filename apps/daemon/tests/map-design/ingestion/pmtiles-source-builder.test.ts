@@ -1,3 +1,4 @@
+import {testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import { gzipSync } from 'node:zlib';
 
 import { describe, expect, it } from 'vitest';
@@ -7,12 +8,7 @@ import type { PinnedTransport } from '../../../src/map-design/ingestion/pinned-t
 import { buildPmtilesSource } from '../../../src/map-design/ingestion/pmtiles-source-builder.js';
 import type { LoadedMapDesignSystem } from '../../../src/map-design/validation/design-system-loader.js';
 
-const DESIGN_SYSTEM: LoadedMapDesignSystem = {
-  id: 'pmtiles-builder',
-  digest: 'd'.repeat(64),
-  humanGuidance: '',
-  rules: { version: 1, requiredSemanticRoles: [], maxLabelLayerCount: 256, minimumContrastRatio: 1 },
-};
+const DESIGN_SYSTEM: LoadedMapDesignSystem = testDesignSystem({ id: 'pmtiles-builder', digest: 'd'.repeat(64) });
 
 interface PmtilesFixture {
   bytes: Uint8Array;

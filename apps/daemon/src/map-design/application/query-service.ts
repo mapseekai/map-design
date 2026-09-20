@@ -113,7 +113,7 @@ export class MapDesignQueryService {
       semanticSummary: semanticSummary(snapshot.semantics),
       validationStatus: validation.summary.status,
       previewStatus: this.previewStatus(snapshot.project),
-      cartographicGuidance: guidanceLines(snapshot.designSystem.humanGuidance),
+      cartographicGuidance: guidanceLines(snapshot.designSystem.source),
     });
   }
 
@@ -304,10 +304,7 @@ function semanticSummary(semantics: SemanticDocument): MapSemanticSummary {
 }
 
 function designSystemName(designSystem: LoadedMapDesignSystem): string {
-  const heading = designSystem.humanGuidance.split(/\r?\n/u)
-    .map((line) => /^#+\s+(.+)$/u.exec(line.trim())?.[1]?.trim())
-    .find((value): value is string => Boolean(value));
-  return (heading ?? designSystem.id).slice(0, 256);
+  return designSystem.name.slice(0, 256);
 }
 
 function guidanceLines(guidance: string): string[] {

@@ -73,7 +73,9 @@ export class MapDesignProjectService {
       }, new Date().toISOString());
       db.prepare("INSERT INTO map_design_initial_runs (project_id, conversation_id, prompt, status) VALUES (?, ?, ?, 'pending')")
         .run(parsed.projectId, conversationId, parsed.designRequirement);
-      const output = MapDesignProjectCreateOutputSchema.parse({ project, conversationId, title: parsed.title, runtime: parsed.runtime, ...(cartography ? { cartography } : {}) });
+      const pinned = new CartographyService(this.deps.store).forProject(parsed.projectId);
+      const boundCartography = pinned ? CartographySummarySchema.parse(pinned) : undefined;
+      const output = MapDesignProjectCreateOutputSchema.parse({ project, conversationId, title: parsed.title, runtime: parsed.runtime, ...(boundCartography ? { cartography: boundCartography } : {}) });
       db.prepare(`INSERT INTO map_design_idempotency (
         project_id, operation, idempotency_key, request_digest, canonical_request_json,
         canonical_request_digest, response_json, created_at

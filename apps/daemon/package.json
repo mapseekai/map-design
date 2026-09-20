@@ -38,7 +38,7 @@
     "@ai-sdk/openai": "4.0.60",
     "@ai-sdk/openai-compatible": "3.0.44",
     "@cartographymd/init-skill": "workspace:*",
-    "@mapseekai/cartography.md": "0.4.0",
+    "@mapseekai/cartography.md": "0.4.1",
     "@mapseekai/contracts": "workspace:*",
     "@mapseekai/map-design-contracts": "workspace:*",
     "@mapseekai/platform": "workspace:*",

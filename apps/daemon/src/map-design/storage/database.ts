@@ -8,7 +8,8 @@ export function createFreshMapDesignSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS cartography_documents (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL,
-      version TEXT NOT NULL, source TEXT NOT NULL, updated_at TEXT
+      version TEXT NOT NULL, source TEXT NOT NULL, updated_at TEXT,
+      origin TEXT NOT NULL DEFAULT 'user' CHECK (origin IN ('user', 'preset'))
     );
     CREATE TABLE IF NOT EXISTS project_cartography (
       project_id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
@@ -24,6 +25,17 @@ export function createFreshMapDesignSchema(db: Database.Database): void {
       initial_validation_digest TEXT, failure_code TEXT, failure_message TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
       CHECK ((initial_validation_status IS NULL) = (initial_validation_digest IS NULL)),
       CHECK ((lifecycle_state = 'ready' AND source_kind IS NOT NULL AND draft_style_digest IS NOT NULL AND draft_style_hash IS NOT NULL AND draft_semantic_digest IS NOT NULL) OR lifecycle_state IN ('importing','failed'))
+    );
+    CREATE TABLE IF NOT EXISTS map_design_cartography_snapshots (
+      id TEXT NOT NULL, digest TEXT NOT NULL, source TEXT NOT NULL,
+      PRIMARY KEY (id, digest)
+    );
+    CREATE TABLE IF NOT EXISTS map_design_cartography_migrations (
+      project_id TEXT NOT NULL REFERENCES map_design_projects(project_id) ON DELETE CASCADE,
+      previous_id TEXT NOT NULL, previous_digest TEXT NOT NULL,
+      cartography_id TEXT NOT NULL, cartography_digest TEXT NOT NULL,
+      previous_draft_revision INTEGER NOT NULL, migrated_at TEXT NOT NULL,
+      PRIMARY KEY (project_id, previous_id, previous_digest, cartography_id, cartography_digest)
     );
     CREATE TABLE IF NOT EXISTS map_design_initial_runs (
       project_id TEXT PRIMARY KEY REFERENCES map_design_projects(project_id) ON DELETE CASCADE,
@@ -101,6 +113,7 @@ export function createFreshMapDesignSchema(db: Database.Database): void {
   const columns = db.prepare('PRAGMA table_info(cartography_documents)').all() as Array<{ name: string }>;
   if (!columns.some((column) => column.name === 'updated_at')) db.exec('ALTER TABLE cartography_documents ADD COLUMN updated_at TEXT');
   if (!columns.some((column) => column.name === 'sample_bindings_json')) db.exec('ALTER TABLE cartography_documents ADD COLUMN sample_bindings_json TEXT');
+  if (!columns.some((column) => column.name === 'origin')) db.exec("ALTER TABLE cartography_documents ADD COLUMN origin TEXT NOT NULL DEFAULT 'user' CHECK (origin IN ('user', 'preset'))");
 
 }
 

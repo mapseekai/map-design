@@ -57,15 +57,8 @@ tsconfig.tsbuildinfo
 .cursor/
 .agents/
 .opencode/
-.claude/*
-# Exception: map-design-contribute skill ships with the repo so the OD app can mount it
-# for non-coder contributors. Personal Claude state (sessions, settings, etc.) stays ignored.
-!.claude/skills/
-.claude/skills/*
-!.claude/skills/map-design-contribute/
-!.claude/commands/
-.claude/commands/*
-!.claude/commands/map-design-contribute.md
+.claude/
+.claude-plugin/
 .codex/
 .deepseek/
 .antigravitycli/
