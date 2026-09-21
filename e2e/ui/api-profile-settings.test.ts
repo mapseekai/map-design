@@ -8,6 +8,7 @@ test('[P1] saves, tests, selects and deletes named API profiles with persistent 
     expect(setup.ok).toBe(true);
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('tab', { name: 'Model providers', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Saved API models' })).toBeVisible();
     await page.getByLabel('Configuration name', { exact: true }).fill('Primary API');
     await page.getByLabel('Base URL', { exact: true }).fill(`${model.baseUrl}/first/v1`);
@@ -35,6 +36,7 @@ test('[P1] saves, tests, selects and deletes named API profiles with persistent 
     await expect(secondary.getByText('Connection verified', { exact: true })).toBeVisible();
     expect(model.calls.at(-1)).toEqual({ path: '/second/v1/chat/completions', model: 'shared-model' });
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('tab', { name: 'Model providers', exact: true }).click();
     await expect(primary.getByText('Connection verified', { exact: true })).toBeVisible();
     await expect(secondary.getByText('Default', { exact: true })).toBeVisible();
     const response = await fetch(`${toolsDev.daemonUrl}/api/agents`); const catalogue = await response.json();
@@ -48,6 +50,7 @@ test('[P1] saves, tests, selects and deletes named API profiles with persistent 
     await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(primary).toHaveCount(0);
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('tab', { name: 'Model providers', exact: true }).click();
     await expect(page.locator('[data-profile-id]')).toHaveCount(1);
     await expect(secondary.getByText('Default', { exact: true })).toBeVisible();
   } finally { await model.close(); }

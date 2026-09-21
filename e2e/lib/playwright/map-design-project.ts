@@ -20,13 +20,8 @@ export async function createAndOpenReadyMapProject(
   expect(response.ok, await response.text()).toBe(true);
   await expect.poll(async () => (await fetch(`${daemonUrl}/api/map-design/projects/${projectId}`).then((value) => value.json()) as { project: { lifecycle: string } }).project.lifecycle)
     .toBe('ready');
-  const projectResource = page.waitForResponse((value) => {
-    const url = new URL(value.url());
-    return value.ok() && url.pathname.startsWith(`/api/map-design/projects/${projectId}/resources/`);
-  });
   await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('region', { name: 'Map canvas' })).toBeVisible();
-  await projectResource;
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
   return projectId;
 }

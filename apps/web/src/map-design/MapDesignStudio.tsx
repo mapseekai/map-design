@@ -97,6 +97,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
   const [commentListHost, setCommentListHost] = useState<HTMLDivElement | null>(null);
   const [mapError, setMapError] = useState<'load' | 'resource' | 'rate-limit' | null>(null);
   const [mapAttempt, setMapAttempt] = useState(0);
+  const [historicalBannerHeight, setHistoricalBannerHeight] = useState(0);
   const [editingStyle, setEditingStyle] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [codeOpened, setCodeOpened] = useState(false);
@@ -384,6 +385,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
     && !data.revisions.revisions.some((revision) => revision.previewId === preview.previewId);
 
   const inspector = <MapDesignInspectorPanel id={inspectorId} placement={presentedInspectorPlacement} closing={drawerClosing} width={resolvedInspectorWidth}
+      topInset={historicalBannerHeight}
       onCommentsHost={setCommentListHost}
       tab={inspectorTab} commentCount={commentCount} inspect={data.inspect}
       revisions={data.revisions} preview={preview} canCommit={canCommit} committing={committing}
@@ -414,7 +416,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
         onModeChange={selectMode}
         viewMode={viewMode} onViewModeChange={next => { setViewMode(next); if (next === 'code') { setCodeOpened(true); setEditingStyle(false); } }}
         inspectorTriggerRef={inspectorTriggerRef}
-        actions={<div className={viewMode === 'code' ? 'hidden' : 'flex items-center gap-1'}>
+        actions={<div className={viewMode === 'code' ? 'hidden' : 'flex min-w-0 flex-wrap items-center gap-1'}>
           <div ref={setCommentToolbarHost} className="flex items-center" />
           <Button ref={editTriggerRef} type="button" size="sm" variant={editingStyle ? 'default' : 'ghost'}
             aria-label={styleEditCopy[locale].edit} title={styleEditCopy[locale].edit} aria-pressed={editingStyle}
@@ -423,10 +425,11 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
             styleHash={displayedStyleHash} disabled={view.kind === 'historical' || editingStyle} count={screenshotCount} onCapture={onScreenshot} />
         </div>} />
       {view.kind === 'historical' ? <MapDesignHistoricalBanner revision={view.revision} restoreTriggerRef={restoreTriggerRef}
+        onHeightChange={setHistoricalBannerHeight}
         onReturnCurrent={() => onViewChange?.({ kind: 'current' })}
         onRequestRestore={() => setRestoreTarget({ revision: view.revision, expectedDraftRevision: data.currentContext.draftRevision })} /> : null}
-      {state.error ? <Alert variant="destructive" appearance="floating" className="absolute inset-x-3.5 top-14 z-3">{t('mapDesign.studio.loadError')}</Alert>
-        : mapError ? <Alert variant={mapError === 'load' ? 'destructive' : 'default'} appearance="floating" className="absolute inset-x-3.5 top-14 z-3">
+      {state.error ? <Alert variant="destructive" appearance="floating" className="z-3 col-start-1 row-start-3 mx-3.5 mt-3 w-auto self-start">{t('mapDesign.studio.loadError')}</Alert>
+        : mapError ? <Alert variant={mapError === 'load' ? 'destructive' : 'default'} appearance="floating" className="z-3 col-start-1 row-start-3 mx-3.5 mt-3 w-auto self-start">
           <span>{mapError === 'load' ? t('mapDesign.studio.loadError') : resourceErrorCopy[locale][mapError]}</span>
           <Button type="button" onClick={() => { setMapError(null); setMapAttempt((attempt) => attempt + 1); }}>
             {t('mapDesign.conversation.retry')}

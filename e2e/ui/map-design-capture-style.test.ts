@@ -29,13 +29,13 @@ test('[P1] screenshots reach chat and direct styles preview, cancel and persist'
 
   await page.getByRole('button', { name: 'Edit style', exact: true }).click();
   await pickStyleFeature(page);
-  const editor = page.locator('[data-slot="card"]').filter({ has: page.getByRole('heading', { name: 'Style map feature', exact: true }) });
+  const editor = page.getByRole('dialog', { name: 'Style map feature', exact: true });
   await editor.getByRole('button', { name: 'Entire layer', exact: true }).click();
   await editor.getByRole('textbox', { name: /^(Color|Text color)$/ }).fill('#123456');
   await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
   expect(await readStyle()).toEqual(original);
 
-  await page.getByRole('button', { name: 'Edit style', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit style', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await pickStyleFeature(page);
   await editor.getByRole('button', { name: 'Entire layer', exact: true }).click();
   await editor.getByRole('textbox', { name: /^(Color|Text color)$/ }).fill('#123456');
@@ -62,11 +62,12 @@ test('[P1] screenshots reach chat and direct styles preview, cancel and persist'
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('tab', { name: 'Map', exact: true }).click();
   await page.getByRole('button', { name: 'Edit style', exact: true }).click();
+  await pickStyleFeature(page);
   const bounds = await editor.boundingBox();
   expect(bounds).not.toBeNull(); expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
   expect(await editor.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('capture-style-mobile.png'), fullPage: true });
-  await page.getByRole('button', { name: /^Comments \(/ }).click();
+  await page.getByRole('button', { name: /^Comment \(/ }).click();
   await expect(editor).toHaveCount(0);
   expect(errors).toEqual([]);
 });

@@ -608,7 +608,7 @@ function threadStartParams(
       ...optional('model_reasoning_effort', reasoning),
       model_reasoning_summary: 'detailed',
     },
-    dynamicTools: [{
+    dynamicTools: tools.length ? [{
       type: 'namespace',
       name: NAMESPACE,
       description: NAMESPACE_DESCRIPTION,
@@ -618,7 +618,7 @@ function threadStartParams(
         description: tool.description,
         inputSchema: tool.inputSchema,
       })),
-    }],
+    }] : [],
   };
 }
 

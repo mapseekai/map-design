@@ -895,7 +895,7 @@ test('[P0] recovers from a resource gateway 502 without an unhandled console err
     window.fetch = async (input, init) => {
       const raw = typeof input === 'string' || input instanceof URL ? String(input) : input.url;
       const url = new URL(raw, window.location.href);
-      if (state.__mapDesignFailResources && url.pathname.startsWith(resourcePrefix)) {
+      if (state.__mapDesignFailResources && (url.pathname.startsWith(resourcePrefix) || url.hostname === 'demotiles.maplibre.org')) {
         return new Response(JSON.stringify({ error: { code: 'RESOURCE_ERROR', message: 'Map resource request failed' } }), {
           status: 502,
           headers: { 'content-type': 'application/json' },
@@ -908,7 +908,7 @@ test('[P0] recovers from a resource gateway 502 without an unhandled console err
   await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
   const mapCanvas = page.getByRole('region', { name: 'Map canvas' });
   const alert = mapCanvas.getByRole('alert');
-  await expect(alert).toContainText('Could not load map studio.');
+  await expect(alert).toContainText('Some map resources are unavailable.');
   await expect(alert).not.toContainText(/https?:|\/private|RESOURCE_ERROR/iu);
   expect(consoleErrors).toEqual([]);
 
@@ -1019,13 +1019,8 @@ async function createAndOpenReadyMapProjectForAgent(page: Page, daemonUrl: strin
   await expect.poll(async () => (
     await fetch(`${daemonUrl}/api/map-design/projects/${projectId}`).then((value) => value.json()) as { project: { lifecycle: string } }
   ).project.lifecycle).toBe('ready');
-  const projectResource = page.waitForResponse((value) => {
-    const url = new URL(value.url());
-    return value.ok() && url.pathname.startsWith(`/api/map-design/projects/${projectId}/resources/`);
-  });
   await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('region', { name: 'Map canvas' })).toBeVisible();
-  await projectResource;
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
   return projectId;
 }

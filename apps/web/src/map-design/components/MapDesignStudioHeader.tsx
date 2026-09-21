@@ -58,8 +58,8 @@ export function MapDesignStudioHeader({
         {value === 'preview' ? <Eye data-icon="inline-start" aria-hidden="true" /> : <Code2 data-icon="inline-start" aria-hidden="true" />}{styleCodeCopy[locale][value]}
       </ToggleGroupItem>)}
     </ToggleGroup> : null}
-    {actions ? <div className="relative z-20 ms-auto flex shrink-0 items-center gap-1">{actions}</div> : null}
-    <div role="group" className={`flex shrink-0 items-center gap-1 ${actions ? '' : 'ms-auto'}`} aria-label={t('mapDesign.studio.modeTabs')}>
+    {actions ? <div className="relative z-20 ms-auto flex min-w-0 max-w-full flex-wrap items-center gap-1">{actions}</div> : null}
+    <div role="group" className={`flex min-w-0 max-w-full flex-wrap items-center gap-1 ${actions ? '' : 'ms-auto'}`} aria-label={t('mapDesign.studio.modeTabs')}>
       {modes.map((value) => <Button type="button" size="sm" variant={inspectorOpen && mode === value ? 'secondary' : 'ghost'} key={value} ref={mode === value ? inspectorTriggerRef : undefined} aria-controls={inspectorId} aria-expanded={mode === value && inspectorOpen} aria-pressed={inspectorOpen && mode === value} aria-label={modeLabel[value]} onClick={() => onModeChange(value)}>
         {value === 'map' ? <Layers aria-hidden="true" /> : value === 'style' ? <History aria-hidden="true" /> : <MessageSquare aria-hidden="true" />}
         {modeLabel[value]}

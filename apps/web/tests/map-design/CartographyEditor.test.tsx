@@ -94,6 +94,7 @@ it('creates and deletes discussions through the same conversation menu as map pr
   vi.mocked(api.createMapDesignConversation).mockResolvedValue({ conversation: created });
   vi.mocked(api.deleteMapDesignConversation).mockResolvedValue(undefined);
   render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
+  await screen.findByRole('button', { name: 'Project conversations' });
   fireEvent.click(await screen.findByRole('button', { name: 'New conversation' }));
   await waitFor(() => expect(api.createMapDesignConversation).toHaveBeenCalledWith(session.id, expect.objectContaining({ idempotencyKey: expect.any(String) }), expect.any(AbortSignal)));
   fireEvent.click(await screen.findByRole('button', { name: 'Project conversations' }));

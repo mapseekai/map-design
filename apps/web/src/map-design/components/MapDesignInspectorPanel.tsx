@@ -14,6 +14,7 @@ export interface MapDesignInspectorLayoutProps {
   placement: MapDesignInspectorPlacement;
   closing?: boolean;
   width: number;
+  topInset?: number;
   onPinChange(pinned: boolean): void;
   onWidthChange(width: number): void;
   onClose(): void;
@@ -32,7 +33,7 @@ function topmostVisibleModal(): HTMLElement | null {
     .at(-1) ?? null;
 }
 
-export function MapDesignInspectorPanel({ id, placement, closing = false, width, tab, commentCount = 0, inspect, revisions, preview, canCommit, committing, currentCommittedRevision, view, onTabChange, onCommit, onViewRevision,
+export function MapDesignInspectorPanel({ id, placement, closing = false, width, topInset = 0, tab, commentCount = 0, inspect, revisions, preview, canCommit, committing, currentCommittedRevision, view, onTabChange, onCommit, onViewRevision,
   onPinChange, onClose, onCommentsHost }: {
   id: string; commentCount?: number; inspect: MapInspectOutput;
   tab: MapDesignInspectorTab; revisions: MapRevisionHistoryOutput; preview: MapRenderPreviewOutput | null; canCommit: boolean; committing: boolean;
@@ -144,7 +145,7 @@ export function MapDesignInspectorPanel({ id, placement, closing = false, width,
     </SheetContent>
   </Sheet>;
   return <aside id={id} ref={panelRef}
-    style={{ top: 'calc(var(--chat-header-height, var(--studio-header-height)) + var(--spacing) * 3)', maxHeight: 'calc(100% - var(--chat-header-height, var(--studio-header-height)) - var(--spacing) * 7 - env(safe-area-inset-bottom, 0px))' }}
+    style={{ top: `calc(var(--chat-header-height, var(--studio-header-height)) + ${topInset}px + var(--spacing) * 3)`, maxHeight: `calc(100% - var(--chat-header-height, var(--studio-header-height)) - ${topInset}px - var(--spacing) * 7 - env(safe-area-inset-bottom, 0px))` }}
     className="absolute end-4 z-8 min-h-0 w-[clamp(286px,var(--map-inspector-width,320px),320px)] overflow-auto rounded-xl border bg-background shadow-xl backdrop-blur-md data-[placement=closed]:invisible data-[placement=closed]:pointer-events-none data-[placement=closed]:opacity-0 group-data-[fullscreen=true]/studio:hidden"
     data-placement={placement} aria-label={t('mapDesign.studio.inspector')}>
     {content}

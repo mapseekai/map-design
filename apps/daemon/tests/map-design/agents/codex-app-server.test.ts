@@ -241,7 +241,7 @@ async function startRun(options: {
         model_reasoning_effort: 'high',
         model_reasoning_summary: 'detailed',
       },
-      dynamicTools: [{
+      dynamicTools: tools.length ? [{
         type: 'namespace',
         name: 'map-design',
         description: 'Transactional map design tools',
@@ -251,7 +251,7 @@ async function startRun(options: {
           description: tool.description,
           inputSchema: tool.inputSchema,
         })),
-      }],
+      }] : [],
     },
   });
   server.send({ id: threadStart.id, result: { thread: { id: 'thread-1' } } });
@@ -1955,4 +1955,10 @@ describe('Codex app-server Map Agent adapter', () => {
       { kind: 'run_finished', status: 'failed' },
     ]);
   });
+});
+
+it('starts tool-free connection tests without an invalid empty tool namespace', async () => {
+  const { server, handle } = await startRun({ tools: [] });
+  server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn('completed') } });
+  await expect(handle.done).resolves.toEqual({ status: 'succeeded' });
 });

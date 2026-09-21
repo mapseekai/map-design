@@ -201,6 +201,10 @@ const nextConfig: NextConfig = {
       }
       : !isProd
       ? {
+        // Local model checks allow 45 seconds and document generation can take
+        // longer. Keep Next's proxy from aborting them at its 30-second default;
+        // the daemon owns operation deadlines and client cancellation.
+        experimental: { proxyTimeout: 300_000 },
         async rewrites() {
           // In dev we run the daemon on a sibling port; proxy the app API
           // proxy so the SPA can hit /api, /artifacts, and /frames without

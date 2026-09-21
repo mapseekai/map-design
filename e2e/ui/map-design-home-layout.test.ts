@@ -136,8 +136,9 @@ test('[P2] Home keyboard order reaches creation after shell navigation', async (
   await expect(page.getByRole('button', { name: 'Create map design' })).toBeEnabled();
   await page.getByRole('combobox', { name: 'Local agent', exact: true }).focus();
   await page.keyboard.press('Tab');
-  await expect.poll(() => page.evaluate(() => document.activeElement?.textContent?.trim() ?? null))
-    .toBe('Create map design');
+  await expect(page.getByRole('combobox', { name: 'Models', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeFocused();
   expectNoRetiredApiRequests(requests);
 });
 

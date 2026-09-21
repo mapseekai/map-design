@@ -1,0 +1,53 @@
+import { expect, test } from '@/playwright/suite';
+import { createAndOpenReadyMapProject, waitForRenderedMap } from '@/playwright/map-design-project';
+
+test('[P1] restores a historical version as a new draft without rewriting committed history', async ({ page, toolsDev }) => {
+  test.setTimeout(120_000);
+  const id = await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
+  const base = `${toolsDev.daemonUrl}/api/map-design/projects/${id}`;
+  const context = () => fetch(`${base}/context`).then(response => response.json());
+  const initial = await context();
+  const draft = await fetch(`${base}/style`).then(response => response.json());
+  draft.name = 'Browser recovery draft';
+  await page.getByRole('button', { name: 'Code', exact: true }).click();
+  await page.getByRole('textbox', { name: 'style.json', exact: true }).fill(JSON.stringify(draft, null, 2));
+  await expect.poll(async () => (await context()).draftRevision).toBeGreaterThan(initial.draftRevision);
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  const before = await context();
+  const history = await fetch(`${base}/revisions`).then(response => response.json());
+  const original = await fetch(`${base}/revisions/0/snapshot`).then(response => response.json());
+  await page.getByRole('button', { name: 'Versions', exact: true }).click();
+  await page.getByRole('button', { name: 'View revision 0', exact: true }).click();
+  await expect(page.getByRole('alert', { name: 'Viewing revision 0 · Read only', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit style', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Restore as new draft', exact: true }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  expect((await context()).draftRevision).toBe(before.draftRevision);
+  await page.getByRole('button', { name: 'Restore as new draft', exact: true }).click();
+  const restored = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/revisions/0/restore'));
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Restore as new draft', exact: true }).click();
+  expect((await restored).ok()).toBe(true);
+  await expect(page).not.toHaveURL(/revision=/);
+  await expect.poll(context).toMatchObject({ committedRevision: initial.committedRevision, draftRevision: before.draftRevision + 1 });
+  expect(await fetch(`${base}/revisions`).then(response => response.json())).toEqual(history);
+  expect(await fetch(`${base}/style`).then(response => response.json())).toEqual(original.style);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('button', { name: 'Edit style', exact: true })).toBeEnabled();
+});
+
+test('[P1] retries failed map resources and renders the recovered map', async ({ page, toolsDev }) => {
+  test.setTimeout(120_000);
+  const id = await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const matches = (url: URL) => url.hostname === 'demotiles.maplibre.org' || url.pathname.startsWith(`/api/map-design/projects/${id}/resources/`);
+  await page.route(matches, route => route.fulfill({ status: 502, body: 'Resource unavailable' }));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const alert = page.getByRole('region', { name: 'Map canvas', exact: true }).getByRole('alert');
+  await expect(alert).toContainText('Some map resources are unavailable.');
+  await page.unroute(matches);
+  await alert.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(alert).toHaveCount(0);
+  await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
+  expect(errors).toEqual([]);
+});
