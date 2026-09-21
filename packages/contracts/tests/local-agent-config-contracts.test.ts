@@ -42,6 +42,7 @@ type _LocalAgentInfoKeys = Expect<
     | 'id'
     | 'label'
     | 'available'
+    | 'enabled'
     | 'executable'
     | 'version'
     | 'models'
@@ -63,7 +64,7 @@ type _AgentCliEnvIntentEntryKeys = Expect<
 type _ByokProviderSelectionKeys = Expect<
   ExactKeys<
     ByokProviderSelection,
-    'protocol' | 'apiKey' | 'baseUrl' | 'apiVersion' | 'apiFormat' | 'model' | 'requiresApiKey'
+    'name' | 'connectionTest' | 'protocol' | 'apiKey' | 'baseUrl' | 'apiVersion' | 'apiFormat' | 'model' | 'requiresApiKey'
   >
 >;
 type _ByokProtocolValues = Expect<
@@ -72,6 +73,9 @@ type _ByokProtocolValues = Expect<
 type _MapDesignAppConfigKeys = Expect<
   ExactKeys<
     MapDesignAppConfig,
+    | 'runtimePreferences'
+    | 'activeApiProfileId'
+    | 'apiExecution'
     | 'agentId'
     | 'agentModels'
     | 'agentCliEnv'
@@ -87,6 +91,9 @@ type _MapDesignAppConfigResponseKeys = Expect<
 type _UpdateMapDesignAppConfigRequestKeys = Expect<
   ExactKeys<
     UpdateMapDesignAppConfigRequest,
+    | 'runtimePreferences'
+    | 'activeApiProfileId'
+    | 'apiExecution'
     | 'agentId'
     | 'agentModels'
     | 'agentCliEnv'
