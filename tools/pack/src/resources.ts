@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { cp } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function resolveToolsPackRoot(startDir: string): string {
@@ -65,6 +65,9 @@ export async function copyBundledResourceTrees({
 }): Promise<void> {
   for (const entry of BUNDLED_RESOURCE_TREES) {
     await cp(join(workspaceRoot, entry.from), join(resourceRoot, entry.to), {
+      // Skill workspaces contain pnpm links to the build machine. Runtime
+      // dependencies are assembled separately; these are not skill resources.
+      filter: (source) => basename(source) !== "node_modules",
       recursive: true,
     });
   }

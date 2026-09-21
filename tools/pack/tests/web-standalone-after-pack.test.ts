@@ -96,6 +96,7 @@ async function runFixture(options: {
   requireRootWebPackageAudit?: boolean;
   useAbsolutePnpmSymlinks?: boolean;
   writeMacCodeBundleFixture?: boolean;
+  externalResourceLink?: boolean;
 }): Promise<{
   appOutDir: string;
   auditReportPath: string;
@@ -120,6 +121,9 @@ async function runFixture(options: {
   const oldConfigEnv = process.env[CONFIG_ENV];
 
   await mkdir(resourcesRoot, { recursive: true });
+  if (options.externalResourceLink) {
+    await symlink(workspaceRoot, join(resourcesRoot, "external-skill-dependency"));
+  }
   if (platformName === "darwin" && options.writeMacCodeBundleFixture) {
     const frameworksRoot = join(appPath, "Contents", "Frameworks");
     const electronFrameworkRoot = join(frameworksRoot, "Electron Framework.framework");
@@ -189,6 +193,14 @@ async function runFixture(options: {
 }
 
 describe("web standalone afterPack hook", () => {
+  darwinSymlinkIt("rejects external resource links before signing", async () => {
+    await expect(runFixture({
+      includeWebNext: true,
+      platformName: "darwin",
+      externalResourceLink: true,
+    })).rejects.toThrow(/app resources has external symlinks: external-skill-dependency/);
+  });
+
   it("deduplicates win32 copied standalone Next while retaining the app-local Next package", async () => {
     const fixture = await runFixture({ includeWebNext: true });
 

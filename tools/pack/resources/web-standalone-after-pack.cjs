@@ -867,6 +867,9 @@ async function auditNoBrokenSymlinks(root, label) {
   if (stats.brokenSymlinks.length > 0) {
     throw new Error(`[tools-pack web-standalone] ${label} has broken symlinks: ${stats.brokenSymlinks.join(", ")}`);
   }
+  if (stats.externalSymlinks.length > 0) {
+    throw new Error(`[tools-pack web-standalone] ${label} has external symlinks: ${stats.externalSymlinks.join(", ")}`);
+  }
   return {
     brokenSymlinks: stats.brokenSymlinks,
     symlinks: stats.symlinks,
@@ -932,6 +935,7 @@ async function runWebStandaloneAfterPack(context) {
     appNodeModulesRoot,
     "root app node_modules",
   );
+  const resourceSymlinkAudit = await auditNoBrokenSymlinks(resourcesRoot, "app resources");
   const macAdhocBundleSign = context.electronPlatformName === "darwin" && config.macAdhocBundleSign
     ? await signMacAdhocBundle(appPath)
     : [];
@@ -947,6 +951,7 @@ async function runWebStandaloneAfterPack(context) {
     macAdhocBundleSign,
     platformName: context.electronPlatformName,
     resourcesRoot,
+    resourceSymlinkAudit,
     rootBuildResiduePrune,
     rootBrokenSymlinkPrune,
     rootNextPruneAudit,

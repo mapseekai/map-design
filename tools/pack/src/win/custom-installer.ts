@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 
 import type { ToolPackConfig } from "../config.js";
 import { winResources } from "../resources.js";
-import { PRODUCT_NAME } from "./constants.js";
+import { PRODUCT_NAME, WIN_EXECUTABLE_BASENAME } from "./constants.js";
 import { pathExists } from "./fs.js";
 import { resolveWinInstallIdentity } from "./identity.js";
 import { readPackagedVersion } from "./manifest.js";
@@ -27,7 +27,7 @@ const NSIS_LANGUAGES = [
 ] as const;
 
 const WIN_NSIS_OVERLAY_RELATIVE_PATHS = [
-  `${PRODUCT_NAME}.exe`,
+  `${WIN_EXECUTABLE_BASENAME}.exe`,
   "resources/app/package.json",
   "resources/map-design-config.json",
 ] as const;

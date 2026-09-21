@@ -16,12 +16,14 @@ function sanitizeNamespace(value: string): string {
 
 export function resolveMacInstallIdentity(config: Pick<ToolPackConfig, "namespace"> & { appVersion?: string }): MacInstallIdentity {
   const namespaceToken = sanitizeNamespace(config.namespace);
-  const publicAppBundleName = `${PRODUCT_NAME}.app`;
+  // electron-builder uses executableName as productFilename for the bundle.
+  const executableName = "map-design";
+  const publicAppBundleName = `${executableName}.app`;
   const systemAppBundleName = `${PRODUCT_NAME}.${namespaceToken}.app`;
 
   return {
     appId: "io.map-design.desktop",
-    executableName: "map-design",
+    executableName,
     installerTitle: PRODUCT_NAME,
     productName: PRODUCT_NAME,
     publicAppBundleName,

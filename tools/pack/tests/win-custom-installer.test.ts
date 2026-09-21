@@ -5,12 +5,23 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { ToolPackConfig } from "../src/config.js";
-import { buildCustomWinNsisInstaller } from "../src/win/custom-installer.js";
+import { buildCustomWinNsisInstaller, resolveWinNsisOverlayRequiredPaths } from "../src/win/custom-installer.js";
+import { resolveWinInstallIdentity } from "../src/win/identity.js";
 import { resolveWinPaths } from "../src/win/paths.js";
 
 const BUILD_HOST_NSIS_LOG_PATH = "D:\\a\\_temp\\tools-pack\\logs\\nsis.log";
 const PORTABLE_NSIS_LOG_DIR = "$TEMP\\MapDesign\\test-namespace";
 const PORTABLE_NSIS_LOG_PATH = `${PORTABLE_NSIS_LOG_DIR}\\nsis.log`;
+
+it("uses the runtime executable name in the NSIS overlay payload", () => {
+  const identity = resolveWinInstallIdentity(createConfig("/unused", true));
+  expect(resolveWinNsisOverlayRequiredPaths()).toEqual([
+    [identity.exeName],
+    ["resources/app/package.json"],
+    ["resources/map-design-config.json"],
+  ]);
+  expect(identity.exeName).toBe("map-design.exe");
+});
 
 function createConfig(root: string, portable: boolean): ToolPackConfig {
   return {

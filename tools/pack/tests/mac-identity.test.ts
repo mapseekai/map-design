@@ -7,7 +7,7 @@ describe("resolveMacInstallIdentity", () => {
       appId: "io.map-design.desktop",
       executableName: "map-design",
       productName: "MapDesign",
-      publicAppBundleName: "MapDesign.app",
+      publicAppBundleName: "map-design.app",
     });
   });
 });
