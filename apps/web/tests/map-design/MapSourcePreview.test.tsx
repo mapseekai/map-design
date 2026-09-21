@@ -35,7 +35,7 @@ describe('MapSourcePreview direct browser loading', () => {
   it('debounces the URL and gives MapLibre the original Style without any daemon preflight or protocols', async () => {
     const h = harness();
     const view = render(h.ui(''));
-    expect(screen.getByText(/load the map automatically/i)).toBeInTheDocument();
+    expect(screen.getByText(/Live preview uses a MapLibre Style URL/i)).toBeInTheDocument();
     view.rerender(h.ui(URL_B));
     await advance(200);
     view.rerender(h.ui(URL_A));

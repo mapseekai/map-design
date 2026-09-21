@@ -298,8 +298,8 @@ export function MapDesignRuntimeSwitcher({
       {open && catalogMessage ? <span>{catalogMessage}</span> : null}
     </div> : null;
 
-  return <DialogRoot open={open} onOpenChange={(next) => { if (next && !disabled && !saving) { setDraft(savedRuntime); setCustomModel(savedRuntime.modelOrigin === 'custom' ? savedRuntime.model ?? '' : ''); setOpen(true); } else if (!next) close(); }}><div className="flex min-w-0 flex-col">
-    <DialogTrigger render={<Button variant="outline" size="sm" className="max-w-full justify-start" />}
+  return <DialogRoot open={open} onOpenChange={(next) => { if (next && !disabled && !saving) { setDraft(savedRuntime); setCustomModel(savedRuntime.modelOrigin === 'custom' ? savedRuntime.model ?? '' : ''); setOpen(true); } else if (!next) close(); }}><div className="flex min-w-0 items-center gap-1">
+    <DialogTrigger render={<Button variant="outline" size="sm" className="min-w-0 max-w-full flex-1 justify-start" />}
       ref={triggerRef}
       type="button"
       aria-label={`${t('mapDesign.runtime.change')}: ${chipParts.join(' · ')}`}
@@ -436,6 +436,8 @@ export function MapDesignRuntimeSwitcher({
         <Button type="button" disabled={disabled || saving || !activeAgent || !isSupported(activeAgent) || (runtime.modelOrigin !== 'custom' && !activeModel?.enabled)} onClick={() => { void confirm(); }}>{runtimeConfirmCopy[locale]}</Button>
       </div>
     </DialogContent>
-    {!open ? runtimeStatus : null}
+    {!open && (saving || notice) ? <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground" role="status" aria-live="polite">
+      {saving ? t('mapDesign.runtime.saving') : notice}
+    </span> : null}
   </div></DialogRoot>;
 }

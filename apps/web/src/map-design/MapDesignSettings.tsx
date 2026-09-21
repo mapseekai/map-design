@@ -8,6 +8,7 @@ import { ApiExecutionFields } from './components/ApiExecutionFields';
 import { apiProfilesCopy } from '../i18n/locales/api-profiles';
 import { modelProvidersTabCopy, runtimeSettingsCopy } from '../i18n/locales/runtime-settings';
 import { settingsCopy } from '../i18n/locales/settings';
+import { settingsNavigationCopy } from '../i18n/locales/settings-navigation';
 import { navigationCopy } from '../i18n/locales/navigation';
 import { Alert, AlertDescription, Button, MapLoading, Tabs, TabsList, TabsTrigger, TabsContent, Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, Textarea, Field, FieldGroup, FieldLabel } from '@mapseekai/components';
 import { useEffect, useRef, useState } from 'react';
@@ -19,7 +20,7 @@ const appearanceKey = 'map-design.appearance';
 interface Draft { apiExecution: Required<MapDesignApiExecutionSettings>; customInstructions: string }
 const makeDraft = (config: MapDesignAppConfig): Draft => ({ apiExecution: resolveMapApiExecutionSettings(config.apiExecution), customInstructions: config.customInstructions ?? '' });
 
-export function MapDesignSettings() {
+export function MapDesignSettings({ section = 'models' }: { section?: 'models' | 'appearance' }) {
   const { t, locale, setLocale } = useI18n();
   const labels = settingsCopy[locale];
   const [agents, setAgents] = useState<readonly LocalAgentInfo[]>([]);
@@ -89,8 +90,10 @@ export function MapDesignSettings() {
     finally { if (saveController.current === controller) { saveController.current = null; if (!controller.signal.aborted) setSaving(false); } }
   }
   if (!draft) return <div>{error ? <p role="alert">{labels[error]}</p> : <MapLoading label={labels.loading} />}</div>;
-  return <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10 [&_h1]:font-serif [&_h1]:text-4xl" aria-labelledby="map-design-settings-title" aria-busy={saving}>
+  return <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-10 md:px-10 [&_h1]:font-serif [&_h1]:text-4xl" aria-labelledby="map-design-settings-title" aria-busy={saving}>
     <header><h1 id="map-design-settings-title">{navigationCopy[locale].settings}</h1></header>
+    <h2 className="text-xl font-medium">{settingsNavigationCopy[locale][section]}</h2>
+    <div hidden={section !== 'models'} className="flex flex-col gap-6 [&[hidden]]:hidden">
     <Tabs value={tab} onValueChange={value => { if (value && !apiProfileDirty) setTab(value); }}>
       <TabsList aria-label={navigationCopy[locale].settings}>
         <TabsTrigger value="local" disabled={apiProfileDirty}>{runtimeSettingsCopy[locale].title}</TabsTrigger>
@@ -106,13 +109,18 @@ export function MapDesignSettings() {
     </Tabs>
     <FieldGroup>
       <Field><FieldLabel htmlFor="mapdesignsettings-8">{labels.customInstructions}</FieldLabel><Textarea id="mapdesignsettings-8" aria-label={labels.customInstructions} disabled={saving} rows={4} value={draft.customInstructions} onChange={(event) => update({ customInstructions: event.target.value })} /></Field>
+    </FieldGroup>
+    </div>
+    <div hidden={section !== 'appearance'} className="[&[hidden]]:hidden">
+    <FieldGroup>
       <Field><FieldLabel htmlFor="mapdesignsettings-9">{labels.language}</FieldLabel><Select items={LOCALES.map((candidate) => ({ value: candidate, label: LOCALE_LABEL[candidate] }))} disabled={saving} value={locale} onValueChange={(nextValue) => nextValue && setLocale(nextValue as typeof locale)}><SelectTrigger id="mapdesignsettings-9" aria-label={labels.language}><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{LOCALES.map((candidate) => <SelectItem key={candidate} data-value={candidate} value={candidate}>{LOCALE_LABEL[candidate]}</SelectItem>)}</SelectGroup></SelectContent></Select></Field>
       <Field><FieldLabel htmlFor="mapdesignsettings-10">{labels.appearance}</FieldLabel><Select items={[{ value: "light", label: labels.light }]} disabled={saving} value={appearance} onValueChange={(nextValue) => { if (nextValue === null) return; setAppearance(nextValue); setLocalPreference(appearanceKey, nextValue); }}><SelectTrigger id="mapdesignsettings-10" aria-label={labels.appearance}><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem data-value="light" value="light">{labels.light}</SelectItem></SelectGroup></SelectContent></Select></Field>
     </FieldGroup>
+    </div>
     {error ? <Alert variant="destructive"><AlertDescription>{labels[error]}</AlertDescription></Alert> : null}
     {saveConfirmed && !apiProfileDirty ? <p role="status" aria-live="polite" className="text-sm">{apiProfilesCopy[locale].settingsSaved}</p> : null}
     {saving ? <p role="status" aria-live="polite" className="text-sm">{t('common.loading')}</p> : null}
     {apiProfileDirty ? <p className="text-sm text-muted-foreground">{apiProfilesCopy[locale].saveFirst}</p> : null}
-    <Button type="button" disabled={saving || apiProfileDirty} onClick={() => { void save(); }}>{labels.save}</Button>
+    {section === 'models' ? <Button type="button" disabled={saving || apiProfileDirty} onClick={() => { void save(); }}>{labels.save}</Button> : null}
   </section>;
 }

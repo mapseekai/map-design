@@ -13,6 +13,20 @@ const source = '---\nversion: "0.4.0"\nname: Quiet Atlas\ncolors:\n  ink: "#2430
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 
 describe('CARTOGRAPHY.md library', () => {
+  it('renames library metadata without changing source, identity or description', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cartography-rename-'));
+    roots.push(root);
+    const db = openMapDesignDatabase(root);
+    try {
+      const service = new CartographyService(createMapDesignLocalStore(db));
+      const saved = service.import({ source, description: 'Keep this' });
+      expect(service.updateMetadata(saved.id, { name: ' New Atlas ' })).toMatchObject({ id: saved.id, name: 'New Atlas', description: 'Keep this' });
+      expect(service.get(saved.id).source).toBe(source);
+      expect(() => service.updateMetadata(saved.id, { name: ' ' })).toThrow();
+      expect(() => service.updateMetadata(saved.id, {})).toThrow();
+      expect(service.updateMetadata(saved.id, { description: 'Updated' }).name).toBe('New Atlas');
+    } finally { db.close(); }
+  });
   it('persists Agent sample bindings separately from the immutable specification', () => {
     const root = mkdtempSync(join(tmpdir(), 'cartography-bindings-'));
     roots.push(root);

@@ -7,7 +7,7 @@ export const CARTOGRAPHY_MAX_BYTES = 64 * 1024;
 export const CartographySourceSchema = z.string().min(1).max(CARTOGRAPHY_MAX_BYTES)
   .refine((source) => mapStringByteLength(source) <= CARTOGRAPHY_MAX_BYTES, 'CARTOGRAPHY.md exceeds 64 KiB');
 export const CartographyDescriptionSchema = z.string().trim().max(2048);
-export const CartographyMetadataInputSchema = z.strictObject({ description: CartographyDescriptionSchema });
+export const CartographyMetadataInputSchema = z.strictObject({ description: CartographyDescriptionSchema.optional(), name: z.string().trim().min(1).max(256).optional() }).refine(value => value.description !== undefined || value.name !== undefined);
 export const CartographyImportInputSchema = z.strictObject({ source: CartographySourceSchema, description: CartographyDescriptionSchema.optional(), sampleBindings: CartographySampleBindingsSchema.optional() });
 // Preview paint is data, never an SVG resource URL or executable markup.
 export const CartographyPreviewColorSchema = z.string().max(96).regex(/^(?:#[0-9a-f]{3,4}|#[0-9a-f]{6}|#[0-9a-f]{8}|(?:rgb|hsl)a?\([\d\s.,%/+\-]+\))$/i);

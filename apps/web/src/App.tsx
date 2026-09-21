@@ -30,7 +30,7 @@ export function App() {
       surface = <CartographyManager />;
       break;
     case 'settings':
-      surface = <MapDesignSettings />;
+      surface = <MapDesignSettings section={route.section ?? 'models'} />;
       break;
     case 'home':
       surface = <><MapDesignHome onOpenProject={(projectId) => navigate({ kind: 'project', projectId })} />{notice ? <p role="status">{notice}</p> : null}</>;

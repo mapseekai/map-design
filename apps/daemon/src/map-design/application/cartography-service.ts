@@ -9,7 +9,7 @@ import type { MapDesignLocalStore } from '../storage/local-store.js';
 import { invalidInput, MapDraftError } from './errors.js';
 import { cartographyPreview } from './cartography-preview.js';
 
-/** Document bodies are immutable; descriptions and timestamps are editable library metadata. */
+/** Document bodies are immutable; names, descriptions and timestamps are editable library metadata. */
 export class CartographyService {
   constructor(private readonly store: Pick<MapDesignLocalStore, 'inTransaction'>) {}
 
@@ -51,8 +51,8 @@ export class CartographyService {
     const parsed = CartographyMetadataInputSchema.safeParse(input);
     if (!parsed.success) throw invalidInput();
     return this.store.inTransaction((db) => {
-      const result = db.prepare('UPDATE cartography_documents SET description = ?, updated_at = ? WHERE id = ?')
-        .run(parsed.data.description, new Date().toISOString(), id);
+      const result = db.prepare('UPDATE cartography_documents SET name = COALESCE(?, name), description = COALESCE(?, description), updated_at = ? WHERE id = ?')
+        .run(parsed.data.name ?? null, parsed.data.description ?? null, new Date().toISOString(), id);
       if (!result.changes) throw new MapDraftError('NOT_FOUND', 'The selected CARTOGRAPHY.md was not found.');
       return previewSummary(db.prepare('SELECT *, updated_at AS updatedAt FROM cartography_documents WHERE id = ?').get(id));
     });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { BookOpen, House, Map, PanelLeftClose, PanelLeftOpen, Search, Settings } from 'lucide-react';
+import { BookOpen, House, Map, PanelLeftClose, PanelLeftOpen, Search, Settings, Languages, ArrowLeft } from 'lucide-react';
 import {
   Button, InputGroup, InputGroupInput, InputGroupAddon, Sidebar, SidebarContent, SidebarGroup, SidebarHeader,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, useSidebar,
@@ -7,6 +7,7 @@ import {
 import { useI18n } from '../i18n';
 import { navigationCopy } from '../i18n/locales/navigation';
 import { sidebarCopy } from '../i18n/locales/sidebar';
+import { settingsNavigationCopy } from '../i18n/locales/settings-navigation';
 import { navigate, useRoute } from '../router';
 import { getMapDesignHost } from '../platform/map-design-host';
 import { MapDesignTitlebarContext, TitlebarControl } from './components/MapDesignTitlebar';
@@ -51,7 +52,14 @@ function ShellNavigation() {
       <SidebarContent>
         <SidebarGroup className="pt-0">
             <SidebarMenu className="gap-1">
-              {navigationItems.filter(({ kind }) => copy[kind].toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).map(({ kind, icon: Icon }) =>
+              {route.kind === 'settings' ? <>
+                <SidebarMenuItem><SidebarMenuButton tooltip={copy.backHome} aria-label={copy.backHome} onClick={() => { navigate({ kind: 'home' }); setOpenMobile(false); setQuery(''); }}><ArrowLeft aria-hidden="true" /><span>{copy.backHome}</span></SidebarMenuButton></SidebarMenuItem>
+                {(['models', 'appearance'] as const).filter(section => settingsNavigationCopy[locale][section].toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).map(section => <SidebarMenuItem key={section}>
+                  <SidebarMenuButton tooltip={settingsNavigationCopy[locale][section]} aria-label={settingsNavigationCopy[locale][section]} isActive={(route.section ?? 'models') === section} aria-current={(route.section ?? 'models') === section ? 'page' : undefined} onClick={() => { navigate({ kind: 'settings', section }); setOpenMobile(false); setQuery(''); }}>
+                    {section === 'models' ? <Settings aria-hidden="true" /> : <Languages aria-hidden="true" />}<span>{settingsNavigationCopy[locale][section]}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>)}
+              </> : navigationItems.filter(({ kind }) => copy[kind].toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).map(({ kind, icon: Icon }) =>
                 <SidebarMenuItem key={kind}>
                   <SidebarMenuButton isActive={route.kind === kind} tooltip={copy[kind]} aria-label={copy[kind]}
                     aria-current={route.kind === kind ? 'page' : undefined}

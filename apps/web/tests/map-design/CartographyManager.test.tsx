@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { CartographyManager } from '../../src/map-design/CartographyManager';
 import { I18nProvider } from '../../src/i18n';
 import * as client from '../../src/map-design/client';
-import { createCartographyEdit } from '../../src/map-design/cartography-edit-client';
-vi.mock('../../src/map-design/cartography-edit-client', () => ({ createCartographyEdit: vi.fn() }));
+import { createCartographyEdit, listActiveCartographyEdits, listCartographyEditHistory, lastCartographyEdit } from '../../src/map-design/cartography-edit-client';
+vi.mock('../../src/map-design/cartography-edit-client', () => ({ createCartographyEdit: vi.fn(), listActiveCartographyEdits: vi.fn(), listCartographyEditHistory: vi.fn(), lastCartographyEdit: vi.fn(), rememberCartographyEdit: vi.fn() }));
 import { ApiClientError } from '../../src/api/request';
 import { selectValue } from '../helpers/select';
 import { useLocalAgents } from '../../src/map-design/hooks/useLocalAgents';
@@ -15,6 +15,8 @@ const document = { id: 'a'.repeat(64), name: 'Quiet Atlas', description: 'Warm p
 const source = '---\nname: Quiet Atlas\nversion: "0.4.0"\n---\n## Overview\nWarm paper.';
 const draft = { source, reportMarkdown: 'Conversion evidence', reportJson: '{"bindings":[]}' };
 beforeEach(() => {
+  vi.mocked(listActiveCartographyEdits).mockResolvedValue({ sessions: [] });
+  vi.mocked(listCartographyEditHistory).mockResolvedValue({ sessions: [] });
   vi.mocked(useLocalAgents).mockReturnValue({ loading: false, error: null, agents: [
     { id: 'api', label: 'API Model', available: true, modelCatalogSource: 'fallback',
       mapDesign: { nativeMapTools: true, publicReasoningSummary: true },
@@ -32,6 +34,49 @@ beforeEach(() => {
   vi.mocked(client.generateCartography).mockResolvedValue({ ...draft, reportMarkdown: '', reportJson: '' });
 });
 afterEach(() => { window.history.replaceState(null, '', '/'); cleanup(); vi.resetAllMocks(); });
+it('renames a specification in the title and library without changing its identity', async () => {
+  vi.mocked(client.listCartographies).mockResolvedValue({ documents: [document] });
+  vi.mocked(client.updateCartography).mockResolvedValue({ ...document, name: 'Renamed Atlas' });
+  render(<I18nProvider><CartographyManager /></I18nProvider>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename: Quiet Atlas' }));
+  const input = screen.getByRole('textbox', { name: 'Specification name' });
+  fireEvent.change(input, { target: { value: ' Renamed Atlas ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+  expect(await screen.findByRole('heading', { name: 'Renamed Atlas' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Preview specification: Renamed Atlas' })).toBeInTheDocument();
+  expect(client.updateCartography).toHaveBeenCalledWith(document.id, { name: 'Renamed Atlas' }, expect.any(AbortSignal));
+});
+it('shows active edits after returning to the library and reopens the running session', async () => {
+  const id = '12345678-1234-4234-8234-123456789abc';
+  vi.mocked(client.listCartographies).mockResolvedValue({ documents: [document] });
+  vi.mocked(listActiveCartographyEdits).mockResolvedValue({ sessions: [{ id, sourceDocumentId: document.id }] });
+  vi.mocked(listCartographyEditHistory).mockResolvedValue({ sessions: [{ id, name: document.name, createdAt: '2026-09-21T00:00:00.000Z', updatedAt: '2026-09-21T00:00:00.000Z', status: 'running', revision: 0 }] });
+  render(<I18nProvider><CartographyManager /></I18nProvider>);
+  const editButton = await screen.findByRole('button', { name: 'Analyzing and improving the specification…' });
+  await waitFor(() => expect(editButton).toBeEnabled());
+  expect(editButton.querySelector('.animate-spin')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Preview specification: Quiet Atlas' }).querySelector('.animate-spin')).toBeNull();
+  fireEvent.click(editButton);
+  await waitFor(() => expect(window.location.pathname).toBe(`/cartographies/edit/${id}`));
+  expect(createCartographyEdit).not.toHaveBeenCalled();
+  vi.mocked(listActiveCartographyEdits).mockResolvedValue({ sessions: [] });
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2100)); });
+  expect(screen.queryByRole('button', { name: 'Analyzing and improving the specification…' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Edit with Agent' }).querySelector('.animate-spin')).toBeNull();
+});
+it('restores the last viewed historical session instead of the latest session', async () => {
+  const oldId = '12345678-1234-4234-8234-123456789abc';
+  const latestId = '22345678-1234-4234-8234-123456789abc';
+  vi.mocked(client.listCartographies).mockResolvedValue({ documents: [document] });
+  vi.mocked(lastCartographyEdit).mockReturnValue(oldId);
+  vi.mocked(listCartographyEditHistory).mockResolvedValue({ sessions: [latestId, oldId].map(id => ({ id, name: document.name, createdAt: '2026-09-21T00:00:00.000Z', updatedAt: '2026-09-21T00:00:00.000Z', status: 'idle', revision: 1 })) });
+  render(<I18nProvider><CartographyManager /></I18nProvider>);
+  const button = await screen.findByRole('button', { name: 'Edit with Agent' });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  await waitFor(() => expect(window.location.pathname).toBe(`/cartographies/edit/${oldId}`));
+  expect(createCartographyEdit).not.toHaveBeenCalled();
+});
 it('confirms deletion, keeps the card on failure, and removes it after success', async () => {
   vi.mocked(client.listCartographies).mockResolvedValue({ documents: [document] });
   render(<I18nProvider><CartographyManager /></I18nProvider>);

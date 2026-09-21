@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 export type MapDesignRoute =
   | { kind: 'home'; cartographyId?: string }
   | { kind: 'project'; projectId: string }
-  | { kind: 'settings' }
+  | { kind: 'settings'; section?: 'models' | 'appearance' }
   | { kind: 'projects' }
   | { kind: 'cartography-editor'; sessionId: string }
   | { kind: 'cartographies' };
@@ -28,6 +28,7 @@ export function parseRoute(pathname: string): MapDesignRoute {
   if (parts.length === 1 && parts[0] === 'projects') return { kind: 'projects' };
   if (parts.length === 0) return { kind: 'home' };
   if (parts.length === 1 && parts[0] === 'settings') return { kind: 'settings' };
+  if (parts.length === 2 && parts[0] === 'settings' && (parts[1] === 'models' || parts[1] === 'appearance')) return { kind: 'settings', section: parts[1] };
   if (parts.length === 2 && parts[0] === 'projects' && parts[1]) {
     const projectId = decodeSegment(parts[1]);
     if (projectId) return { kind: 'project', projectId };
@@ -39,7 +40,7 @@ export function buildPath(route: MapDesignRoute): string {
   switch (route.kind) {
     case 'home': return route.cartographyId ? `/?cartography=${encodeURIComponent(route.cartographyId)}` : '/';
     case 'projects': return '/projects';
-    case 'settings': return '/settings';
+    case 'settings': return route.section ? `/settings/${route.section}` : '/settings';
     case 'cartographies': return '/cartographies';
     case 'cartography-editor': return `/cartographies/edit/${encodeURIComponent(route.sessionId)}`;
     case 'project': return `/projects/${encodeURIComponent(route.projectId)}`;

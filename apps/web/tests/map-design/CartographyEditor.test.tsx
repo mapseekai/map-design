@@ -38,15 +38,24 @@ beforeEach(() => {
   vi.mocked(client.sendCartographyEdit).mockResolvedValue(running);
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
-it('starts the initial analysis once and defaults to the Markdown document', async () => {
+it('prefills the initial prompt and waits for the author to edit and send it', async () => {
   const view = render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
   expect(await screen.findByRole('heading', { name: 'Overview' })).toBeInTheDocument();
-  await waitFor(() => expect(client.sendCartographyEdit).toHaveBeenCalledWith(session.id, { requestId: session.id, expectedRevision: 0, prompt: session.initialPrompt, conversationId: session.id, runtimeRevision: 3 }));
+  const input = await screen.findByRole('textbox');
+  await waitFor(() => expect(input).toBeEnabled());
+  expect(input).toHaveValue(session.initialPrompt);
+  expect(client.sendCartographyEdit).not.toHaveBeenCalled();
+  fireEvent.change(input, { target: { value: '' } });
+  expect(input).toHaveValue('');
+  fireEvent.change(input, { target: { value: 'Only improve the color guidance' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+  await waitFor(() => expect(client.sendCartographyEdit).toHaveBeenCalledWith(session.id, { requestId: expect.any(String), expectedRevision: 0, prompt: 'Only improve the color guidance', conversationId: session.id, runtimeRevision: 3 }));
   expect(screen.queryByText('Example map')).not.toBeInTheDocument();
   view.unmount();
   vi.mocked(client.getCartographyEdit).mockResolvedValue(running);
   render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
   await screen.findByRole('heading', { name: 'Overview' });
+  expect(await screen.findByRole('textbox')).toHaveValue('');
   expect(client.sendCartographyEdit).toHaveBeenCalledTimes(1);
 });
 it('updates the document and conversation after the agent finishes, then saves explicitly', async () => {

@@ -21,6 +21,12 @@ export function createCartographyAuthoringRouter(deps: {
   const jobs = new Map<string, { controller: AbortController; result: CartographyGeneration }>();
   router.use('/api/map-design/cartography-tools', deps.requireLocal, json({ limit: '6mb', strict: true }));
   const editPath = '/api/map-design/cartography-tools/edit-sessions';
+  router.get(editPath, route(async (_request, response) => {
+    response.json(await edits.activeEdits());
+  }));
+  router.get(`${editPath}/history/:documentId`, route(async (request, response) => {
+    response.json(await edits.history(String(request.params.documentId)));
+  }));
   router.post(editPath, requireJson, route(async (request, response) => {
     response.status(201).json(await edits.create(request.body));
   }));

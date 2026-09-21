@@ -16,7 +16,7 @@ async function setup() {
   const saveDocument = vi.fn(() => ({ id: 'a'.repeat(64), name: 'Atlas', description: 'Note', version: '0.4.0' }));
   const deps = { dataRoot: root, projectRoot: '/unused', generate, saveDocument };
   const service = new CartographyEditService(deps);
-  const session = await service.create({ source, description: 'Note', runtime: 'api', initialPrompt: 'Improve the document' });
+  const session = await service.create({ source, sourceDocumentId: 'b'.repeat(64), description: 'Note', runtime: 'api', initialPrompt: 'Improve the document' });
   return { root, deps, service, session, generate, saveDocument };
 }
 it('runs the initial analysis once, persists a valid edit and saves a new library record explicitly', async () => {
@@ -24,13 +24,19 @@ it('runs the initial analysis once, persists a valid edit and saves a new librar
   let finish!: (reply: { source: string; message: string }) => void;
   generate.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
   const request = { requestId: session.id, expectedRevision: 0, prompt: session.initialPrompt, runtime: 'api' };
+  expect(await service.activeEdits()).toEqual({ sessions: [] });
   expect((await service.turn(session.id, request)).status).toBe('running');
+  expect(await service.activeEdits()).toEqual({ sessions: [{ id: session.id, sourceDocumentId: 'b'.repeat(64) }] });
   expect((await service.turn(session.id, request)).status).toBe('running');
   expect(generate).toHaveBeenCalledTimes(1);
   await expect(service.save(session.id, { expectedRevision: 0 })).rejects.toThrow('running');
   finish({ source: updated, message: 'Added scale guidance.' });
   await vi.waitFor(async () => expect((await service.get(session.id)).status).toBe('idle'));
   const edited = await service.get(session.id);
+  expect(await service.activeEdits()).toEqual({ sessions: [] });
+  expect(await new CartographyEditService(deps).history('b'.repeat(64))).toEqual({ sessions: [expect.objectContaining({ id: session.id, revision: 1, status: 'idle' })] });
+  expect(await service.history('c'.repeat(64))).toEqual({ sessions: [] });
+  await expect(service.history('../invalid')).rejects.toThrow();
   expect(edited.source).toBe(updated);
   expect(edited.revision).toBe(1);
   expect(edited.messages.map((message) => message.role)).toEqual(['user', 'assistant']);

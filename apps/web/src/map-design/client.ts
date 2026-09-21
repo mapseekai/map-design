@@ -382,9 +382,9 @@ export async function generateCartography(input: Omit<CartographyGenerateInput, 
   }
 }
 
-export function updateCartography(id: string, description: string, signal?: AbortSignal) {
+export function updateCartography(id: string, change: string | { name: string }, signal?: AbortSignal) {
   return requestContract(`/api/map-design/cartographies/${encodeURIComponent(id)}`, {
-    method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ description }), signal,
+    method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(typeof change === 'string' ? { description: change } : change), signal,
   }, CartographySummarySchema);
 }
 import { MapDesignProjectRenameInputSchema, MapDesignProjectRenameOutputSchema } from '@mapseekai/map-design-contracts';

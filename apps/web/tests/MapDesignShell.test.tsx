@@ -58,7 +58,11 @@ describe('MapDesignShell sidebar', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'settings' } });
     expect(screen.queryByRole('button', { name: 'Home' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(screen.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'Model settings' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('button', { name: 'Design specifications' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Language & appearance' }));
+    expect(window.location.pathname).toBe('/settings/appearance');
+    expect(screen.getByRole('button', { name: 'Language & appearance' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('searchbox')).toHaveValue('');
   });
 

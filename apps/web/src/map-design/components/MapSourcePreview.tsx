@@ -73,7 +73,6 @@ function DirectStylePreview({ sourceUrl, onRetry, ...mapProps }: PreviewProps & 
           {error === 'resource' ? t('mapDesign.preview.resourceError') : t('mapDesign.preview.loadError')}
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>{t('mapDesign.preview.retry')}</Button>
         </AlertDescription></Alert> : null}
-        <p className="pointer-events-none rounded-md bg-card/90 px-3 py-2 text-xs text-muted-foreground">{t('mapDesign.preview.hint')}</p>
       </div>
     </div>
   );

@@ -23,6 +23,8 @@ import { useMapDesignLayoutPreferences } from './hooks/useMapDesignLayoutPrefere
 import { navigate } from '../router';
 import { cancelCartographyEdit, getCartographyEdit, saveCartographyEdit, sendCartographyEdit } from './cartography-edit-client';
 import { CartographyDocumentPreview } from './components/CartographyDocumentPreview';
+import { CartographyEditHistory } from './components/CartographyEditHistory';
+import { rememberCartographyEdit } from './cartography-edit-client';
 
 const SpecificationMap = lazy(() => import('./components/CartographySpecificationMap'));
 
@@ -32,11 +34,12 @@ export function CartographyEditor({ sessionId }: { sessionId: string }) {
   const [error, setError] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
+    setError(false);
     void getCartographyEdit(sessionId, controller.signal).then((value) => { if (!controller.signal.aborted) setSession(value); })
       .catch(() => { if (!controller.signal.aborted) setError(true); });
     return () => controller.abort();
   }, [sessionId]);
-  if (!session) return <div className="p-6">{error ? <Alert variant="destructive"><AlertDescription>{cartographyEditorCopy[locale].failed}</AlertDescription></Alert> : <MapLoading label={t('common.loading')} />}</div>;
+  if (!session || session.id !== sessionId) return <div className="p-6">{error ? <Alert variant="destructive"><AlertDescription>{cartographyEditorCopy[locale].failed}</AlertDescription></Alert> : <MapLoading label={t('common.loading')} />}</div>;
   return <CartographyEditorWorkspace key={sessionId} initial={session} />;
 }
 
@@ -44,8 +47,14 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
   const { locale, t } = useI18n();
   const copy = cartographyEditorCopy[locale];
   const sessionId = initial.id;
+  useEffect(() => {
+    if (initial.sourceDocumentId) rememberCartographyEdit(initial.sourceDocumentId, initial.id);
+  }, [initial.sourceDocumentId, initial.id]);
   const [session, setSession] = useState(initial);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>(() =>
+    !initial.initialAnalysisStarted && !initial.messages.length && initial.status === 'idle'
+      ? { [initial.id]: initial.initialPrompt }
+      : {});
   const [view, setView] = useState<'document' | 'map'>('document');
   const [notice, setNotice] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -64,7 +73,6 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
   const chatPanel = useRef<PanelImperativeHandle | null>(null);
   const [mobileView, setMobileView] = useState<MapDesignMobileView>('map');
   const sending = useRef(false);
-  const automaticStarted = useRef(false);
   const alive = useRef(true);
   const log = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selectedId); selectedRef.current = selectedId;
@@ -80,11 +88,6 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
     update(); media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-  useEffect(() => {
-    if (session.initialAnalysisStarted || session.messages.length || !selectedId || !runtime.runtime || agents.loading || automaticStarted.current) return;
-    automaticStarted.current = true;
-    void submit(session.initialPrompt, session.id);
-  }, [session.initialAnalysisStarted, selectedId, runtime.runtime, agents.loading]);
   useEffect(() => {
     if (!documentRunning) return;
     const controller = new AbortController();
@@ -136,6 +139,7 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
   const retryPrompt = [...messages].reverse().find((message) => message.role === 'user')?.content ?? session.initialPrompt;
   return <section className="group/workspace flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
     <TitlebarProject title={session.name} />
+    {session.sourceDocumentId ? <div className="flex justify-end border-b px-3"><CartographyEditHistory documentId={session.sourceDocumentId} sessionId={session.id} /></div> : null}
     <MapDesignViewSwitcher view={mobileView} chatPanelId="map-design-chat-surface" mapPanelId="map-design-map-surface" mapLabel="CARTOGRAPHY.md" onViewChange={setMobileView} />
     <MapDesignWorkspacePanels
       groupProps={{ className: 'min-h-0 flex-1', disabled: mobile,

@@ -5,6 +5,7 @@ import { MapDigestSchema, MapSafeRevisionSchema } from './project.js';
 
 export const CartographyEditRuntimeSchema = z.enum(['api', 'codex']);
 export const CartographyEditCreateSchema = z.strictObject({
+  sourceDocumentId: MapDigestSchema.optional(),
   source: CartographySourceSchema,
   description: CartographyDescriptionSchema.default(''),
   reportMarkdown: z.string().max(2 * 1024 * 1024).default(''),
@@ -24,6 +25,7 @@ export const CartographyEditReplySchema = z.strictObject({
   sampleBindings: CartographySampleBindingsSchema.optional(),
 });
 export const CartographyEditSessionSchema = z.strictObject({
+  sourceDocumentId: MapDigestSchema.optional(),
   sampleBindings: CartographySampleBindingsSchema.optional(),
   initialAnalysisStarted: z.boolean().optional(),
   activeConversationId: z.string().uuid().optional(),
@@ -39,6 +41,12 @@ export const CartographyEditSessionSchema = z.strictObject({
   preview: CartographyPreviewSchema.optional(),
 });
 export const CartographyEditSaveSchema = z.strictObject({ expectedRevision: MapSafeRevisionSchema });
+export const CartographyActiveEditsSchema = z.object({ sessions: z.array(z.object({
+  id: z.string().uuid(), sourceDocumentId: MapDigestSchema.optional(),
+})) });
+export const CartographyEditHistorySchema = z.object({ sessions: z.array(CartographyEditSessionSchema.pick({
+  id: true, name: true, createdAt: true, updatedAt: true, status: true, revision: true,
+})) });
 export const CartographyEditSaveOutputSchema = z.strictObject({ session: CartographyEditSessionSchema, document: CartographySummarySchema });
 export type CartographyEditCreate = z.input<typeof CartographyEditCreateSchema>;
 export type CartographyEditTurn = z.infer<typeof CartographyEditTurnSchema>;

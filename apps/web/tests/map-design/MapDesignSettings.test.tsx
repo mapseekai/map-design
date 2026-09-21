@@ -26,10 +26,26 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete (window as typeof window & { __mapDesign__?: unknown }).__mapDesign__; });
 
+it('separates model settings from appearance and retains unsaved model edits across sections', async () => {
+  const view = render(<I18nProvider initial="en"><MapDesignSettings /></I18nProvider>);
+  const input = await screen.findByRole('textbox', { name: 'Custom instructions' });
+  fireEvent.change(input, { target: { value: 'Keep this draft' } });
+  expect(screen.queryByRole('combobox', { name: 'Language' })).not.toBeInTheDocument();
+  view.rerender(<I18nProvider initial="en"><MapDesignSettings section="appearance" /></I18nProvider>);
+  expect(screen.getByRole('combobox', { name: 'Language' })).toBeVisible();
+  expect(screen.getByRole('combobox', { name: 'Appearance' })).toBeVisible();
+  expect(screen.queryByRole('tab', { name: 'Local runtimes' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save settings' })).not.toBeInTheDocument();
+  view.rerender(<I18nProvider initial="en"><MapDesignSettings section="models" /></I18nProvider>);
+  expect(screen.getByRole('textbox', { name: 'Custom instructions' })).toHaveValue('Keep this draft');
+});
+
 it('uses local configuration without displaying key or endpoint fields and separates online API in a tab', async () => {
   render(<I18nProvider initial="en"><MapDesignSettings /></I18nProvider>);
   expect(await screen.findByRole('tab', { name: 'Local runtimes' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByRole('region', { name: 'Settings' })).toHaveClass('max-w-7xl', 'px-6', 'md:px-10');
   expect(screen.getByText('Kimi K3')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Test connection: kimi-code/k3' }).parentElement?.parentElement).toHaveStyle({ paddingBlockEnd: '1rem' });
   expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
   expect(screen.queryByText('Missing runtime')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: 'Model providers' }));
@@ -104,7 +120,7 @@ it('saves API budgets from the online tab without sending stored secrets', async
 });
   it('persists the appearance preference without a desktop bridge', async () => {
     localStorage.setItem('map-design.appearance', 'system');
-    render(<I18nProvider initial="en"><MapDesignSettings /></I18nProvider>);
+    render(<I18nProvider initial="en"><MapDesignSettings section="appearance" /></I18nProvider>);
     await screen.findByLabelText('Language');
     selectValue(screen.getByLabelText('Language'), 'zh-CN');
     expect(localStorage.getItem('map-design:locale')).toBe('zh-CN');
@@ -127,7 +143,7 @@ it('saves API budgets from the online tab without sending stored secrets', async
         shell: { openExternal: vi.fn() },
       },
     });
-    render(<MapDesignSettings />);
+    render(<MapDesignSettings section="appearance" />);
     await screen.findByLabelText('Appearance');
     selectValue(screen.getByLabelText('Appearance'), 'light');
 

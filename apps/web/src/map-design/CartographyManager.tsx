@@ -1,12 +1,15 @@
 import { MapLoading, Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@mapseekai/components';
-import { Plus, BookOpen, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, ExternalLink, Trash2, LoaderCircle, Pencil } from 'lucide-react';
+import { projectRenameCopy } from '../i18n/locales/project-rename';
+import { updateCartography } from './client';
 import { ApiClientError } from '../api/request';
 import { CartographyDocumentPreview } from './components/CartographyDocumentPreview';
 import { CartographyVisualPreview } from './components/CartographyVisualPreview';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { cartographyLibraryCopy } from '../i18n/locales/cartography-library';
 import { cartographyEditorCopy } from '../i18n/locales/cartography-editor';
-import { createCartographyEdit } from './cartography-edit-client';
+import { createCartographyEdit, listActiveCartographyEdits, listCartographyEditHistory, lastCartographyEdit, rememberCartographyEdit } from './cartography-edit-client';
+import { CartographyEditHistory } from './components/CartographyEditHistory';
 import { AgentModelFields } from './components/AgentModelFields';
 import { useLocalAgents } from './hooks/useLocalAgents';
 import { apiModelCopy } from '../i18n/locales/api-model';
@@ -42,6 +45,22 @@ export function CartographyManager() {
   const [documentLoading, setDocumentLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [documents, setDocuments] = useState<CartographySummary[]>([]);
+  const [activeEdits, setActiveEdits] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    async function refresh() {
+      try {
+        const { sessions } = await listActiveCartographyEdits(controller.signal);
+        if (!controller.signal.aborted) setActiveEdits(Object.fromEntries(sessions
+          .filter((session) => session.sourceDocumentId)
+          .map((session) => [session.sourceDocumentId!, session.id])));
+      } catch { /* Retain the last known state until the next refresh. */ }
+      if (!controller.signal.aborted) timer = setTimeout(() => { void refresh(); }, 2000);
+    }
+    void refresh();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, []);
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get('cartography') ?? '');
   const [source, setSource] = useState('');
   const [mode, setMode] = useState<Mode>('upload');
@@ -59,6 +78,11 @@ export function CartographyManager() {
   const [deleteTarget, setDeleteTarget] = useState<CartographySummary | null>(null);
   const [deleteError, setDeleteError] = useState<'inUse' | 'failed' | null>(null);
   const [deleted, setDeleted] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<CartographySummary | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const [renameFailed, setRenameFailed] = useState(false);
+  const renameInput = useRef<HTMLInputElement>(null);
+  const renameCopy = projectRenameCopy[locale];
   const request = useRef<AbortController | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -153,10 +177,24 @@ export function CartographyManager() {
     : library.unknownTime;
   function openDocument(id: string) { setCreateOpen(false); setSelected(id); setError(false); setSaved(false); setDeleted(false); }
   function useDocument(id: string) { navigate({ kind: 'home', cartographyId: id }); }
-  function editWithAgent(documentSource: string, documentDescription: string, reportMarkdown = '') {
+  function editWithAgent(documentSource: string, documentDescription: string, reportMarkdown = '', sourceDocumentId?: string) {
     void perform(async (signal) => {
-      const session = await createCartographyEdit({ source: documentSource, description: documentDescription, reportMarkdown, runtime: generationRuntime, initialPrompt: editor.initialPrompt }, signal);
-      if (!signal.aborted) navigate({ kind: 'cartography-editor', sessionId: session.id });
+      if (sourceDocumentId) {
+        const { sessions } = await listCartographyEditHistory(sourceDocumentId, signal);
+        if (signal.aborted) return;
+        const previous = lastCartographyEdit(sourceDocumentId);
+        const existing = sessions.find((session) => session.id === previous) ?? sessions[0];
+        if (existing) {
+          rememberCartographyEdit(sourceDocumentId, existing.id);
+          navigate({ kind: 'cartography-editor', sessionId: existing.id });
+          return;
+        }
+      }
+      const session = await createCartographyEdit({ source: documentSource, description: documentDescription, reportMarkdown, runtime: generationRuntime, initialPrompt: editor.initialPrompt, ...(sourceDocumentId ? { sourceDocumentId } : {}) }, signal);
+      if (!signal.aborted) {
+        if (sourceDocumentId) rememberCartographyEdit(sourceDocumentId, session.id);
+        navigate({ kind: 'cartography-editor', sessionId: session.id });
+      }
     });
   }
   function confirmDelete(document: CartographySummary) { setDeleteTarget(document); setDeleteError(null); setDeleted(false); }
@@ -209,6 +247,25 @@ export function CartographyManager() {
         <Button type="button" variant="destructive" disabled={busy} onClick={removeDocument}>{busy ? t('common.loading') : t('common.delete')}</Button>
       </DialogFooter>
     </Dialog> : null}
+    {renameTarget ? <Dialog ariaLabelledBy="rename-cartography-title" onClose={() => { if (!busy) setRenameTarget(null); }} closeOnEscape={!busy} closeOnBackdrop={!busy} initialFocus={renameInput}>
+      <form className="flex flex-col gap-4" onSubmit={event => {
+        event.preventDefault();
+        if (busy || !renameName.trim() || renameName.trim() === renameTarget.name) return;
+        const target = renameTarget;
+        setRenameFailed(false);
+        void perform(async signal => {
+          try {
+            const updated = await updateCartography(target.id, { name: renameName.trim() }, signal);
+            if (!signal.aborted) { setDocuments(current => current.map(item => item.id === target.id ? updated : item)); setRenameTarget(null); }
+          } catch { if (!signal.aborted) setRenameFailed(true); }
+        });
+      }}>
+        <DialogHeader><DialogTitle id="rename-cartography-title">{renameCopy.rename}</DialogTitle></DialogHeader>
+        <Field><FieldLabel htmlFor="rename-cartography-name">{text.name}</FieldLabel><Input id="rename-cartography-name" ref={renameInput} value={renameName} onChange={event => setRenameName(event.target.value)} maxLength={256} required disabled={busy} /></Field>
+        {renameFailed ? <p role="alert" className="text-sm text-destructive">{renameCopy.error}</p> : null}
+        <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={() => setRenameTarget(null)}>{text.cancel}</Button><Button type="submit" disabled={busy || !renameName.trim() || renameName.trim() === renameTarget.name}>{busy ? t('common.loading') : renameCopy.rename}</Button></DialogFooter>
+      </form>
+    </Dialog> : null}
     {!createOpen ? <div className="flex min-w-0 flex-wrap items-start gap-8">
       <nav aria-label={text.library} className="flex min-w-0 flex-col gap-4" style={{ flex: '1 1 190px', maxWidth: 240 }}>
         <div className="flex flex-wrap gap-1" role="group" aria-label={text.library}>
@@ -223,9 +280,13 @@ export function CartographyManager() {
       </nav>
     {selectedDocument ? <section className="flex min-w-0 flex-col gap-6" style={{ flex: '3 1 300px' }} aria-label={selectedDocument.name}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div><h2 className="mb-2 text-xl font-medium">{selectedDocument.name}</h2><p className="text-sm text-muted-foreground">CARTOGRAPHY.md · {selectedDocument.version} · {library.updated}: {selectedDocument.updatedAt ? <time dateTime={selectedDocument.updatedAt}>{updatedTime(selectedDocument)}</time> : library.unknownTime}</p></div>
+        <div><div className="mb-2 flex items-center gap-2"><h2 className="text-xl font-medium">{selectedDocument.name}</h2><Button type="button" variant="ghost" size="icon-sm" aria-label={`${renameCopy.rename}: ${selectedDocument.name}`} disabled={busy} onClick={() => { setRenameTarget(selectedDocument); setRenameName(selectedDocument.name); setRenameFailed(false); }}><Pencil aria-hidden="true" /></Button></div><p className="text-sm text-muted-foreground">CARTOGRAPHY.md · {selectedDocument.version} · {library.updated}: {selectedDocument.updatedAt ? <time dateTime={selectedDocument.updatedAt}>{updatedTime(selectedDocument)}</time> : library.unknownTime}</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" disabled={busy || documentLoading || !source} onClick={() => editWithAgent(source, selectedDocument.description)}>{editor.edit}</Button>
+          <Button type="button" disabled={busy || documentLoading || !source} onClick={() => editWithAgent(source, selectedDocument.description, '', selectedDocument.id)}>
+            {activeEdits[selectedDocument.id] ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
+            <span aria-live="polite">{activeEdits[selectedDocument.id] ? editor.analyzing : editor.edit}</span>
+          </Button>
+          <CartographyEditHistory documentId={selectedDocument.id} />
           <a href={`/?cartography=${encodeURIComponent(selected)}`} onClick={(event) => { event.preventDefault(); useDocument(selected); }}>{text.use} →</a>
           <Button type="button" variant="outline" disabled={!source || documentLoading} onClick={() => download('CARTOGRAPHY.md', source)}>{text.download}</Button>
           <Button type="button" variant="destructive" disabled={busy} onClick={() => confirmDelete(selectedDocument)} aria-label={`${t('common.delete')}: ${selectedDocument.name}`}><Trash2 aria-hidden="true" />{t('common.delete')}</Button>

@@ -49,14 +49,14 @@ export function LocalRuntimeManager({ agents, config, onAgentsChange, onConfigCh
         const result = await refreshLocalRuntimes(signal); if (!signal.aborted) { onAgentsChange(result); setChecks({}); }
       }); }}>{busy === 'refresh' ? t('common.loading') : copy.refresh}</Button>
     </div>
-    {!installed.length ? <p>{copy.empty}</p> : <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(160px,0.7fr)_minmax(0,1.3fr)]">
-      <div className="grid min-w-0 content-start gap-2">
+    {!installed.length ? <p>{copy.empty}</p> : <div className="flex min-w-0 flex-wrap items-start gap-8">
+      <div className="grid min-w-0 content-start gap-2" style={{ flex: '1 1 190px', maxWidth: 240 }}>
         {installed.map(agent => <Button key={agent.id} type="button" variant={active?.id === agent.id ? 'secondary' : 'outline'} size="content" className="w-full min-w-0 justify-start"
               aria-pressed={active?.id === agent.id} onClick={() => { setSelected(agent.id); setSearch(''); }}>
               <span className="grid min-w-0 text-left"><span className="truncate">{agent.label}</span><span className="truncate text-xs text-muted-foreground">{agent.version}</span></span>
             </Button>)}
       </div>
-      {active ? <Card className="min-w-0">
+      {active ? <Card className="min-w-0" style={{ flex: '3 1 300px' }}>
         <CardHeader className="min-w-0"><div className="flex min-w-0 items-center justify-between gap-3">
           <CardTitle className="min-w-0"><span className="[overflow-wrap:anywhere]">{active.label} · {t('mapDesign.runtime.models')}</span></CardTitle>
           <Switch aria-label={`${copy.enabled}: ${active.label}`} checked={preference(active.id).enabled !== false} disabled={locked}
@@ -75,7 +75,7 @@ export function LocalRuntimeManager({ agents, config, onAgentsChange, onConfigCh
               const enabled = !preference(active.id).disabledModels?.includes(model.id);
               const key = JSON.stringify([active.id, model.id]);
               const check = checks[key];
-              return <div key={model.id} className="grid min-w-0 gap-2 border-b border-border pb-3">
+              return <div key={model.id} className="grid min-w-0 gap-2 border-b border-border" style={{ paddingBlockEnd: '1rem' }}>
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium [overflow-wrap:anywhere]">{model.label}</p>
                     {model.id !== model.label ? <p className="break-all text-xs text-muted-foreground">{model.id}</p> : null}</div>

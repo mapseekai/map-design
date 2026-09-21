@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { lintCartography } from '@mapseekai/cartography.md';
@@ -35,6 +35,23 @@ export class CartographyEditService {
     deps.store?.inTransaction((db) => db.exec('CREATE TABLE IF NOT EXISTS cartography_edit_sessions (id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE, document_json TEXT NOT NULL)'));
   }
   isProjectRunning(id: string) { return this.jobs.has(id) || this.locks.has(id); }
+  async history(documentId: string) {
+    if (!z.string().regex(/^[a-f0-9]{64}$/).safeParse(documentId).success) throw invalidInput();
+    const rows = this.deps.store?.inTransaction((db) => db.prepare('SELECT id FROM cartography_edit_sessions WHERE json_extract(document_json, \'$.sourceDocumentId\') = ?').all(documentId)) as { id: string }[] | undefined;
+    const files = rows ? [] : await readdir(this.directory).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+    const ids = rows?.map((row) => row.id) ?? files.filter((file) => /^[a-f0-9-]{36}\.json$/.test(file)).map((file) => file.slice(0, -5));
+    const sessions = await Promise.all(ids.map((id) => this.get(id)));
+    return { sessions: sessions.filter((session) => session.sourceDocumentId === documentId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))
+      .map(({ id, name, createdAt, updatedAt, status, revision }) => ({ id, name, createdAt, updatedAt, status, revision })) };
+  }
+  async activeEdits() {
+    const sessions = await Promise.all([...this.jobs.keys()].map((id) => this.read(id)));
+    return { sessions: sessions.filter((session) => session.status === 'running').map(({ id, sourceDocumentId }) => ({ id, sourceDocumentId })) };
+  }
   isConversationRunning(id: string) { return [...this.jobs.values()].some((job) => job.conversationId === id); }
   async shutdown() {
     for (const job of this.jobs.values()) job.controller.abort();
@@ -49,6 +66,7 @@ export class CartographyEditService {
     const now = new Date().toISOString();
     const session: StoredSession = {
       id: randomUUID(), name: report.cartography.name, source: parsed.data.source,
+      ...(parsed.data.sourceDocumentId ? { sourceDocumentId: parsed.data.sourceDocumentId } : {}),
       description: parsed.data.description, reportMarkdown: parsed.data.reportMarkdown,
       initialPrompt: parsed.data.initialPrompt, runtime: parsed.data.runtime,
       revision: 0, status: 'idle', error: null, savedId: null, savedRevision: null,
