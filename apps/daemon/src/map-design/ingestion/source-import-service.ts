@@ -38,6 +38,7 @@ import {
   type MapDesignResourceService,
 } from '../resources/resource-service.js';
 import { detectMapSource, type DetectedMapSource } from './source-detector.js';
+import { fetchImportResource, ImportHttpError, importHttpFailure } from './import-fetch.js';
 import { buildStyleSource } from './style-source-builder.js';
 import { buildTileJsonSource } from './tilejson-source-builder.js';
 
@@ -138,7 +139,7 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
         capturedAt,
         designSystem,
         previewTransport,
-        { blobStore: previewBlobStore, resourceScope: 'source-previews' },
+        { blobStore: previewBlobStore, resourceScope: 'source-previews', signal },
       );
       signal.throwIfAborted();
       assertMapDesignStyleResourceUrls(build.style, previewId, { scope: 'source-previews' });
@@ -234,7 +235,7 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
     try { parsed = MapProjectImportInputSchema.parse(input); } catch { throw invalidInput(); }
     const sourceUrl = new URL(parsed.source.url);
     if (sourceUrl.username || sourceUrl.password) throw invalidInput();
-    const binding = selectProjectCartography(db, projectId, this.deps.designSystem);
+    const binding = selectProjectCartography(db, projectId);
     const json = canonicalJson(parsed);
     const digest = requestDigest(parsed);
     db.prepare(`INSERT INTO map_design_projects (
@@ -344,10 +345,10 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
       const capturedAt = this.timestamp();
       const build = await this.build(
         projectId, source, response.finalUrl, response.headers.etag ?? null,
-        capturedAt, designSystem, transport,
+        capturedAt, designSystem, transport, { signal },
       );
       signal.throwIfAborted();
-      assertMapDesignStyleResourceUrls(build.style, projectId);
+      assertMapDesignStyleResourceUrls(build.style, projectId, { allowExternal: true });
       const [styleBlob, semanticBlob, sourceBlob, validationBlob] = await Promise.all([
         this.deps.blobStore.putJson(projectId, 'styles', build.style),
         this.deps.blobStore.putJson(projectId, 'semantics', build.semantics),
@@ -447,6 +448,7 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
     options: {
       blobStore?: Pick<MapDesignBlobStore, 'putBytes'>;
       resourceScope?: MapDesignResourceScope;
+      signal?: AbortSignal;
     } = {},
   ): Promise<InitialMapBuild> {
     const common = {
@@ -456,10 +458,12 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
       etag,
       capturedAt,
       designSystem,
+      ...(options.signal ? { signal: options.signal } : {}),
       ...(options.resourceScope ? { resourceScope: options.resourceScope } : {}),
     };
     const blobStore = options.blobStore ?? this.deps.blobStore;
-    if (source.kind === 'style') return buildStyleSource({ ...common, blobStore, transport });
+    if (source.kind === 'style') return buildStyleSource({ ...common, blobStore, transport,
+      resourceMode: options.resourceScope === 'source-previews' ? 'gateway' : 'direct' });
     if (source.kind === 'tilejson') return buildTileJsonSource(common);
     if (source.kind === 'geojson') return buildGeoJsonSource({ ...common, blobStore });
     return buildPmtilesSource({ ...common, transport });
@@ -504,15 +508,18 @@ export class MapSourceImportServiceImpl implements MapSourceImportService, MapIm
 
   private commitFailed(projectId: string, error: unknown): void {
     const now = this.timestamp();
-    const message = redactedFailure(error);
+    const failure = importHttpFailure(error) ?? { code: 'IMPORT_FAILED', message: redactedFailure(error) };
+    console.warn('map-design.import.failed', { projectId, code: failure.code,
+      ...(error instanceof ImportHttpError ? { phase: error.phase, httpStatus: error.status } : {}),
+    });
     const transaction = this.deps.db.transaction(() => {
       const changed = this.deps.db.prepare(`UPDATE map_design_import_jobs SET
-        status = 'failed', finished_at = ?, failure_code = 'IMPORT_FAILED', failure_message = ?
-        WHERE project_id = ? AND status = 'running'`).run(now, message, projectId);
+        status = 'failed', finished_at = ?, failure_code = ?, failure_message = ?
+        WHERE project_id = ? AND status = 'running'`).run(now, failure.code, failure.message, projectId);
       if (changed.changes !== 1) return;
       this.deps.db.prepare(`UPDATE map_design_projects SET lifecycle_state = 'failed',
-        failure_code = 'IMPORT_FAILED', failure_message = ?, updated_at = ?
-        WHERE project_id = ? AND lifecycle_state = 'importing'`).run(message, now, projectId);
+        failure_code = ?, failure_message = ?, updated_at = ?
+        WHERE project_id = ? AND lifecycle_state = 'importing'`).run(failure.code, failure.message, now, projectId);
       this.appendLifecycle(this.deps.db, projectId, this.readProject(this.deps.db, projectId), now);
     });
     transaction.immediate();
@@ -593,7 +600,9 @@ async function fetchInitialSource(
   url: URL,
   signal: AbortSignal,
 ): Promise<{ response: Awaited<ReturnType<PinnedTransport['fetch']>>; source: DetectedMapSource }> {
-  const probe = await transport.fetch({
+  // JSON map documents need one ordinary GET, not a PMTiles range probe.
+  if (/\.(?:json|geojson)$/iu.test(url.pathname)) return fetchSourceDocument(transport, url, signal);
+  const probe = await fetchImportResource(transport, {
     url, purpose: 'pmtiles-range', range: { start: 0, endInclusive: 7 }, signal,
   });
   if (probe.status === 200) {
@@ -602,7 +611,7 @@ async function fetchInitialSource(
     return { response: probe, source };
   }
   if (probe.status !== 206) {
-    throw new TypeError('invalid source range probe');
+    throw new ImportHttpError(probe.status, 'source');
   }
   if (probe.body.byteLength === 8
     && parseInitialProbeContentRange(probe.headers['content-range']) !== null) {
@@ -611,11 +620,17 @@ async function fetchInitialSource(
       if (source.kind === 'pmtiles') return { response: probe, source };
     } catch { /* a JSON document is fetched in full below */ }
   }
-  const response = await transport.fetch({
+  return fetchSourceDocument(transport, url, signal);
+}
+
+async function fetchSourceDocument(
+  transport: PinnedTransport, url: URL, signal: AbortSignal,
+): Promise<{ response: Awaited<ReturnType<PinnedTransport['fetch']>>; source: DetectedMapSource }> {
+  const response = await fetchImportResource(transport, {
     url, purpose: 'document',
     accept: ['application/json', 'application/geo+json', 'application/octet-stream'], signal,
   });
-  if (response.status !== 200) throw new TypeError('source document did not return 200');
+  if (response.status !== 200) throw new ImportHttpError(response.status, 'source');
   return { response, source: detectMapSource(response) };
 }
 

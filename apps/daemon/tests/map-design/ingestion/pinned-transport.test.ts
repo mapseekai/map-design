@@ -259,6 +259,7 @@ describe('pinned MapDesign transport', () => {
     });
     expect(dispatcher.calls[0]?.request.headers).toEqual({
       accept: 'application/json, application/geo+json',
+      'accept-encoding': 'identity',
       range: 'bytes=4-9',
       'if-none-match': '"v1"',
       'if-modified-since': 'Wed, 21 Oct 2015 07:28:00 GMT',

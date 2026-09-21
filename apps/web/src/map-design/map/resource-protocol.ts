@@ -3,6 +3,14 @@ import type { AddProtocolAction, GetResourceResponse, RequestParameters } from '
 export const MAP_DESIGN_RESOURCE_PROTOCOL = 'map-design-resource';
 const RESOURCE_PATH = /^\/api\/map-design\/(?:projects|source-previews)\/[^/]+\/resources\/[^/]+(?:\/.*)?$/;
 
+/** MapLibre uses error.status to handle missing tiles and parent-tile fallback. */
+export class MapResourceRequestError extends Error {
+  constructor(readonly status: number, readonly retryAfter?: string) {
+    super(`MapDesign resource request failed (${status}).`);
+    this.name = 'MapResourceRequestError';
+  }
+}
+
 export interface MapDesignResourceProtocolOptions {
   origin?: string;
   fetch?: typeof globalThis.fetch;
@@ -29,7 +37,7 @@ export function createMapDesignResourceProtocol(options: MapDesignResourceProtoc
       headers: options.headers,
       signal: abortController.signal,
     });
-    if (!response.ok) throw new TypeError(`MapDesign resource request failed (${response.status}).`);
+    if (!response.ok) throw new MapResourceRequestError(response.status, response.headers.get('retry-after') ?? undefined);
     const data = request.type === 'json'
       ? await response.json()
       : request.type === 'arrayBuffer' || request.type === 'image'

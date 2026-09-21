@@ -39,16 +39,16 @@ export function MapSourcePreflight({
     <section
       className="relative isolate min-h-96 w-full overflow-hidden rounded-xl border border-border bg-muted md:min-h-[480px]"
       role="region"
-      aria-label={t('mapDesign.preflight.title')}
+      aria-label={t('mapDesign.preview.title')}
       aria-busy={loading || Boolean(preview && !ready && !error)}
     >
       {loading ? <div className="absolute left-5 top-5 rounded-md bg-card/90 px-3 py-2">
-        <MapLoading variant="inline" label={t('mapDesign.preflight.checking')} />
+        <MapLoading variant="inline" label={t('common.loading')} />
       </div> : null}
 
       {!preview && error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
       {!preview && !loading && !error ? (
-        <Empty className="absolute inset-0"><EmptyHeader><EmptyDescription>{t('mapDesign.preflight.idle')}</EmptyDescription></EmptyHeader></Empty>
+        <Empty className="absolute inset-0"><EmptyHeader><EmptyDescription>{t('mapDesign.preview.idle')}</EmptyDescription></EmptyHeader></Empty>
       ) : null}
       {preview ? (
         <div

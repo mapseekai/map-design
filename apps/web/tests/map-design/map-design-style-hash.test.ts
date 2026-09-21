@@ -83,7 +83,7 @@ describe('hashMapDesignStyle', () => {
   });
 
   it.each([
-    ['cross-origin', `https://attacker.example.test${relativeStyle.glyphs}`],
+    ['private-origin', `http://127.0.0.1${relativeStyle.glyphs}`],
     ['cross-project', `${ORIGIN}${resource(OTHER_PROJECT_ID, 'glyphs', 'fonts/{fontstack}/{range}.pbf')}`],
     ['malformed', `${ORIGIN}${resource(PROJECT_ID, 'glyphs', '%2e%2e/secret')}`],
   ])('rejects %s resource fields instead of normalizing them', async (_name, glyphs) => {

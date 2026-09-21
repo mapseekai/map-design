@@ -83,7 +83,7 @@ describe('MapSourceImportServiceImpl preflight', () => {
     const sourceImportService = service({ transport });
 
     const result = await sourceImportService.preflight(
-      { source: { url: STYLE_URL.href } },
+      { source: { url: 'https://maps.example.test/source' } },
       new AbortController().signal,
     );
 
@@ -146,7 +146,9 @@ describe('MapSourceImportServiceImpl preflight', () => {
 
     expect(requests).toHaveLength(2);
     expect(requests[1]).toMatchObject({ purpose: 'document' });
-    expect(requests[1]!.signal).toBe(controller.signal);
+    expect(requests[1]!.signal).toBeInstanceOf(AbortSignal);
+    controller.abort();
+    expect(requests.every((request) => request.signal?.aborted)).toBe(true);
   });
 
   it('serves captured GeoJSON bytes from the in-memory preview', async () => {

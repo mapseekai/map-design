@@ -211,7 +211,7 @@ export function MapDesignStyleEditor({
       </PopoverHeader>
       <div className="flex max-h-[calc(var(--available-height)-5rem)] min-h-0 flex-col gap-4 overflow-hidden p-1">
         {emptyHit ? <Alert><AlertDescription>{copy.emptyHit}</AlertDescription></Alert> : null}
-        {candidates.length ? <section className="flex min-h-0 flex-col gap-2 overflow-y-auto" aria-label={copy.chooseTarget}>
+        {candidates.length ? <section className="flex min-h-0 flex-col gap-2 overflow-y-auto p-1" aria-label={copy.chooseTarget}>
           <h3 className="text-sm font-medium">{copy.chooseTarget}</h3>
           {candidates.map((item) => <Button key={item.key} type="button" variant="outline" size="content" className="justify-between text-start"
             aria-label={`${item.label} ${item.keyAttributes.map(([key, value]) => `${key} ${String(value)}`).join(' ')}`}
@@ -220,7 +220,7 @@ export function MapDesignStyleEditor({
         </section> : null}
         {target && layer ? <form className="flex min-h-0 flex-col" onSubmit={(event) => { event.preventDefault(); void save(); }}>
 
-          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pb-4">
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-1 pt-1 pb-4">
           <Badge variant="outline" className="w-fit max-w-full"><span className="truncate">{copy.selectedTarget}: {candidate?.label ?? target.layerId}{target.featureId !== undefined ? ` · #${String(target.featureId)}` : ''}</span></Badge>
           {!featureAvailable ? <p className="text-xs text-muted-foreground">{copy.featureUnavailable}</p> : null}
           {saveError || previewError ? <Alert variant="destructive"><AlertDescription>{copy.saveError}</AlertDescription></Alert> : null}

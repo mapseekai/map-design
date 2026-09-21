@@ -65,6 +65,19 @@ async function request(app: Express, method: 'GET' | 'PUT', body?: unknown, path
 }
 
 describe('MapDesign system config route', () => {
+  it('distinguishes keyless configurations from saved redacted credentials', async () => {
+    const { app, config } = setup();
+    config.update({ byokProviders: {
+      local: { protocol: 'openai', apiKey: '', requiresApiKey: false, model: 'local-model' },
+      remote: { protocol: 'openai', apiKey: 'only-on-server', model: 'remote-model' },
+    } });
+    const response = await request(app, 'GET');
+    const result = await response.json() as { config: { byokProviders: Record<string, { apiKey: string }> } };
+    expect(result.config.byokProviders.local!.apiKey).toBe('');
+    expect(result.config.byokProviders.remote!.apiKey).toBe('[REDACTED]');
+    expect(JSON.stringify(result)).not.toContain('only-on-server');
+  });
+
   it('returns the authoritative safe runtime catalog snapshot without projecting runtime definitions', async () => {
     const { app } = setup({
       list: () => { throw new Error('runtime definitions must not be projected by the route'); },

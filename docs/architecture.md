@@ -43,3 +43,29 @@ The runtime uses the standard CARTOGRAPHY.md format 0.4.0 with the official
 quality policy separate from document format validation. See
 [Cartography runtime integration](cartography-runtime.md) for selection,
 content digests, compatibility, and migration details.
+
+## Resource transport
+
+New Style imports persist a validated, editable document with public resource
+URLs resolved against the final Style URL. Nested TileJSON, glyphs, sprites and
+tiles are not eagerly captured. The Home preview and Studio use the shared
+`resource-request.ts` transform. Direct requests carry no daemon headers.
+Private/local schemes and same-origin application APIs cannot be used as public
+map resources. Browser CORS and Electron isolation remain enabled.
+
+Older projects and non-Style import paths can retain project-scoped gateways.
+Those gateways use a bounded DNS-pinned connection pool, per-host scheduling,
+in-flight request sharing, explicit-freshness LRU caching, content-correct ETags,
+bounded HTTP decoding, and cancellation-aware finite retries. See
+[resource and runtime reliability](resource-runtime-reliability.md) for bounds,
+compatibility and regression coverage.
+
+## Run history
+
+`map_design_run_history` stores bounded final messages, request-id/digest receipts
+and safe runtime/model provenance. Initial messages and the run receipt are
+created in one transaction. Completed runs are evicted from the active registry;
+GET, terminal SSE replay and revision provenance fall back to persisted records.
+Startup recovery marks interrupted runs failed for explicit user review and does
+not replay model calls automatically. The history table references its project
+with cascading deletion.

@@ -107,6 +107,13 @@ export const MapDesignProjectSummarySchema = z.strictObject({
 });
 export type MapDesignProjectSummary = z.infer<typeof MapDesignProjectSummarySchema>;
 
+export const MapDesignProjectRenameInputSchema = z.strictObject({
+  title: z.string().trim().min(1).max(256),
+});
+export const MapDesignProjectRenameOutputSchema = MapDesignProjectSummarySchema.pick({
+  projectId: true, title: true, updatedAt: true,
+});
+
 export const MapDesignProjectListOutputSchema = z.strictObject({
   projects: z.array(MapDesignProjectSummarySchema).max(100),
 });

@@ -1,176 +1,163 @@
-import { openSelect, selectValue } from '../helpers/select';
 // @vitest-environment jsdom
-
+import { openSelect, selectValue } from '../helpers/select';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalAgentInfo } from '@mapseekai/contracts';
 
 vi.mock('../../src/map-design/client', async (original) => ({
   ...await original<typeof import('../../src/map-design/client')>(),
   listCartographies: vi.fn(async () => ({ documents: [] })),
 }));
-
-const previewHarness = vi.hoisted(() => ({
-  ready: new Map<string, () => void>(),
-  error: new Map<string, () => void>(),
-}));
-
-vi.mock('../../src/map-design/components/MapSourcePreflight', () => ({
-  MapSourcePreflight: ({ result, error, onPreviewReady, onPreviewError }: {
-    result: { preview: { previewId: string } } | null;
-    error?: string | null;
-    onPreviewReady?: (previewId: string) => void;
-    onPreviewError?: (previewId: string) => void;
-  }) => {
-    const previewId = result?.preview.previewId;
-    if (previewId) {
-      previewHarness.ready.set(previewId, () => onPreviewReady?.(previewId));
-      previewHarness.error.set(previewId, () => onPreviewError?.(previewId));
-    }
-    return <section role="region" aria-label="Preview">
-      {previewId ? <button type="button" onClick={() => onPreviewReady?.(previewId)}>Mark preview ready</button> : null}
-      {error ? <p role="alert">{error}</p> : null}
-    </section>;
+const previewHarness = vi.hoisted(() => ({ error: new Map<string, () => void>() }));
+vi.mock('../../src/map-design/map/MapLibreCanvas', () => ({
+  MapLibreCanvas: ({ style, onMapError }: { style: string; onMapError?: () => void }) => {
+    previewHarness.error.set(style, () => onMapError?.());
+    return <div data-testid="direct-preview" data-source={style} />;
   },
 }));
-
 import { I18nProvider } from '../../src/i18n';
 import { MapSourceForm } from '../../src/map-design/components/MapSourceForm';
 import { listCartographies } from '../../src/map-design/client';
 
-function json(body: unknown) {
-  return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
-}
-
-function preflightPayload(previewId = 'preview-1') {
-  return {
-    kind: 'style', requestedHost: 'maps.example.com', finalHost: 'maps.example.com', redirectCount: 0,
-    reachability: 'reachable', security: { scheme: 'https', allResolvedAddressesPublic: true, credentialsPresent: false },
-    mediaType: 'application/json', byteLength: 1,
-    preview: {
-      previewId,
-      styleUrl: `/api/map-design/source-previews/${previewId}/style`,
-      expiresAt: '2026-09-04T03:10:00.000Z',
-    },
-  };
-}
-
-function preflightFetch(previewId = 'preview-1') {
-  return vi.fn((_input: RequestInfo | URL, init?: RequestInit) => Promise.resolve(
-    init?.method === 'DELETE'
-      ? new Response(null, { status: 204 })
-      : json(preflightPayload(previewId)),
-  )) as typeof fetch;
-}
-
+const SOURCE_URL = 'https://demotiles.maplibre.org/styles/osm-bright-gl-terrain/style.json';
 const defaultAgents: LocalAgentInfo[] = [
   { id: 'offline', label: 'Offline agent', available: false, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'agent-unavailable' } },
   { id: 'codex', label: 'Codex', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: true, publicReasoningSummary: true } },
 ];
-
-function renderForm(
-  agents: LocalAgentInfo[] = defaultAgents,
-  onCreate = vi.fn().mockResolvedValue({ project: { projectId: 'map-1' }, conversationId: 'conversation-1' }),
-) {
+function json(body: unknown) { return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } }); }
+function renderForm(agents: LocalAgentInfo[] = defaultAgents,
+  onCreate = vi.fn().mockResolvedValue({ project: { projectId: 'map-1' }, conversationId: 'conversation-1' })) {
   render(<I18nProvider><MapSourceForm agents={agents} onCreate={onCreate} /></I18nProvider>);
   return onCreate;
 }
-
+function fillForm() {
+  fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: ' Atlas ' } });
+  fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: SOURCE_URL } });
+  fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: ' Calm basemap ' } });
+  selectValue(screen.getByLabelText(/local agent/i), 'codex');
+}
+const createButton = () => screen.getByRole('button', { name: /create map/i });
+const submit = () => fireEvent.submit(createButton().closest('form')!);
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Unexpected source preflight request')));
+  vi.mocked(listCartographies).mockResolvedValue({ documents: [] });
+});
 afterEach(() => {
   cleanup();
   delete (window as typeof window & { __mapDesign__?: unknown }).__mapDesign__;
-  previewHarness.ready.clear();
   previewHarness.error.clear();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
-describe('MapSourceForm', () => {
-  it('presents invalid URLs as readable guidance instead of schema diagnostics', async () => {
-    globalThis.fetch = preflightFetch();
-    renderForm();
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'not-a-map-url' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm map' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Verify that the map URL is valid and publicly accessible.');
-    expect(screen.getByRole('alert')).not.toHaveTextContent('invalid_format');
-    expect(screen.getByRole('button', { name: /create map/i })).toBeDisabled();
+describe('MapSourceForm independent preview and creation', () => {
+  it('previews a URL without a name, brief or agent and never requests preflight', async () => {
+    renderForm([]);
+    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: SOURCE_URL } });
+    expect(await screen.findByTestId('direct-preview')).toHaveAttribute('data-source', SOURCE_URL);
+    expect(screen.queryByRole('button', { name: /check source/i })).toBeNull();
+    expect(createButton()).toBeDisabled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it('passes the chosen saved cartography in the atomic create request', async () => {
+  it('creates before preview readiness with one strict atomic body', async () => {
+    const onCreate = renderForm();
+    fillForm();
+    expect(createButton()).toBeEnabled();
+    fireEvent.click(createButton());
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    const input = onCreate.mock.calls[0]![0];
+    expect(Object.keys(input).sort()).toEqual(['designRequirement', 'idempotencyKey', 'projectId', 'runtime', 'source', 'title']);
+    expect(input).toMatchObject({ title: 'Atlas', source: { url: SOURCE_URL }, designRequirement: 'Calm basemap', runtime: { agentId: 'codex' } });
+    expect(input.idempotencyKey).toBe(`map-create:${input.projectId}`);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('still creates after a preview error', async () => {
+    const onCreate = renderForm();
+    fillForm();
+    await screen.findByTestId('direct-preview');
+    act(() => previewHarness.error.get(SOURCE_URL)!());
+    expect(screen.getByRole('alert')).toHaveTextContent('You can still create the project.');
+    expect(createButton()).toBeEnabled();
+    fireEvent.click(createButton());
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+  });
+
+  it('submits the current URL without waiting for a replacement preview', async () => {
+    const onCreate = renderForm();
+    fillForm();
+    await screen.findByTestId('direct-preview');
+    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/other.json' } });
+    expect(createButton()).toBeEnabled();
+    fireEvent.click(createButton());
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ source: { url: 'https://maps.example.com/other.json' } }), expect.any(AbortSignal)));
+  });
+
+  it('validates required fields, URL syntax and agent capabilities on submit', async () => {
+    const onCreate = renderForm();
+    submit();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/available local agent/i);
+    fillForm();
+    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'not-a-map-url' } });
+    expect(createButton()).toBeDisabled();
+    submit();
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid HTTP(S) map URL');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('invalid_format');
+    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: SOURCE_URL } });
+    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: '  ' } });
+    submit();
+    expect(screen.getByRole('alert')).toHaveTextContent('Complete the project name');
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it('keeps unsupported agents visible but unavailable for map creation', async () => {
+    const onCreate = renderForm([...defaultAgents, { id: 'text-only', label: 'Text Agent', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'native-tools-unavailable' } }]);
+    fillForm();
+    openSelect(screen.getByLabelText(/local agent/i));
+    expect(screen.getByRole('option', { name: 'Offline agent' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('option', { name: 'Text Agent — Map editing unavailable' })).not.toHaveAttribute('aria-disabled', 'true');
+    selectValue(screen.getByLabelText(/local agent/i), 'text-only');
+    expect(createButton()).toBeDisabled();
+    submit();
+    expect(screen.getByRole('alert')).toHaveTextContent('Map editing unavailable');
+    expect(onCreate).not.toHaveBeenCalled();
+    selectValue(screen.getByLabelText(/local agent/i), 'codex');
+    expect(createButton()).toBeEnabled();
+  });
+
+  it('passes the selected cartography and trusted desktop directory into creation', async () => {
     const document = { id: 'a'.repeat(64), name: 'Quiet Atlas', description: '', version: '0.4.0' };
     vi.mocked(listCartographies).mockResolvedValueOnce({ documents: [document] });
-    globalThis.fetch = vi.fn((url, init) => Promise.resolve(json(String(url).includes('/cartographies/')
-      ? { ...document, source: '---\nversion: "0.4.0"\nname: Quiet Atlas\n---' }
-      : preflightPayload()))) as typeof fetch;
+    vi.stubGlobal('fetch', vi.fn(async () => json({ ...document, source: '---\nversion: "0.4.0"\nname: Quiet Atlas\n---' })));
+    Object.assign(window, { __mapDesign__: {
+      version: 1, client: { type: 'desktop', platform: 'linux' }, appearance: { setTheme: vi.fn() },
+      project: { pickWorkingDirectory: vi.fn().mockResolvedValue({ ok: true, path: '/tmp/atlas', token: 'trusted-directory-grant' }) },
+      shell: { openExternal: vi.fn() },
+    } });
     const onCreate = renderForm();
     openSelect(screen.getByLabelText('Map design system'));
     await screen.findByRole('option', { name: 'Quiet Atlas' });
     selectValue(screen.getByLabelText('Map design system'), document.id);
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/style.json' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm basemap' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /mark preview ready/i }));
-    fireEvent.click(screen.getByRole('button', { name: /create/i }));
-    await waitFor(() => expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ cartographyId: document.id }), expect.any(AbortSignal)));
-  });
-
-  it('requires a loaded map preview and posts one strict atomic create body', async () => {
-    globalThis.fetch = preflightFetch();
-    const onCreate = renderForm();
-
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/style.json' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm blue basemap' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/map-design/source-preflight', expect.any(Object)));
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /mark preview ready/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /create/i })).toBeEnabled());
-    fireEvent.click(screen.getByRole('button', { name: /create/i }));
-    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
-    const input = onCreate.mock.calls[0]?.[0];
-    expect(input).toBeDefined();
-    expect(Object.keys(input!).sort()).toEqual(['designRequirement', 'idempotencyKey', 'projectId', 'runtime', 'source', 'title']);
-    expect(input).toMatchObject({ title: 'Atlas', source: { url: 'https://maps.example.com/style.json' }, designRequirement: 'Calm blue basemap', runtime: { agentId: 'codex' } });
-    expect(input!.idempotencyKey).toBe(`map-create:${input!.projectId}`);
-  });
-
-  it('maps a trusted desktop directory grant into the atomic create request', async () => {
-    globalThis.fetch = preflightFetch();
-    const bridge = {
-      version: 1,
-      client: { type: 'desktop', platform: 'linux' },
-      appearance: { setTheme: vi.fn() },
-      project: { pickWorkingDirectory: vi.fn().mockResolvedValue({ ok: true, path: '/tmp/atlas', token: 'trusted-token' }) },
-      shell: { openExternal: vi.fn() },
-    };
-    Object.assign(window, { __mapDesign__: bridge });
-    const onCreate = renderForm();
-
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/style.json' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm blue basemap' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
+    fillForm();
     fireEvent.click(screen.getByRole('button', { name: /choose working directory/i }));
-    await waitFor(() => expect(bridge.project.pickWorkingDirectory).toHaveBeenCalledOnce());
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    await screen.findByRole('button', { name: /mark preview ready/i });
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /mark preview ready/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /create/i })).toBeEnabled());
-    fireEvent.click(screen.getByRole('button', { name: /create/i }));
+    await screen.findByText('Working directory selected.');
+    fireEvent.click(createButton());
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ cartographyId: document.id, workingDirectory: { path: '/tmp/atlas', token: 'trusted-directory-grant' } }), expect.any(AbortSignal)));
+  });
 
-    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
-    expect(onCreate.mock.calls[0]?.[0]).toMatchObject({
-      workingDirectory: { path: '/tmp/atlas', token: 'trusted-token' },
-    });
+  it('blocks duplicate submissions and aborts a pending create on unmount', async () => {
+    const onCreate = vi.fn(() => new Promise(() => undefined));
+    renderForm(defaultAgents, onCreate);
+    fillForm();
+    const button = createButton();
+    const form = button.closest('form')!;
+    fireEvent.submit(form); fireEvent.submit(form);
+    expect(onCreate).toHaveBeenCalledOnce();
+    expect(button).toBeDisabled();
+    const signal = (onCreate.mock.calls[0] as unknown as [unknown, AbortSignal])[1];
+    cleanup();
+    expect(signal.aborted).toBe(true);
   });
 
   it('keeps a selected directory and no alert when the next desktop picker is cancelled', async () => {
@@ -211,15 +198,6 @@ describe('MapSourceForm', () => {
     expect(screen.queryByText('internal path disclosure')).not.toBeInTheDocument();
   });
 
-  it('keeps unavailable agents unselectable and explains the gate', async () => {
-    renderForm();
-    openSelect(screen.getByLabelText(/local agent/i));
-    expect(screen.getByRole('option', { name: 'Offline agent' })).toHaveAttribute('aria-disabled', 'true');
-    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/available local agent/i);
-  });
-
   it('preserves an explicit unavailable-Agent label instead of map-editing copy', () => {
     renderForm([
       { id: 'agent-unavailable', label: 'Unavailable Agent', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'agent-unavailable' } },
@@ -229,89 +207,46 @@ describe('MapSourceForm', () => {
     expect(screen.getByRole('option', { name: 'Unavailable Agent' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /map editing unavailable/i })).not.toBeInTheDocument();
   });
+});
 
-  it('keeps unsupported Agents visible but blocks map creation until a compatible Agent is selected', async () => {
-    globalThis.fetch = preflightFetch();
-    const onCreate = renderForm([
-      { id: 'codex', label: 'Codex', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: true, publicReasoningSummary: true } },
-      { id: 'text-only', label: 'Text Agent', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'native-tools-unavailable' } },
-    ]);
+it('creates with the selected saved API profile, not merely the shared remote model name', async () => {
+  const api: LocalAgentInfo = { id: 'api', label: 'API Model', available: true, modelCatalogSource: 'configured',
+    mapDesign: { nativeMapTools: true, publicReasoningSummary: true }, models: [
+      { id: 'api-profile:a', label: 'Primary · shared', enabled: true, default: true, reasoningOptions: [], serviceTierOptions: [] },
+      { id: 'api-profile:b', label: 'Secondary · shared', enabled: true, default: false, reasoningOptions: [], serviceTierOptions: [] },
+    ] };
+  const create = renderForm([...defaultAgents, api]); fillForm();
+  selectValue(screen.getByLabelText(/local agent/i), 'api');
+  selectValue(screen.getByLabelText('Saved API models'), 'api-profile:b');
+  fireEvent.click(createButton());
+  await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ runtime: { agentId: 'api', model: 'api-profile:b' } }), expect.any(AbortSignal)));
+});
 
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/style.json' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm blue basemap' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    await screen.findByRole('button', { name: /mark preview ready/i });
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /mark preview ready/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /create/i })).toBeEnabled());
+it('does not create with an empty saved API catalog', () => {
+  const create = renderForm([...defaultAgents, { id: 'api', label: 'API Model', available: true, modelCatalogSource: 'configured',
+    mapDesign: { nativeMapTools: true, publicReasoningSummary: true }, models: [] }]);
+  fillForm(); selectValue(screen.getByLabelText(/local agent/i), 'api');
+  expect(createButton()).toBeDisabled(); expect(create).not.toHaveBeenCalled();
+});
 
-    openSelect(screen.getByLabelText(/local agent/i));
-    expect(screen.getByRole('option', { name: 'Text Agent — Map editing unavailable' })).not.toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('option', { name: 'Codex — Public reasoning summaries available' })).toBeInTheDocument();
-    selectValue(screen.getByLabelText(/local agent/i), 'text-only');
-    expect(screen.getByText('Map editing unavailable')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Map editing unavailable');
-    fireEvent.submit(screen.getByRole('button', { name: /create/i }).closest('form')!);
-    expect(onCreate).not.toHaveBeenCalled();
 
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create/i })).toBeEnabled();
-  });
-
-  it('releases a replaced preview and ignores its stale ready callback', async () => {
-    let preflightCount = 0;
-    const fetcher = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => Promise.resolve(
-      init?.method === 'DELETE'
-        ? new Response(null, { status: 204 })
-        : json(preflightPayload(`preview-${++preflightCount}`)),
-    )) as typeof fetch;
-    globalThis.fetch = fetcher;
-    renderForm();
-
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/style.json' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm blue basemap' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    await waitFor(() => expect(previewHarness.ready.has('preview-1')).toBe(true));
-    const staleReady = previewHarness.ready.get('preview-1')!;
-    act(() => staleReady());
-    expect(screen.getByRole('button', { name: /create/i })).toBeEnabled();
-
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/other.json' } });
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    await waitFor(() => expect(fetcher).toHaveBeenCalledWith(
-      '/api/map-design/source-previews/preview-1',
-      expect.objectContaining({ method: 'DELETE' }),
-    ));
-
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    await waitFor(() => expect(previewHarness.ready.has('preview-2')).toBe(true));
-    act(() => staleReady());
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    act(() => previewHarness.ready.get('preview-2')!());
-    expect(screen.getByRole('button', { name: /create/i })).toBeEnabled();
-  });
-
-  it('keeps creation disabled when the current map preview reports an error', async () => {
-    globalThis.fetch = preflightFetch('preview-error');
-    renderForm();
-
-    fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Atlas' } });
-    fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: 'https://maps.example.com/style.json' } });
-    fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Calm blue basemap' } });
-    selectValue(screen.getByLabelText(/local agent/i), 'codex');
-    fireEvent.click(screen.getByRole('button', { name: /check source/i }));
-    await waitFor(() => expect(previewHarness.error.has('preview-error')).toBe(true));
-
-    act(() => previewHarness.error.get('preview-error')!());
-
-    expect(screen.getByRole('button', { name: /create/i })).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent(/could not load map studio/i);
-  });
+it('does not replace an explicitly selected deleted API profile with another default', async () => {
+  const models = [
+    { id: 'api-profile:first', label: 'Primary saved model', enabled: true, default: true, reasoningOptions: [], serviceTierOptions: [] },
+    { id: 'api-profile:second', label: 'Secondary saved model', enabled: true, default: false, reasoningOptions: [], serviceTierOptions: [] },
+  ];
+  const api: LocalAgentInfo = { id: 'api', label: 'API Model', available: true, modelCatalogSource: 'configured',
+    mapDesign: { nativeMapTools: true, publicReasoningSummary: true }, models };
+  const onCreate = vi.fn();
+  const rendered = render(<I18nProvider><MapSourceForm agents={[api]} onCreate={onCreate} /></I18nProvider>);
+  fireEvent.change(screen.getByLabelText(/project name/i), { target: { value: 'Map' } });
+  fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: SOURCE_URL } });
+  fireEvent.change(screen.getByLabelText(/design requirement/i), { target: { value: 'Keep map' } });
+  selectValue(screen.getByLabelText(/local agent/i), 'api');
+  selectValue(screen.getByLabelText('Saved API models'), 'api-profile:second');
+  expect(createButton()).toBeEnabled();
+  rendered.rerender(<I18nProvider><MapSourceForm agents={[{ ...api, models: [models[0]!] }]} onCreate={onCreate} /></I18nProvider>);
+  expect(createButton()).toBeDisabled();
+  expect(screen.getByLabelText('Saved API models')).toHaveTextContent('Select a saved API model');
+  submit(); expect(onCreate).not.toHaveBeenCalled();
 });

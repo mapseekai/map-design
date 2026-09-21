@@ -1,4 +1,5 @@
 import type { MapDesignAppConfig } from '@mapseekai/contracts';
+import type { CartographyModelRoots } from '../application/cartography-authoring.js';
 import { Router, json, type RequestHandler, type Request, type Response, type NextFunction } from 'express';
 import { CartographyGenerateInputSchema, type CartographyGeneration, CartographyUrlInputSchema } from '@mapseekai/map-design-contracts';
 import { fetchCartographySource, generateCartographyDraft, initializeCartographyDraft, initializeCartographyUrlDraft } from '../application/cartography-authoring.js';
@@ -10,6 +11,7 @@ import { bodyErrorStatus, requireJson, route, sendError } from './route-helpers.
 export function createCartographyAuthoringRouter(deps: {
   dataRoot: string; projectRoot: string;
   config?: { read(): MapDesignAppConfig };
+  agents?: NonNullable<CartographyModelRoots['agents']>;
   projectService: Pick<MapDesignProjectService, 'importCartography'>;
   requireLocal: RequestHandler;
   editService?: CartographyEditService | undefined;

@@ -117,7 +117,7 @@ export function createMapDesignApp(options: {
       requireLocalDaemonRequest: requireLocal,
     }));
   }
-  if (options.cartographyRoots) app.use(createCartographyAuthoringRouter({ config: options.config, ...options.cartographyRoots, projectService: options.projectService, requireLocal, editService: options.cartographyEditService }));
+  if (options.cartographyRoots) app.use(createCartographyAuthoringRouter({ config: options.config, agents: options.agents, ...options.cartographyRoots, projectService: options.projectService, requireLocal, editService: options.cartographyEditService }));
   if (options.commentService) app.use(createMapDesignCommentRouter({ service: options.commentService, requireLocalDaemonRequest: requireLocal }));
   if (options.attachmentService) app.use(createMapTextAttachmentRouter({ service: options.attachmentService, requireLocalDaemonRequest: requireLocal }));
   if (options.thumbnailService) app.use(createMapThumbnailRouter({ service: options.thumbnailService, requireLocalDaemonRequest: requireLocal }));

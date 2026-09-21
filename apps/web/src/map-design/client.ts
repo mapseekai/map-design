@@ -141,6 +141,13 @@ export function listMapDesignProjects(signal?: AbortSignal): Promise<MapDesignPr
   return requestContract('/api/map-design/projects', { signal }, MapDesignProjectListOutputSchema);
 }
 
+export async function renameMapDesignProject(projectId: string, title: string) {
+  return requestContract(projectUrl(projectId, ''), {
+    method: 'PATCH', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(MapDesignProjectRenameInputSchema.parse({ title })),
+  }, MapDesignProjectRenameOutputSchema);
+}
+
 export function getMapDesignProject(
   projectId: string,
   signal?: AbortSignal,
@@ -380,3 +387,4 @@ export function updateCartography(id: string, description: string, signal?: Abor
     method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ description }), signal,
   }, CartographySummarySchema);
 }
+import { MapDesignProjectRenameInputSchema, MapDesignProjectRenameOutputSchema } from '@mapseekai/map-design-contracts';

@@ -5,12 +5,25 @@ function Card({
   className,
   size = "default",
   variant = "default",
+  interactive = false,
+  style,
+  onPointerEnter,
+  onPointerLeave,
+  onFocusCapture,
+  onBlurCapture,
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm"; variant?: "default" | "media" }) {
+}: React.ComponentProps<"div"> & { size?: "default" | "sm"; variant?: "default" | "media"; interactive?: boolean }) {
+  const [hovered, setHovered] = React.useState(false)
+  const [focused, setFocused] = React.useState(false)
   return (
     <div
       data-slot="card"
       data-size={size}
+      onPointerEnter={(event) => { setHovered(true); onPointerEnter?.(event) }}
+      onPointerLeave={(event) => { setHovered(false); onPointerLeave?.(event) }}
+      onFocusCapture={(event) => { setFocused(true); onFocusCapture?.(event) }}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); onBlurCapture?.(event) }}
+      style={{ ...style, ...(interactive ? { outline: `2px solid ${hovered || focused ? 'color-mix(in srgb, var(--primary) 50%, transparent)' : 'transparent'}`, outlineOffset: '2px' } : {}) }}
       className={cn(
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         variant === "media" && "gap-0 pt-0",

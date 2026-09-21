@@ -1,4 +1,5 @@
-import { generateText, streamText } from 'ai';
+import { generateText, streamText, tool, jsonSchema } from 'ai';
+import { apiProviderOptions } from '../../../src/map-design/agents/api-provider-options.js';
 import { describe, expect, it, vi } from 'vitest';
 import { createApiModel, apiModelFailure } from '../../../src/map-design/agents/api-model.js';
 
@@ -52,4 +53,27 @@ it.each(['openai', 'anthropic'] as const)('streams %s responses with the real pr
   const result = streamText({ model: createApiModel({ protocol, apiKey: 'test-secret', model: 'test' }, null, mockFetch), prompt: 'Analyze', maxOutputTokens: 128, maxRetries: 0 });
   expect(await result.text).toBe(text);
   expect(JSON.parse(String(mockFetch.mock.calls[0]?.[1]?.body)).stream).toBe(true);
+});
+
+
+it.each([
+  ['openai', 'chat-completions', 'chat'], ['openai', 'responses', 'responses'], ['anthropic', 'chat-completions', 'anthropic'],
+] as const)('sends effective provider-specific parameters for %s / %s', async (protocol, apiFormat, fixture) => {
+  const request = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(responses[fixture]), { headers: { 'content-type': 'application/json' } }));
+  const provider = { protocol, apiFormat, apiKey: 'test-secret', baseUrl: 'https://models.example/v1', model: apiFormat === 'responses' ? 'gpt-5' : 'test' };
+  const model = createApiModel(provider, null, request);
+  const tier = protocol === 'anthropic' ? 'standard_only' : 'priority';
+  await generateText({ model, prompt: 'Analyze the map', maxOutputTokens: 512, maxRetries: 0,
+    tools: { read_map: tool({ inputSchema: jsonSchema({ type: 'object', properties: {}, additionalProperties: false }), execute: async () => ({ ok: true }) }) },
+    providerOptions: apiProviderOptions(provider, 'high', tier),
+  });
+  const body = JSON.parse(String(request.mock.calls[0]![1]!.body));
+  if (protocol === 'anthropic') {
+    expect(body.tool_choice.disable_parallel_tool_use).toBe(true);
+    expect(body.output_config.effort).toBe('high'); expect(body.service_tier).toBe('standard_only');
+  } else {
+    expect(body.parallel_tool_calls).toBe(false); expect(body.service_tier).toBe('priority');
+    expect(apiFormat === 'responses' ? body.reasoning.effort : body.reasoning_effort).toBe('high');
+  }
+  expect(JSON.stringify(body)).not.toContain('test-secret');
 });

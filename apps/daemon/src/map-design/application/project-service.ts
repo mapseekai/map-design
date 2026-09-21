@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto';
 
 import {
   CartographySummarySchema,
+  MapDesignProjectRenameInputSchema,
+  MapDesignProjectRenameOutputSchema,
   MapDesignProjectCreateInputSchema,
   MapDesignProjectCreateOutputSchema,
   MapDesignProjectListOutputSchema,
@@ -29,6 +31,20 @@ type ProjectCreateWitness = {
 };
 
 export class MapDesignProjectService {
+  rename(projectId: string, input: unknown) {
+    const parsed = MapDesignProjectRenameInputSchema.safeParse(input);
+    if (!parsed.success) throw invalidInput();
+    return this.deps.store.inTransaction((db) => {
+      if (!db.prepare('SELECT 1 FROM projects p JOIN map_design_projects m ON m.project_id = p.id WHERE p.id = ?').get(projectId)) {
+        throw new MapDraftError('NOT_FOUND', 'The map project was not found.');
+      }
+      const updatedAt = new Date().toISOString();
+      db.prepare('UPDATE projects SET title = ?, updated_at = ? WHERE id = ?').run(parsed.data.title, updatedAt, projectId);
+      db.prepare('UPDATE map_design_projects SET updated_at = ? WHERE project_id = ?').run(updatedAt, projectId);
+      return MapDesignProjectRenameOutputSchema.parse({ projectId, title: parsed.data.title, updatedAt });
+    });
+  }
+
   constructor(private readonly deps: {
     store: MapDesignLocalStore;
     sourceImportService: MapSourceImportService;

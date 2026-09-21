@@ -23,7 +23,7 @@ export interface MapDesignHomeProps { onOpenProject(projectId: string): void; }
 export function MapDesignHome({ onOpenProject }: MapDesignHomeProps) {
   const t = useT();
   const { agents, loading: agentsLoading, error: agentsError } = useLocalAgents();
-  const { projects, loading: projectsLoading, error, projectErrors, pendingProjectIds, add, retry, remove } = useMapDesignProjects();
+  const { projects, loading: projectsLoading, error, projectErrors, pendingProjectIds, add, retry, remove, rename } = useMapDesignProjects();
   const mounted = useRef(true);
   const controller = useRef<AbortController | null>(null);
   const generation = useRef(0);
@@ -60,7 +60,7 @@ export function MapDesignHome({ onOpenProject }: MapDesignHomeProps) {
       pendingProjectIds={pendingProjectIds}
       onOpenProject={onOpenProject}
       onRetryProject={(id) => void retry(id)}
-      onDeleteProject={(id) => void remove(id)}
+      onDeleteProject={(id) => void remove(id)} onRenameProject={rename}
     />
   </section>;
 }

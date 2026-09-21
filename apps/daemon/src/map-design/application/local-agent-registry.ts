@@ -1,3 +1,4 @@
+import { resolveApiProfile } from './api-profile-service.js';
 import { API_AGENT_ID } from '../../runtimes/defs/api.js';
 import { createApiMapAgentAdapter } from '../agents/ai-sdk.js';
 import { spawn } from 'node:child_process';
@@ -68,7 +69,7 @@ export interface MapDesignLocalAgentRegistry extends LocalAgentRegistry {
 
 export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}): MapDesignLocalAgentRegistry {
   const agents = options.definitions ?? AGENT_DEFS;
-  const apiAdapter = createApiMapAgentAdapter({ projectRoot: options.projectRoot ?? process.cwd(), provider: () => options.config?.read().byokProviders?.default });
+  const apiAdapter = createApiMapAgentAdapter({ projectRoot: options.projectRoot ?? process.cwd(), provider: (model) => resolveApiProfile(options.config?.read() ?? {}, model), execution: () => options.config?.read().apiExecution });
   const configuredEnv = (agentId: string): Record<string, string> => {
     const configId = agentId === 'byok-opencode' ? 'opencode' : agentId;
     return { ...(options.config?.read().agentCliEnv?.[configId] ?? {}) };
@@ -250,6 +251,7 @@ export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}
     };
   };
   const runtimeCatalog = createMapDesignRuntimeCatalog({
+    ...(options.config ? { apiConfig: () => options.config!.read() } : {}),
     definitions: agents,
     inspect: (agent) => {
       if (agent.id === API_AGENT_ID) return { definition: agent, available: true, environment: {}, mapDesign: mapCapability(agent, true) };

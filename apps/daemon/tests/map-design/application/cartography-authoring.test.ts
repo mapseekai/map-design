@@ -40,6 +40,7 @@ it('creates a lint-valid CARTOGRAPHY.md through the configured API without a CLI
 });
 
 it('edits the supplied document through the shared Agent runner and validates its reply', async () => {
+  vi.mocked(runCartographyAgent).mockClear();
   const source = '---\nversion: "0.4.0"\nname: Atlas\ncolors:\n  ink: "#123456"\n---\n\n## Overview\nOriginal.';
   const reply = { message: 'Clarified hierarchy.', source: source + '\n\n## Typography & Labels\nKeep labels readable.' };
   vi.mocked(runCartographyAgent).mockResolvedValue(JSON.stringify(reply));
@@ -50,4 +51,18 @@ it('edits the supplied document through the shared Agent runner and validates it
   expect(result).toEqual(reply);
   expect(runCartographyAgent).toHaveBeenCalledWith(expect.objectContaining({ prompt: expect.stringContaining('#123456') }));
   expect(vi.mocked(runCartographyAgent).mock.calls[0]?.[0].prompt).toContain('sampleBindings');
+});
+
+it.each(['api', 'codex', 'omp'])('generates with the selected %s agent and model', async (agentId) => {
+  const source = '---\nversion: "0.4.0"\nname: Atlas\ncolors:\n  ink: "#123456"\n---\n\n## Overview\nOriginal.';
+  vi.mocked(runCartographyAgent).mockResolvedValue(source);
+  const runtime = { agentId, model: 'chosen-model' };
+  const result = await generateCartographyDraft({
+    jobId: '12345678-1234-4234-8234-123456789abc', name: 'Atlas', requirements: 'Warm paper', runtime,
+  }, {
+    dataRoot: '/unused', projectRoot: new URL('../../../../../', import.meta.url).pathname,
+    agents: {} as Parameters<typeof runCartographyAgent>[0]['agents'],
+  }, new AbortController().signal);
+  expect(result.source).toBe(source);
+  expect(runCartographyAgent).toHaveBeenLastCalledWith(expect.objectContaining({ runtime }));
 });

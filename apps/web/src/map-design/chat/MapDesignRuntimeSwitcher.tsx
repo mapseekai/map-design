@@ -1,3 +1,5 @@
+import { apiProfilesCopy } from '../../i18n/locales/api-profiles';
+import { runtimeConfirmCopy } from '../../i18n/locales/runtime-confirm';
 import { Badge, Button, Field, FieldGroup, FieldLabel, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@mapseekai/components';
 import type {
   LocalAgentInfo,
@@ -85,15 +87,23 @@ function rememberedReasoning(preferences: Record<string, string>, agentId: strin
 
 export function MapDesignRuntimeSwitcher({
   agents,
-  runtime,
+  runtime: savedRuntime,
   disabled,
   disabledReason,
-  saving,
+  saving: parentSaving,
   notice,
-  onChange,
+  onChange: saveRuntime,
 }: MapDesignRuntimeSwitcherProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(savedRuntime);
+  const runtime = open ? draft : savedRuntime;
+  const [confirming, setConfirming] = useState(false);
+  const saving = parentSaving || confirming;
+  const confirmingRef = useRef(false);
+  const onChange = async (next: MapDesignRuntimeSelectionInput) => {
+    setDraft({ ...next, revision: savedRuntime.revision, updatedAt: savedRuntime.updatedAt });
+  };
   const [query, setQuery] = useState('');
   const [reasoningPreferences, setReasoningPreferences] = useState(readReasoningPreferences);
   const [customModel, setCustomModel] = useState(
@@ -111,23 +121,28 @@ export function MapDesignRuntimeSwitcher({
   const activeAgent = agents.find((agent) => agent.id === runtime.agentId);
   const catalogActiveModel = activeAgent?.models?.find((model) => model.id === runtime.model);
   const activeModel = catalogActiveModel
-    ?? (runtime.modelOrigin === 'custom' ? undefined : defaultModel(activeAgent));
+    ?? (runtime.modelOrigin === 'custom' || runtime.agentId === 'api' ? undefined : defaultModel(activeAgent));
   useEffect(() => {
     // The runtime prop is daemon-confirmed state. Never remember an in-flight choice.
+    const runtime = savedRuntime;
+    const catalogActiveModel = agents.find((agent) => agent.id === runtime.agentId)?.models?.find((model) => model.id === runtime.model);
     if (saving || !catalogActiveModel || runtime.modelOrigin === 'custom') return;
     if (runtime.reasoning && !catalogActiveModel.reasoningOptions.includes(runtime.reasoning)) return;
     const next = readReasoningPreferences();
     next[reasoningPreferenceKey(runtime.agentId, catalogActiveModel.id)] = runtime.reasoning ?? '';
     setReasoningPreferences((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
     try { localStorage.setItem(REASONING_PREFERENCES_KEY, JSON.stringify(next)); } catch { /* Storage is optional. */ }
-  }, [saving, runtime.agentId, runtime.model, runtime.modelOrigin, runtime.reasoning, catalogActiveModel]);
-  const chipParts = [activeAgent?.label ?? runtime.agentId, activeModel?.label ?? runtime.model, runtime.reasoning]
+  }, [saving, savedRuntime, agents]);
+  const savedAgent = agents.find((agent) => agent.id === savedRuntime.agentId);
+  const savedModel = savedAgent?.models?.find((model) => model.id === savedRuntime.model);
+  const chipParts = [savedAgent?.label ?? savedRuntime.agentId, savedModel?.label ?? (savedRuntime.agentId === 'api' ? apiProfilesCopy[locale].selectModel : savedRuntime.model), savedRuntime.reasoning]
     .filter((value): value is string => Boolean(value));
   const modelQuery = query.trim().toLocaleLowerCase();
   const models = (activeAgent?.models ?? []).filter((model) => !modelQuery
     || model.label.toLocaleLowerCase().includes(modelQuery)
     || model.id.toLocaleLowerCase().includes(modelQuery));
-  const catalogMessage = activeAgent?.modelCatalogSource === 'fallback'
+  const catalogMessage = activeAgent?.id === 'api' && !catalogActiveModel?.enabled ? apiProfilesCopy[locale].unavailable
+    : activeAgent?.modelCatalogSource === 'fallback'
     ? [t('mapDesign.runtime.fallbackCatalog'), activeAgent.modelCatalogWarning].filter(Boolean).join(' — ')
     : activeAgent?.modelCatalogSource === 'remembered'
       ? [t('mapDesign.runtime.rememberedCatalog'), activeAgent.modelCatalogWarning].filter(Boolean).join(' — ')
@@ -162,10 +177,32 @@ export function MapDesignRuntimeSwitcher({
   }, []);
 
   const close = useCallback(() => {
+    if (confirmingRef.current) return;
     restoreFocusPendingRef.current = true;
     setOpen(false);
     setQuery('');
   }, []);
+
+  const confirm = async () => {
+    if (disabled || saving || confirmingRef.current) return;
+    if (draft.agentId === savedRuntime.agentId && draft.model === savedRuntime.model
+      && draft.modelOrigin === savedRuntime.modelOrigin && draft.reasoning === savedRuntime.reasoning
+      && draft.serviceTier === savedRuntime.serviceTier) { close(); return; }
+    confirmingRef.current = true;
+    setConfirming(true);
+    const { revision: _revision, updatedAt: _updatedAt, ...selection } = draft;
+    try { await saveRuntime(selection); } catch { /* The owner supplies save errors. Keep the draft open. */ }
+    finally { confirmingRef.current = false; setConfirming(false); }
+  };
+  useEffect(() => {
+    if (open && savedRuntime.revision !== draft.revision
+      && savedRuntime.agentId === draft.agentId && savedRuntime.model === draft.model
+      && savedRuntime.modelOrigin === draft.modelOrigin && savedRuntime.reasoning === draft.reasoning
+      && savedRuntime.serviceTier === draft.serviceTier) {
+      confirmingRef.current = false;
+      close();
+    }
+  }, [savedRuntime, draft, open, close]);
 
   useEffect(() => {
     if (disabled && open) close();
@@ -259,7 +296,7 @@ export function MapDesignRuntimeSwitcher({
       {open && catalogMessage ? <span>{catalogMessage}</span> : null}
     </div> : null;
 
-  return <DialogRoot open={open} onOpenChange={(next) => { if (next && !disabled && !saving) setOpen(true); else if (!next) close(); }}><div className="flex min-w-0 flex-col">
+  return <DialogRoot open={open} onOpenChange={(next) => { if (next && !disabled && !saving) { setDraft(savedRuntime); setCustomModel(savedRuntime.modelOrigin === 'custom' ? savedRuntime.model ?? '' : ''); setOpen(true); } else if (!next) close(); }}><div className="flex min-w-0 flex-col">
     <DialogTrigger render={<Button variant="outline" size="sm" className="max-w-full justify-start" />}
       ref={triggerRef}
       type="button"
@@ -308,7 +345,7 @@ export function MapDesignRuntimeSwitcher({
               >
                 <span className="flex min-w-0 flex-col items-start gap-0.5 text-left whitespace-normal">
                 <span className="max-w-full truncate">{agent.label}</span>
-                {reason ? <small className="max-w-full text-xs text-muted-foreground">{reason}</small> : <small className="max-w-full text-xs text-muted-foreground">{agent.modelCatalogSource === 'live'
+                {reason ? <small className="max-w-full text-xs text-muted-foreground">{reason}</small> : <small className="max-w-full text-xs text-muted-foreground">{agent.modelCatalogSource === 'configured' ? apiProfilesCopy[locale].title : agent.modelCatalogSource === 'live'
                   ? t('mapDesign.runtime.liveCatalog')
                   : agent.modelCatalogSource === 'remembered'
                     ? t('mapDesign.runtime.rememberedCatalog')
@@ -388,6 +425,10 @@ export function MapDesignRuntimeSwitcher({
         </Select>
       </Field> : null}
       {runtimeStatus}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" disabled={saving} onClick={close}>{t('mapDesign.revision.cancel')}</Button>
+        <Button type="button" disabled={disabled || saving || !activeAgent || !isSupported(activeAgent) || (runtime.modelOrigin !== 'custom' && !activeModel?.enabled)} onClick={() => { void confirm(); }}>{runtimeConfirmCopy[locale]}</Button>
+      </div>
     </DialogContent>
     {!open ? runtimeStatus : null}
   </div></DialogRoot>;

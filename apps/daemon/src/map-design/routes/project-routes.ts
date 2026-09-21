@@ -19,7 +19,7 @@ import { route, requireJson } from './route-helpers.js';
 
 export interface CreateMapDesignProjectRouterDependencies {
   projectService: Pick<MapDesignProjectService,
-    'create' | 'list' | 'get' | 'getConversation' | 'delete' | 'listCartographies' | 'importCartography' | 'getCartography' | 'updateCartography' | 'deleteCartography'>;
+    'create' | 'list' | 'get' | 'rename' | 'getConversation' | 'delete' | 'listCartographies' | 'importCartography' | 'getCartography' | 'updateCartography' | 'deleteCartography'>;
   queryService: Pick<MapDesignQueryService,
     'getContext' | 'inspect' | 'searchLayers' | 'getStyle' | 'getSemantics' | 'listRevisions'>;
   validationService: Pick<MapDesignValidationService, 'validate'>;
@@ -54,7 +54,7 @@ export function createMapDesignProjectRouter(deps: CreateMapDesignProjectRouterD
   }));
   router.use('/api/map-design/projects', deps.requireLocalDaemonRequest);
   router.use('/api/map-design/projects', (request, response, next) => {
-    if (request.method !== 'POST') { next(); return; }
+    if (request.method !== 'POST' && request.method !== 'PATCH') { next(); return; }
     parseMapDesignJson(request, response, next);
   });
   router.get('/api/map-design/projects', rejectReadBody, route(async (_request, response) => {
@@ -74,6 +74,9 @@ export function createMapDesignProjectRouter(deps: CreateMapDesignProjectRouterD
 
   router.get(PROJECT_ROUTE, rejectReadBody, route(async (request, response) => {
     response.json(await deps.projectService.get(projectId(request)));
+  }));
+  router.patch(PROJECT_ROUTE, requireJson, route(async (request, response) => {
+    response.json(deps.projectService.rename(projectId(request), request.body));
   }));
   // Keep this primary-conversation endpoint as a compatibility alias for existing clients.
   router.get(`${PROJECT_ROUTE}/conversation`, rejectReadBody, route(async (request, response) => {

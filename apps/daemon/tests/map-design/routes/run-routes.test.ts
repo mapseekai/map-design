@@ -1,4 +1,5 @@
 import { once } from 'node:events';
+import { request as httpRequest } from 'node:http';
 import express, { type Express } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import type { MapDesignRunEvent } from '@mapseekai/contracts';
@@ -28,6 +29,7 @@ function setup() {
     subscribe: vi.fn((_runId: string, listener: (event: MapDesignRunEvent) => void) => { listener({ type: 'run_finished', run: { runId: 'run-1', projectId: 'map-1', conversationId: 'conversation-1', status: 'succeeded' } }); return vi.fn(); }),
   };
   const app: Express = express();
+  app.get('/api/runs/:runId/events', express.json());
   app.use(createMapDesignRunRouter({ runService: runs, requireLocalDaemonRequest }));
   return { app, runs };
 }
@@ -42,6 +44,38 @@ async function request(app: Express, route: string, init: RequestInit = {}) {
 }
 
 describe('MapDesign run routes', () => {
+  it('keeps live events subscribed after the GET request completes and cleans up on disconnect', async () => {
+    const { app, runs } = setup();
+    const unsubscribe = vi.fn();
+    let emit: ((event: MapDesignRunEvent) => void) | undefined;
+    runs.subscribe.mockImplementationOnce((_id, listener) => { emit = listener; return unsubscribe; });
+    const server = app.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('server did not listen');
+    const client = httpRequest({
+      hostname: '127.0.0.1', port: address.port, path: '/api/runs/run-1/events',
+      headers: { 'content-type': 'application/json', 'content-length': '0' },
+    });
+    const incoming = once(client, 'response');
+    client.end();
+    try {
+      const [response] = await incoming;
+      let body = '';
+      response.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      await vi.waitFor(() => expect(body).toContain(': keepalive'));
+      expect(unsubscribe).not.toHaveBeenCalled();
+      emit?.({ type: 'event_snapshot', runId: 'run-1', messageId: 'assistant-1', events: [{ kind: 'text', text: 'Live result' }] });
+      await vi.waitFor(() => expect(body).toContain('Live result'));
+      client.destroy();
+      await vi.waitFor(() => expect(unsubscribe).toHaveBeenCalledOnce());
+    } finally {
+      client.destroy();
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
   it('starts, reads, cancels, and streams scoped run events', async () => {
     const { app, runs } = setup();
     const requestBody = validStartRequest;

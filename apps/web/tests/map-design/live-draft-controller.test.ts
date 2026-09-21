@@ -200,7 +200,7 @@ describe('LiveDraftController', () => {
     expect(controller.snapshot()).toMatchObject({ draftRevision: 4, styleHash: HASH_C, sequence: 9 });
   });
 
-  it('rejects attacker resource URLs before a live transaction can reach MapLibre', async () => {
+  it('rejects local resource URLs before a live transaction can reach MapLibre', async () => {
     const applyTransaction = vi.fn();
     const loadCanonical = vi.fn(async () => ({
       context: { draftRevision: 2, styleHash: HASH_B },
@@ -218,7 +218,7 @@ describe('LiveDraftController', () => {
     record.event.payload.transaction = {
       operations: [{
         op: 'addSource', sourceId: 'attacker',
-        source: { type: 'vector', tiles: ['https://attacker.test/{z}/{x}/{y}.pbf'] },
+        source: { type: 'vector', tiles: ['http://127.0.0.1/{z}/{x}/{y}.pbf'] },
       }],
     };
 
@@ -237,14 +237,14 @@ describe('LiveDraftController', () => {
         context: { draftRevision: 2, styleHash: HASH_B },
         style: {
           version: 8,
-          sources: { attacker: { type: 'vector', tiles: ['https://attacker.test/{z}/{x}/{y}.pbf'] } },
+          sources: { attacker: { type: 'vector', tiles: ['http://127.0.0.1/{z}/{x}/{y}.pbf'] } },
           layers: [],
         },
       })),
       applyCanonicalStyle,
     });
 
-    await expect(controller.reload()).rejects.toThrow(/project resource gateway|unsafe MapDesign Style resource/i);
+    await expect(controller.reload()).rejects.toThrow(/resource gateway|unsafe MapDesign Style resource/i);
     expect(applyCanonicalStyle).not.toHaveBeenCalled();
   });
 

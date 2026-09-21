@@ -1,7 +1,7 @@
 import { TitlebarControl } from '../components/MapDesignTitlebar';
 import { Button, Popover, PopoverTrigger, PopoverContent, DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@mapseekai/components';
 import type { MapDesignConversationSummary } from '@mapseekai/contracts';
-import { Bot, ChevronDown, PanelLeftClose, Plus, Trash2 } from 'lucide-react';
+import { Bot, ChevronDown, LoaderCircle, PanelLeftClose, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 import { useI18n } from '../../i18n';
@@ -97,9 +97,11 @@ export function MapDesignConversationHeader({
       <PopoverTrigger render={<Button variant="ghost" size="sm" className="min-w-0 justify-between" />} ref={triggerRef} type="button" aria-haspopup="listbox"
         aria-label={t('mapDesign.conversation.listLabel')}
         aria-expanded={open} aria-controls="map-design-conversation-list" disabled={readOnly}>
-        <span className="truncate">{titleFor(selected)}</span>
-        {selected.runState === 'running' ? <span className="size-2 shrink-0 rounded-full bg-primary" aria-label={t('mapDesign.conversation.running')} /> : null}
-        <ChevronDown data-icon="inline-end" aria-hidden="true" />
+        <span className="min-w-0 flex-1 truncate text-left">{titleFor(selected)}</span>
+        <span className="ms-2 inline-flex shrink-0 items-center gap-2">
+          {selected.runState === 'running' ? <LoaderCircle className="size-3.5 animate-spin motion-reduce:animate-none text-primary" role="img" aria-label={t('mapDesign.conversation.running')} /> : null}
+          <ChevronDown aria-hidden="true" />
+        </span>
       </PopoverTrigger>
 
     </div>

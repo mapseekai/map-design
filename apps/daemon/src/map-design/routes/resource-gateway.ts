@@ -127,6 +127,7 @@ function createResourceGateway(deps: {
       return;
     }
     if (error instanceof MapDesignResourceError) {
+      if (error.retryAfter) response.set('Retry-After', error.retryAfter);
       sendError(response, error.status, error.message);
       return;
     }
@@ -244,5 +245,5 @@ function sendError(response: Response, status: number, message: string): void {
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json; charset=utf-8',
     'X-Content-Type-Options': 'nosniff',
-  }).json({ error: { code: status === 404 ? 'NOT_FOUND' : 'RESOURCE_ERROR', message } });
+  }).json({ error: { code: status === 404 ? 'NOT_FOUND' : status === 429 ? 'RESOURCE_RATE_LIMITED' : 'RESOURCE_ERROR', message } });
 }

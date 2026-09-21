@@ -7,8 +7,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { cartographyLibraryCopy } from '../i18n/locales/cartography-library';
 import { cartographyEditorCopy } from '../i18n/locales/cartography-editor';
 import { createCartographyEdit } from './cartography-edit-client';
+import { AgentModelFields } from './components/AgentModelFields';
+import { useLocalAgents } from './hooks/useLocalAgents';
 import { apiModelCopy } from '../i18n/locales/api-model';
-import { Alert, AlertDescription, Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, Textarea, Field, FieldLabel, FieldSet, Empty, EmptyHeader, EmptyDescription, Tabs, TabsList, TabsTrigger, TabsContent } from '@mapseekai/components';
+import { Alert, AlertDescription, Button, Input, Textarea, Field, FieldLabel, FieldSet, Empty, EmptyHeader, EmptyDescription, Tabs, TabsList, TabsTrigger, TabsContent } from '@mapseekai/components';
 import { CARTOGRAPHY_MAX_BYTES, CARTOGRAPHY_STYLE_MAX_BYTES, type CartographyDraft, type CartographySummary } from '@mapseekai/map-design-contracts';
 import { navigate } from '../router';
 import { useI18n } from '../i18n';
@@ -21,7 +23,15 @@ export function CartographyManager() {
   const { locale, t } = useI18n();
   const copy = cartographyCopy[locale];
   const apiCopy = apiModelCopy[locale];
-  const [generationRuntime, setGenerationRuntime] = useState<'api' | 'codex'>('api');
+  const { agents, loading: agentsLoading, error: agentsError } = useLocalAgents();
+  const [generationAgent, setGenerationAgent] = useState('');
+  const [generationModel, setGenerationModel] = useState('');
+  const generationRuntime = generationAgent === 'codex' ? 'codex' : 'api';
+  const selectedAgent = agents.find(agent => agent.id === generationAgent && agent.available);
+  const apiModels = selectedAgent?.models?.filter(model => model.enabled) ?? [];
+  const selectedModel = generationModel ? apiModels.find(model => model.id === generationModel) : apiModels.find(model => model.default);
+  const canGenerate = !!selectedAgent && selectedAgent.mapDesign.nativeMapTools && (generationAgent !== 'api' || !!selectedModel);
+
   const text = cartographyManagerCopy[locale];
   const library = cartographyLibraryCopy[locale];
   const editor = cartographyEditorCopy[locale];
@@ -102,6 +112,7 @@ export function CartographyManager() {
   }
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (mode === 'ai' && !canGenerate) return;
     void perform(async (signal) => {
       if (mode === 'online') {
         const result = await importCartographyUrl(url.trim(), signal, description.trim() || undefined);
@@ -110,7 +121,7 @@ export function CartographyManager() {
         const result = await initializeCartographyUrl({ name: name.trim(), url: styleUrl.trim(), ...(styleFileName.trim() ? { fileName: styleFileName.trim() } : {}) }, signal);
         if (!signal.aborted) setDraft(result);
       } else if (mode === 'ai') {
-        const result = await generateCartography({ name: name.trim(), requirements: brief.trim(), runtime: generationRuntime }, signal);
+        const result = await generateCartography({ name: name.trim(), requirements: brief.trim(), runtime: { agentId: generationAgent, ...(generationAgent === 'api' && selectedModel ? { model: selectedModel.id } : {}) } }, signal);
         if (!signal.aborted) setDraft(result);
       } else {
         if (!file || file.size > (mode === 'style' ? CARTOGRAPHY_STYLE_MAX_BYTES : CARTOGRAPHY_MAX_BYTES)) throw new Error('Invalid file size');
@@ -244,9 +255,9 @@ export function CartographyManager() {
               </FieldLabel><Input id="cartographymanager-5" aria-label={mode === 'upload' ? copy.import : text.fromStyle} key={mode} type="file" accept={mode === 'upload' ? '.md,text/markdown,text/plain' : '.json,.qgs,.qgz,.lyrx,.stylx,.sld,.xml'} required onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
               <small>{mode === 'upload' ? `CARTOGRAPHY.md · ${CARTOGRAPHY_MAX_BYTES / 1024} KiB` : 'ArcGIS (.lyrx, .stylx) · QGIS (.qgs, .qgz) · style.json · SLD (.sld) · 4 MiB'}</small>
             </Field> : null}
-            {mode === 'ai' ? <><Field><FieldLabel htmlFor="cartographymanager-6">{apiCopy.generation}</FieldLabel><Select items={[{ value: "api", label: "API Model" }, { value: "codex", label: "Codex CLI" }]} disabled={busy} value={generationRuntime} onValueChange={(nextValue) => nextValue && setGenerationRuntime(nextValue as 'api' | 'codex')}><SelectTrigger id="cartographymanager-6"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem data-value="api" value="api">API Model</SelectItem><SelectItem data-value="codex" value="codex">Codex CLI</SelectItem></SelectGroup></SelectContent></Select></Field><Field><FieldLabel htmlFor="cartographymanager-7">{text.brief}</FieldLabel><Textarea id="cartographymanager-7" rows={5} maxLength={8000} required value={brief} onChange={(event) => setBrief(event.target.value)} /></Field><p className="text-sm text-muted-foreground">{generationRuntime === 'api' ? apiCopy.generationHint : text.aiHint}</p></> : null}
+            {mode === 'ai' ? <><AgentModelFields id="cartographymanager-6" agents={agents} agentId={generationAgent} model={generationModel} disabled={busy || agentsLoading} onAgentChange={setGenerationAgent} onModelChange={setGenerationModel} />{agentsError ? <Alert variant="destructive"><AlertDescription>{agentsError}</AlertDescription></Alert> : null}<Field><FieldLabel htmlFor="cartographymanager-7">{text.brief}</FieldLabel><Textarea id="cartographymanager-7" rows={5} maxLength={8000} required value={brief} onChange={(event) => setBrief(event.target.value)} /></Field><p className="text-sm text-muted-foreground">{generationRuntime === 'api' ? apiCopy.generationHint : text.aiHint}</p></> : null}
             <Field><FieldLabel htmlFor="cartographymanager-2">{library.description}</FieldLabel><Textarea id="cartographymanager-2" rows={2} value={description} maxLength={2048} placeholder={library.descriptionHint} onChange={(event) => setDescription(event.target.value)} /></Field>
-            <Button type="submit" variant="default">{busy ? t('common.loading') : mode === 'ai' || mode === 'style' ? text.generate : copy.import}</Button>
+            <Button type="submit" variant="default" disabled={mode === 'ai' && !canGenerate}>{busy ? t('common.loading') : mode === 'ai' || mode === 'style' ? text.generate : copy.import}</Button>
           </FieldSet>
         </form></TabsContent></Tabs>
         {busy ? <Button type="button" variant="ghost" onClick={() => { request.current?.abort(); setBusy(false); }}>{text.cancel}</Button> : null}

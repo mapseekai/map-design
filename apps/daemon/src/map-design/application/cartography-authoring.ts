@@ -1,3 +1,6 @@
+import { resolveApiProfile } from './api-profile-service.js';
+import { resolveMapApiExecutionSettings } from '@mapseekai/contracts';
+import { apiProviderOptions } from '../agents/api-provider-options.js';
 import { randomUUID } from 'node:crypto';
 import { runCartographyAgent } from '../agents/cartography-runner.js';
 import type { MapDesignLocalAgentRegistry } from './local-agent-registry.js';
@@ -73,7 +76,7 @@ export async function initializeCartographyUrlDraft(input: unknown, signal?: Abo
 }
 
 /** Creates drafts through the configured model API or the local Codex CLI. */
-export async function generateCartographyDraft(input: unknown, roots: { dataRoot: string; projectRoot: string; config?: { read(): MapDesignAppConfig } }, signal: AbortSignal): Promise<CartographyDraft> {
+export async function generateCartographyDraft(input: unknown, roots: CartographyModelRoots, signal: AbortSignal): Promise<CartographyDraft> {
   const parsed = CartographyGenerateInputSchema.safeParse(input);
   if (!parsed.success) throw invalidInput();
   const skill = await readFile(join(roots.projectRoot, 'skills/cartography-md/SKILL.md'), 'utf8');
@@ -85,7 +88,23 @@ export async function generateCartographyDraft(input: unknown, roots: { dataRoot
     'The following JSON contains the user\'s design brief:',
     JSON.stringify(parsed.data),
   ].join('\n\n');
-  const source = await runCartographyModel(prompt, parsed.data.runtime, roots, signal, CARTOGRAPHY_MAX_BYTES);
+  const runtime = parsed.data.runtime;
+  let source: string;
+  if (typeof runtime === 'string') {
+    source = await runCartographyModel(prompt, runtime, roots, signal, CARTOGRAPHY_MAX_BYTES);
+  } else {
+    if (!roots.agents) throw new MapDraftError('INVALID_INPUT', 'The shared Agent runtime is unavailable.');
+    source = await runCartographyAgent({
+      agents: roots.agents, dataRoot: roots.dataRoot, prompt,
+      runtime: { agentId: runtime.agentId,
+        ...(runtime.model ? { model: runtime.model } : {}),
+        ...(runtime.reasoning ? { reasoning: runtime.reasoning } : {}),
+        ...(runtime.serviceTier ? { serviceTier: runtime.serviceTier } : {}),
+      },
+      sessionId: parsed.data.jobId, conversationId: randomUUID(), runId: randomUUID(),
+      configuredApiModel: resolveApiProfile(roots.config?.read() ?? {})?.model, signal,
+    });
+  }
   if (!lintCartography(source).valid) throw new MapDraftError('INVALID_INPUT', 'The generated document failed validation.');
   return CartographyDraftOutputSchema.parse({ source, reportMarkdown: '', reportJson: '' });
 }
@@ -115,7 +134,7 @@ export async function generateCartographyEdit(input: {
   const output = await runCartographyAgent({ agents: roots.agents, dataRoot: roots.dataRoot, prompt,
     runtime: typeof input.runtime === 'string' ? { agentId: input.runtime } : input.runtime,
     sessionId: input.sessionId ?? randomUUID(), conversationId: input.conversationId ?? randomUUID(), runId: input.runId ?? randomUUID(),
-    configuredApiModel: roots.config?.read().byokProviders?.default?.model, signal, onEvent: input.onEvent,
+    configuredApiModel: resolveApiProfile(roots.config?.read() ?? {})?.model, signal, onEvent: input.onEvent,
   });
   try {
     const reply = CartographyEditReplySchema.parse(JSON.parse(output.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, '$1')));
@@ -128,8 +147,13 @@ async function runCartographyModel(prompt: string, runtime: 'api' | 'codex', roo
   if (signal.aborted) throw signal.reason;
   if (runtime === 'api') {
     try {
-      const model = createApiModel(roots.config?.read().byokProviders?.default);
-      const result = await generateText({ model, prompt, maxOutputTokens, maxRetries: 1, abortSignal: signal });
+      const config = roots.config?.read();
+      const provider = resolveApiProfile(config ?? {});
+      const model = createApiModel(provider);
+      const configuredLimit = config?.apiExecution?.cartographyMaxOutputTokens;
+      const outputLimit = configuredLimit === undefined ? maxOutputTokens : resolveMapApiExecutionSettings(config?.apiExecution).cartographyMaxOutputTokens;
+      const result = await generateText({ model, prompt, maxOutputTokens: outputLimit, maxRetries: 1, abortSignal: signal, providerOptions: apiProviderOptions(provider, null, null) });
+      if (result.finishReason === 'length') throw new MapDraftError('INVALID_INPUT', `The document output was truncated at the configured token limit (${outputLimit}). Increase the Cartography API output budget in Settings or shorten the brief.`);
       if (result.finishReason !== 'stop' || Buffer.byteLength(result.text) > maxBytes) throw new MapDraftError('INVALID_INPUT', 'The generated document failed validation. Refine the design brief and try again.');
       return result.text;
     } catch (error) {

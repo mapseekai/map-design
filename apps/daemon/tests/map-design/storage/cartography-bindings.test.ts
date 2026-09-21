@@ -11,6 +11,7 @@ import {CartographyService, cartographyPrompt} from '../../../src/map-design/app
 import {TEST_CARTOGRAPHY_SOURCE, testDesignSystem} from '../../fixtures/map-design/test-design-system.js';
 import {createMapDesignProjectServices} from '../../../src/server-context.js';
 import type {PinnedTransport} from '../../../src/map-design/ingestion/pinned-transport.js';
+import {NO_DESIGN_SYSTEM} from '../../../src/map-design/validation/design-system-loader.js';
 
 const NOW = '2026-09-20T00:00:00.000Z';
 const hash = (source: string) => createHash('sha256').update(source).digest('hex');
@@ -156,7 +157,7 @@ describe('pinned Cartography runtime bindings', () => {
       const created = db.transaction(() => services.sourceImportService.prepareImportInTransaction(db, 'project-1', {
         source: {url: 'https://maps.example.test/data.geojson'}, designRequirement: 'Use the selected identity', idempotencyKey: 'import-1',
       }, NOW)).immediate();
-      const expectedId = selected?.id ?? document.id;
+      const expectedId = selected?.id ?? NO_DESIGN_SYSTEM.id;
       expect(created.designSystemId).toBe(expectedId);
       await services.sourceImportService.executeImportJob('project-1', new AbortController().signal);
       const current = services.repository.get('project-1');
@@ -166,12 +167,21 @@ describe('pinned Cartography runtime bindings', () => {
       const attestation = await services.blobStore.getJson('project-1', 'attestations', revision.attestationDigest);
       expect(attestation).toMatchObject({designSystemId: expectedId, designSystemDigest: current!.designSystemDigest});
       const context = await services.queryService.getContext('project-1');
-      expect(context.designSystem).toMatchObject({id: expectedId, name: selectUser ? 'Selected Atlas' : 'Test Atlas'});
-      expect(library.forProject('project-1')?.source).toBe(source);
-      expect(cartographyPrompt(library.forProject('project-1'))).toContain('Do not put dataset bindings');
-      if (selected) expect(library.forProject('project-1')?.description).toBe('Pinned custom visual identity');
-      db.prepare('DELETE FROM map_design_cartography_snapshots WHERE id = ?').run(expectedId);
-      expect(() => library.forProject('project-1')).toThrow('unavailable');
+      expect(context.designSystem).toMatchObject({id: expectedId, name: selectUser ? 'Selected Atlas' : NO_DESIGN_SYSTEM.name});
+      if (selected) {
+        expect(library.forProject('project-1')?.source).toBe(source);
+        expect(cartographyPrompt(library.forProject('project-1'))).toContain('Do not put dataset bindings');
+        expect(library.forProject('project-1')?.description).toBe('Pinned custom visual identity');
+        db.prepare('DELETE FROM map_design_cartography_snapshots WHERE id = ?').run(expectedId);
+        expect(() => library.forProject('project-1')).toThrow('unavailable');
+      } else {
+        expect(current?.designSystemDigest).toBe(NO_DESIGN_SYSTEM.digest);
+        expect(context.cartographicGuidance).toEqual([]);
+        expect(library.forProject('project-1')).toBeNull();
+        expect(cartographyPrompt(library.forProject('project-1'))).toBe('');
+        expect(loadPinnedCartography(db, NO_DESIGN_SYSTEM)).toEqual(NO_DESIGN_SYSTEM);
+        expect(() => loadPinnedCartography(db, { id: NO_DESIGN_SYSTEM.id, digest: document.digest })).toThrow('digest mismatch');
+      }
       // Missing pinned evidence never falls back to a different library document.
     } finally { services.previewService.shutdown(); await services.outbox.drainPending(); }
   });

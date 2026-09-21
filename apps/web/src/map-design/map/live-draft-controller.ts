@@ -233,8 +233,8 @@ export class LiveDraftController {
   }
 }
 
-function resourceOptions(): { origin?: string } {
+function resourceOptions(): { origin?: string; allowExternal: boolean } {
   return typeof globalThis.location?.origin === 'string'
-    ? { origin: globalThis.location.origin }
-    : {};
+    ? { origin: globalThis.location.origin, allowExternal: true }
+    : { allowExternal: true };
 }

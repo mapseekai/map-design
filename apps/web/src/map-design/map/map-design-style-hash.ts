@@ -10,7 +10,7 @@ export async function hashMapDesignStyle(
   projectId: string,
   options: { origin?: string } = {},
 ): Promise<string> {
-  assertMapDesignStyleResourceUrls(style, projectId, options);
+  assertMapDesignStyleResourceUrls(style, projectId, { ...options, allowExternal: true });
   const normalized = structuredClone(style) as StyleDocument;
   const root = normalized as unknown as Record<string, unknown>;
   delete root.id;
@@ -37,7 +37,7 @@ function normalizeResource(
   projectId: string,
   options: { origin?: string },
 ): string {
-  assertMapDesignResourceUrl(value, projectId, options);
+  assertMapDesignResourceUrl(value, projectId, { ...options, allowExternal: true });
   const origin = options.origin;
   if (origin && value.startsWith(`${origin}/`)) return value.slice(origin.length);
   return value;

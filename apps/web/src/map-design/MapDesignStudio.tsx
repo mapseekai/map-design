@@ -1,3 +1,4 @@
+import { resourceErrorCopy } from '../i18n/locales/resource-error';
 import { MapLoading } from '@mapseekai/components';
 import { Button, Alert, ResizablePanelGroup, ResizablePanel, ResizableHandle, type PanelImperativeHandle } from '@mapseekai/components';
 import {
@@ -94,7 +95,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
   const cameraRef = useRef<{ projectId: string; center: [number, number]; zoom: number; bearing: number; pitch: number } | null>(null);
   const [commentToolbarHost, setCommentToolbarHost] = useState<HTMLDivElement | null>(null);
   const [commentListHost, setCommentListHost] = useState<HTMLDivElement | null>(null);
-  const [mapError, setMapError] = useState(false);
+  const [mapError, setMapError] = useState<'load' | 'resource' | 'rate-limit' | null>(null);
   const [mapAttempt, setMapAttempt] = useState(0);
   const [editingStyle, setEditingStyle] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
@@ -425,16 +426,16 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
         onReturnCurrent={() => onViewChange?.({ kind: 'current' })}
         onRequestRestore={() => setRestoreTarget({ revision: view.revision, expectedDraftRevision: data.currentContext.draftRevision })} /> : null}
       {state.error ? <Alert variant="destructive" appearance="floating" className="absolute inset-x-3.5 top-14 z-3">{t('mapDesign.studio.loadError')}</Alert>
-        : mapError ? <Alert variant="destructive" appearance="floating" className="absolute inset-x-3.5 top-14 z-3">
-          <span>{t('mapDesign.studio.loadError')}</span>
-          <Button type="button" onClick={() => { setMapError(false); setMapAttempt((attempt) => attempt + 1); }}>
+        : mapError ? <Alert variant={mapError === 'load' ? 'destructive' : 'default'} appearance="floating" className="absolute inset-x-3.5 top-14 z-3">
+          <span>{mapError === 'load' ? t('mapDesign.studio.loadError') : resourceErrorCopy[locale][mapError]}</span>
+          <Button type="button" onClick={() => { setMapError(null); setMapAttempt((attempt) => attempt + 1); }}>
             {t('mapDesign.conversation.retry')}
           </Button>
         </Alert> : null}
       <MapCanvas key={`${projectId}:${view.kind}:${selectedRevision ?? 'current'}:${mapAttempt}`} projectId={projectId} initialStyle={data.style} className={`relative col-start-1 row-start-3 h-full min-h-80 w-full min-w-0 max-w-full overflow-hidden ${viewMode === 'code' ? 'invisible pointer-events-none' : ''}`}
         layoutRevision={layoutRevision}
-        onMapError={() => setMapError(true)}
-        onMapIdle={() => setMapError(false)}
+        onMapError={(event) => setMapError(event?.status === 429 ? 'rate-limit' : event?.sourceId || event?.status ? 'resource' : 'load')}
+        onMapIdle={() => setMapError((issue) => issue === 'load' ? null : issue)}
         onMapReady={(owned: OwnedMap) => {
           const nextMap = owned as MapLibreMap;
           const camera = cameraRef.current;

@@ -85,7 +85,7 @@ export function createMapDesignEventStreamRouter(deps: CreateMapDesignEventStrea
     }, HEARTBEAT_MS);
     stopHeartbeat = scheduledStop;
     if (closed) scheduledStop();
-    request.once('close', cleanup);
+    // Keep live updates subscribed after the incoming request has been consumed.
     response.once('close', cleanup);
 
     if (cursor.initial) {

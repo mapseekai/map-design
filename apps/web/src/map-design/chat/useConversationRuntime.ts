@@ -1,3 +1,5 @@
+import { MAP_API_PROFILE_UNAVAILABLE_NOTICE } from '@mapseekai/contracts';
+import { apiProfilesCopy } from '../../i18n/locales/api-profiles';
 import type {
   MapDesignConversationRuntimeChoice,
   MapDesignRuntimeSelectionInput,
@@ -61,7 +63,7 @@ export function useConversationRuntime(_options: {
   update(next: MapDesignRuntimeSelectionInput): Promise<void>;
 } {
   const { projectId, conversationId, disabled = false, enabled = true } = _options;
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const scope = `${projectId}\u0000${conversationId}`;
   const [state, setState] = useState<RuntimeState>({
     scope,
@@ -83,7 +85,7 @@ export function useConversationRuntime(_options: {
     saveError: t('mapDesign.runtime.saveError'),
     conflict: t('mapDesign.runtime.conflict'),
     normalized: t('mapDesign.runtime.normalized'),
-    saved: t('mapDesign.runtime.saved'),
+    unavailable: apiProfilesCopy[locale].unavailable,
   });
   const visibleState = state.scope === scope ? state : {
     scope,
@@ -100,7 +102,7 @@ export function useConversationRuntime(_options: {
     saveError: t('mapDesign.runtime.saveError'),
     conflict: t('mapDesign.runtime.conflict'),
     normalized: t('mapDesign.runtime.normalized'),
-    saved: t('mapDesign.runtime.saved'),
+    unavailable: apiProfilesCopy[locale].unavailable,
   };
 
   useEffect(() => {
@@ -123,7 +125,8 @@ export function useConversationRuntime(_options: {
         loading: false,
         saving: false,
         error: null,
-        notice: response.normalizationNotice ? copyRef.current.normalized : null,
+        notice: response.normalizationNotice === MAP_API_PROFILE_UNAVAILABLE_NOTICE ? copyRef.current.unavailable
+          : response.normalizationNotice ? copyRef.current.normalized : null,
       });
     }).catch(() => {
       if (controller.signal.aborted || generationRef.current !== generation || contextRef.current.scope !== scope) return;
@@ -181,7 +184,7 @@ export function useConversationRuntime(_options: {
         saving: false,
         error: null,
         notice: response.normalizationNotice || !sameSelection(effectiveRuntime, next)
-          ? copyRef.current.normalized : copyRef.current.saved,
+          ? copyRef.current.normalized : null,
       });
     } catch (error) {
       if (!currentScope()) return;

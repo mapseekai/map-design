@@ -1,3 +1,4 @@
+import { createMapRunHistory } from './map-design/storage/run-history.js';
 import { DEFAULT_MAP_DESIGN_SYSTEM_ID } from '@mapseekai/map-design-contracts';
 import { CartographyEditService } from './map-design/application/cartography-edit-service.js';
 import { MapTextAttachmentService } from './map-design/application/text-attachment-service.js';
@@ -91,6 +92,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     await stop(runService ? () => runService.shutdown() : undefined);
     await stop(services ? () => services.importJobRunner.shutdown() : undefined);
     await stop(services ? () => services.outbox.stop() : undefined);
+    await stop(services?.pinnedTransport.close ? () => services!.pinnedTransport.close!() : undefined);
     try {
       closeMapDesignDatabase(db);
     } catch (error) {
@@ -102,6 +104,8 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     const config = createMapDesignConfigStore(dataDir);
     const projectRoot = resolveProjectRoot(fileURLToPath(new URL('.', import.meta.url)));
     const store = createMapDesignLocalStore(db);
+    const runHistory = createMapRunHistory(db);
+    runHistory.recoverInterrupted();
     const designSystem = await loadMapDesignSystem({ projectRoot, designSystemId: DEFAULT_MAP_DESIGN_SYSTEM_ID });
     let runService: MapDesignRunService | null = null;
     let initialRuns: MapInitialRunService | null = null;
@@ -145,6 +149,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     const thumbnailService = new MapThumbnailService(db);
     const screenshotService = new MapScreenshotService({ blobStore: mapServices.blobStore, projectReader: mapServices.queryService });
     activeRunService = createMapDesignRunService({
+      runHistory,
       store,
       comments: commentService,
       screenshots: screenshotService,

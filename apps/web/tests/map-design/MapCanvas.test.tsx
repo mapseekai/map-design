@@ -167,17 +167,17 @@ describe('MapCanvas lifecycle and resource protocols', () => {
     expect(createMap).toHaveBeenCalledTimes(2);
   });
 
-  it('rejects native attacker URLs before map construction and defends every transformed request', () => {
+  it('rejects local/privileged URLs before map construction and defends every transformed request', () => {
     const maplibre = { addProtocol: vi.fn(), removeProtocol: vi.fn() };
     const createMap = vi.fn((_options: MapOptions) => ({ remove: vi.fn(), resize: vi.fn() }));
     const attackerStyle = {
       version: 8 as const,
-      sources: { attacker: { type: 'vector' as const, tiles: ['https://attacker.test/{z}/{x}/{y}.pbf'] } },
+      sources: { attacker: { type: 'vector' as const, tiles: ['http://127.0.0.1/{z}/{x}/{y}.pbf'] } },
       layers: [],
     };
 
     expect(() => render(<MapCanvas projectId="project-a" initialStyle={attackerStyle} maplibre={maplibre} createMap={createMap} />))
-      .toThrow(/project resource gateway|unsafe MapDesign Style resource/i);
+      .toThrow(/resource gateway|unsafe MapDesign Style resource/i);
     expect(createMap).not.toHaveBeenCalled();
 
     const safeStyle = {
@@ -187,8 +187,8 @@ describe('MapCanvas lifecycle and resource protocols', () => {
     };
     render(<MapCanvas projectId="project-a" initialStyle={safeStyle} maplibre={maplibre} createMap={createMap} />);
     const options = createMap.mock.calls[0]?.[0];
-    expect(() => options?.transformRequest?.('https://attacker.test/native.pbf', 'Tile' as never))
-      .toThrow(/project resource gateway/i);
+    expect(() => options?.transformRequest?.('http://127.0.0.1/native.pbf', 'Tile' as never))
+      .toThrow(/resource gateway/i);
     expect(options?.transformRequest?.('/api/map-design/projects/project-a/resources/tiles/tiles/0/0/0.pbf', 'Tile' as never))
       .toMatchObject({ url: expect.stringContaining('/projects/project-a/resources/') });
   });

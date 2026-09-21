@@ -18,7 +18,16 @@ export interface CartographyDesignSystem {
 }
 
 /** The legacy branch is read-only revision evidence, never a selectable preset. */
-export type LoadedMapDesignSystem = CartographyDesignSystem | LegacyMapDesignSystem;
+export type LoadedMapDesignSystem = CartographyDesignSystem | LegacyMapDesignSystem | typeof NO_DESIGN_SYSTEM;
+
+/** Stable absence marker for revision evidence; contains no visual identity or guidance. */
+export const NO_DESIGN_SYSTEM = Object.freeze({
+  format: 'none' as const,
+  id: 'mapdesign-no-cartography',
+  digest: blake3Digest(new TextEncoder().encode('mapdesign:no-cartography:v1')),
+  name: 'No design specification',
+  source: '',
+});
 
 export interface LoadMapDesignSystemInput {
   projectRoot: string;

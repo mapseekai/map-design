@@ -1,3 +1,4 @@
+import { createApiProfileRouter } from './api-profile-routes.js';
 import { Router, json, type RequestHandler } from 'express';
 import type { MapDesignAppConfig, UpdateMapDesignAppConfigRequest } from '@mapseekai/contracts';
 import { MapDesignConfigValidationError, type MapDesignConfigStore } from '../storage/config-store.js';
@@ -15,6 +16,7 @@ function mergeConfigPatch(current: MapDesignAppConfig, patch: unknown): UpdateMa
       const providerRecord = typeof provider === 'object' && provider !== null && !Array.isArray(provider)
         ? provider as Record<string, unknown>
         : null;
+      if (providerRecord && Object.hasOwn(providerRecord, 'connectionTest')) throw new MapDesignConfigValidationError('Invalid byokProviders');
       if (providerRecord?.apiKey === REDACTED) throw new MapDesignConfigValidationError('Invalid byokProviders');
       if (Object.hasOwn(providerRecord ?? {}, 'apiKey')
         && (typeof providerRecord?.apiKey !== 'string' || providerRecord.apiKey.length === 0)) {
@@ -27,6 +29,7 @@ function mergeConfigPatch(current: MapDesignAppConfig, patch: unknown): UpdateMa
       for (const field of ['baseUrl', 'apiVersion', 'model'] as const) {
         if (providerRecord?.[field] === '') delete merged[field];
       }
+      if (providerRecord && Object.keys(providerRecord).some((key) => key !== 'name')) delete merged.connectionTest;
       providers[providerId] = providerRecord ? merged : provider;
     }
     next.byokProviders = providers;
@@ -56,13 +59,14 @@ export function createMapDesignSystemRouter(deps: {
       else res.status(500).json({ error: { code: 'INTERNAL', message: 'The MapDesign configuration could not be saved.' } });
     }
   });
+  router.use(createApiProfileRouter(deps.config));
   return router;
 }
 
 function redactConfig(config: MapDesignAppConfig): MapDesignAppConfig {
   return {
     ...config,
-    ...(config.byokProviders ? { byokProviders: Object.fromEntries(Object.entries(config.byokProviders).map(([id, provider]) => [id, { ...provider, apiKey: '[REDACTED]' }])) } : {}),
+    ...(config.byokProviders ? { byokProviders: Object.fromEntries(Object.entries(config.byokProviders).map(([id, provider]) => [id, { ...provider, apiKey: provider.apiKey.trim() ? '[REDACTED]' : '' }])) } : {}),
     ...(config.agentCliEnv ? { agentCliEnv: Object.fromEntries(Object.entries(config.agentCliEnv).map(([id, values]) => [id, Object.fromEntries(Object.keys(values).map((key) => [key, '[REDACTED]']))])) } : {}),
   };
 }

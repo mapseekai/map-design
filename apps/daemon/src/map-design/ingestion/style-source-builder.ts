@@ -1,3 +1,4 @@
+import { resolveDirectStyleResources } from './direct-style-resources.js';
 import type { MapDesignResourceScope } from '@mapseekai/map-design-contracts';
 
 import { canonicalJsonBytes } from '../storage/canonical-json.js';
@@ -23,12 +24,17 @@ export async function buildStyleSource(input: {
   transport?: PinnedTransport;
   designSystem: LoadedMapDesignSystem;
   resourceScope?: MapDesignResourceScope;
+  signal?: AbortSignal;
+  resourceMode?: 'direct' | 'gateway';
 }): Promise<InitialMapBuild> {
   if (input.source.kind !== 'style') throw new TypeError('Expected a detected Style source');
   const sourceBytes = canonicalJsonBytes(input.source.document);
-  const rewritten = await rewriteStyleResources({
+  const rewritten = input.resourceMode === 'direct'
+    ? resolveDirectStyleResources({ style: input.source.document, approvedFinalUrl: input.approvedFinalUrl })
+    : await rewriteStyleResources({
     style: input.source.document,
     projectId: input.projectId,
+    ...(input.signal ? { signal: input.signal } : {}),
     approvedFinalUrl: input.approvedFinalUrl,
     ...(input.blobStore ? { blobStore: input.blobStore } : {}),
     ...(input.transport ? { transport: input.transport } : {}),

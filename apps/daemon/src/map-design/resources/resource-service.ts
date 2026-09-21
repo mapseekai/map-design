@@ -1,4 +1,7 @@
+import { expandTileTemplate, parseTileCoordinates } from './tile-template.js';
 import type Database from 'better-sqlite3';
+import { fetchImportResource } from '../ingestion/import-fetch.js';
+import { blake3Digest } from '../storage/canonical-json.js';
 import { PMTiles, TileType } from 'pmtiles';
 
 import type { PinnedTransport } from '../ingestion/pinned-transport.js';
@@ -38,9 +41,10 @@ export interface MapDesignResourceService {
 
 export class MapDesignResourceError extends Error {
   constructor(
-    readonly status: 400 | 404 | 409 | 412 | 415 | 502,
+    readonly status: 400 | 404 | 408 | 409 | 412 | 415 | 429 | 500 | 502 | 503 | 504,
     message: string,
     options?: ErrorOptions,
+    readonly retryAfter?: string,
   ) {
     super(message, options);
     this.name = 'MapDesignResourceError';
@@ -142,7 +146,7 @@ export function createMapDesignResourceServiceFromLookup(input: {
       const mediaType = effectiveMediaType(resource, suffix);
       let response;
       try {
-        response = await input.transport.fetch({
+        response = await fetchImportResource(input.transport, {
           url: target,
           purpose: purposeFor(resource.kind),
           accept: [mediaType],
@@ -153,7 +157,8 @@ export function createMapDesignResourceServiceFromLookup(input: {
       }
       if (response.status === 404) throw new MapDesignResourceError(404, 'Map resource not found');
       if (response.status !== 200) {
-        throw new MapDesignResourceError(502, 'Map resource upstream returned an invalid status');
+        const status = response.status === 429 ? 429 : 502;
+        throw new MapDesignResourceError(status, 'Map resource upstream returned an invalid status', undefined, safeRetryAfter(response.headers['retry-after']));
       }
       const responseEtag = response.headers.etag ?? resource.etag;
       if (resource.etag && response.headers.etag && response.headers.etag !== resource.etag) {
@@ -162,7 +167,7 @@ export function createMapDesignResourceServiceFromLookup(input: {
       return {
         bytes: response.body,
         mediaType,
-        etag: responseEtag ?? `W/"remote-${resource.resourceId}"`,
+        etag: responseEtag ?? `"${blake3Digest(response.body)}"`,
       };
     },
     async getPmtilesArchiveRange(ownerId, resourceId, range, ifMatch, signal) {
@@ -182,7 +187,7 @@ export function createMapDesignResourceServiceFromLookup(input: {
       }
       let response;
       try {
-        response = await input.transport.fetch({
+        response = await fetchImportResource(input.transport, {
           url: new URL(resource.sourceUrl),
           purpose: 'pmtiles-range',
           range,
@@ -291,14 +296,14 @@ async function loadPmtilesTile(
   return {
     bytes: new Uint8Array(tile.data),
     mediaType,
-    etag: tile.etag ?? header.etag ?? resource.etag ?? `W/"remote-${resource.resourceId}"`,
+    etag: `"${blake3Digest(new Uint8Array(tile.data))}"`,
   };
 }
 
 function resolveRemoteTarget(resource: MapDesignResolvedResource, suffix: readonly string[]): URL {
   if (resource.kind === 'tile') {
-    const { z, x, y } = parseTileSuffix(suffix);
-    return finalTemplateUrl(resource.sourceUrl, { z: String(z), x: String(x), y: String(y) });
+    try { return expandTileTemplate(resource.sourceUrl, suffix); }
+    catch { throw new MapDesignResourceError(400, 'Map tile suffix or template is invalid'); }
   }
   if (resource.kind === 'glyph') {
     if (suffix.length !== 3 || suffix[0] !== 'fonts'
@@ -339,18 +344,8 @@ function effectiveMediaType(resource: MapDesignResolvedResource, suffix: readonl
 }
 
 function parseTileSuffix(suffix: readonly string[]): { z: number; x: number; y: number } {
-  if (suffix.length !== 4 || suffix[0] !== 'tiles' || !/^\d+$/u.test(suffix[1] ?? '')
-    || !/^\d+$/u.test(suffix[2] ?? '') || !/^\d+(?:\.[A-Za-z0-9]+)?$/u.test(suffix[3] ?? '')) {
-    throw new MapDesignResourceError(400, 'Map tile suffix is invalid');
-  }
-  const z = Number(suffix[1]);
-  const x = Number(suffix[2]);
-  const y = Number((suffix[3] as string).replace(/\.[A-Za-z0-9]+$/u, ''));
-  if (![z, x, y].every(Number.isSafeInteger) || z < 0 || z > 24
-    || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) {
-    throw new MapDesignResourceError(400, 'Map tile coordinates are invalid');
-  }
-  return { z, x, y };
+  try { return parseTileCoordinates(suffix); }
+  catch { throw new MapDesignResourceError(400, 'Map tile suffix is invalid'); }
 }
 
 function finalTemplateUrl(template: string, values: Readonly<Record<string, string>>): URL {
@@ -416,4 +411,9 @@ function safeNonnegativeInteger(value: unknown): number {
 
 function invalidMetadata(): never {
   throw new MapDesignResourceError(409, 'Map resource metadata is invalid');
+}
+
+function safeRetryAfter(value: string | undefined): string | undefined {
+  if (!value || value.length > 128 || /[\r\n]/u.test(value)) return undefined;
+  return /^\d+$/u.test(value) || Number.isFinite(Date.parse(value)) ? value : undefined;
 }

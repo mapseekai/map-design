@@ -1,3 +1,5 @@
+import { MAP_API_PROFILE_UNAVAILABLE_NOTICE, type MapDesignAppConfig } from '@mapseekai/contracts';
+import { configuredApiCatalog, resolveConfiguredApiChoice } from './api-profile-catalog.js';
 import type {
   LocalAgentInfo,
   LocalAgentModelOption,
@@ -59,6 +61,7 @@ type RuntimeCatalogExecFile = (
 
 export function createMapDesignRuntimeCatalog(options: {
   definitions: readonly RuntimeAgentDef[];
+  apiConfig?(): MapDesignAppConfig;
   inspect(definition: RuntimeAgentDef): RuntimeCatalogInspection;
   execFile?: RuntimeCatalogExecFile;
 }): MapDesignRuntimeCatalog {
@@ -92,17 +95,23 @@ export function createMapDesignRuntimeCatalog(options: {
     return pending;
   };
 
+  const currentSnapshot = () => options.apiConfig ? configuredApiCatalog(snapshot, options.apiConfig()) : snapshot;
+
   const resolveChoice = (
     agentId: string,
     input: MapDesignRuntimeSelectionInput,
   ): ResolvedRuntimeChoice => {
     if (agentId !== input.agentId) throw invalidInput();
     let definition = definitionsById.get(agentId);
-    let agent = snapshot.find((candidate) => candidate.id === agentId);
+    const current = currentSnapshot();
+    let agent = current.find((candidate) => candidate.id === agentId);
+    if (agentId === 'api' && options.apiConfig) {
+      return resolveConfiguredApiChoice(agent, options.apiConfig(), input);
+    }
     let normalized = false;
     let normalizationNotice: string | undefined;
     if (!definition || !agent?.available || !agent.mapDesign.nativeMapTools) {
-      agent = snapshot.find((candidate) => candidate.available
+      agent = current.find((candidate) => candidate.available
         && candidate.mapDesign.nativeMapTools
         && (candidate.models ?? []).some((model) => model.enabled));
       definition = agent ? definitionsById.get(agent.id) : undefined;
@@ -182,9 +191,18 @@ export function createMapDesignRuntimeCatalog(options: {
 
   return {
     refresh,
-    list: () => snapshot,
+    list: currentSnapshot,
     resolveChoice,
     normalizeSaved(input) {
+      if (input.agentId === 'api' && options.apiConfig) {
+        try {
+          const resolved = resolveChoice(input.agentId, input);
+          return { runtime: { agentId: 'api', model: resolved.model, modelOrigin: 'catalog' as const } };
+        } catch {
+          // Keep the picker reachable; never select another account after deletion.
+          return { runtime: input, normalizationNotice: MAP_API_PROFILE_UNAVAILABLE_NOTICE };
+        }
+      }
       const resolved = resolveChoice(input.agentId, input);
       return {
         runtime: {
@@ -202,6 +220,9 @@ export function createMapDesignRuntimeCatalog(options: {
     validate(input) {
       const resolved = resolveChoice(input.agentId, input);
       if (resolved.normalizationNotice) throw invalidInput();
+      if (input.agentId === 'api' && options.apiConfig) {
+        return { agentId: 'api', model: resolved.model, modelOrigin: 'catalog' as const };
+      }
       return {
         agentId: input.agentId,
         ...(input.model === undefined ? {} : { model: input.model }),

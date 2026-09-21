@@ -1,3 +1,4 @@
+import { createManagedTransport } from './map-design/ingestion/managed-transport.js';
 import { networkInterfaces } from 'node:os';
 
 import type Database from 'better-sqlite3';
@@ -87,9 +88,9 @@ export function createMapDesignProjectServices(input: {
 }): MapDesignProjectServices {
   const repository = new MapDesignSqliteProjectRepository(input.db);
   const blobStore = createMapDesignBlobStore(input.dataRoot);
-  const pinnedTransport = input.transport ?? createPinnedTransport({
+  const pinnedTransport = createManagedTransport(input.transport ?? createPinnedTransport({
     allowProxyVirtualAddresses: shouldAllowMapDesignProxyVirtualAddresses(),
-  });
+  }));
   if (input.designSystem.format !== 'cartography') throw new TypeError('Startup requires a standard CARTOGRAPHY.md.');
   const defaultDocument = pinCartographyDocument(input.db, input.designSystem.id, input.designSystem.source);
   if (defaultDocument.digest !== input.designSystem.digest) throw new TypeError('Default cartography digest mismatch.');

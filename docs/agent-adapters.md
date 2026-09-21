@@ -32,3 +32,37 @@ it is not a general filesystem or network sandbox.
 ## Changing an adapter
 
 Edit its definition, keep it registered, reuse the shared parser when possible, and add focused tests for detection, arguments, or event parsing. A selected adapter receives the run-scoped `skills/map-design` instructions.
+## Built-in API Model
+
+The `api` adapter uses the AI SDK inside the daemon; it is not a subprocess.
+It supports the configured compatible Chat Completions, OpenAI Responses or
+Anthropic Messages protocol. Provider options are built for that protocol's
+namespace and wire fields; serial model-tool settings do not rely solely on
+serializing tool execution after generation.
+
+`apiExecution` configures `maxSteps` (default 48, range 1–128), `maxToolCalls`
+(default 192, range 1–512), `maxOutputTokens` (default 16,384) and
+`cartographyMaxOutputTokens` (default 32,768). Token settings accept 256–131,072;
+this application bound is not a claim about a particular model's supported
+maximum. Both API-based map editing and Cartography generation consume these
+settings. Provider-specific restrictions still apply.
+
+Tool failures are keyed by tool-call ID. An explicit `retryOfToolCallId` may
+resolve a failed call only when the tool and semantic operation match; fresh
+revision and idempotency metadata are allowed. This adapter-only field is
+removed before invoking the domain tool. Three repeated failures of the same
+operation stop the loop. A successful unrelated operation never clears an
+older failure.
+
+Errors distinguish `API_OUTPUT_LIMIT`, `API_STEP_LIMIT`, `API_TOOL_LIMIT`,
+`API_TOOL_LOOP`, `API_TOOL_FAILED` and `API_TOOL_CALL_INCOMPLETE`. Safe run
+telemetry records counts, final reason and token usage, not prompts or secrets.
+The current draft is not automatically rolled back or silently re-executed when
+a run stops. Continue explicitly after inspecting the persisted map state.
+
+## Named API model profiles
+
+API Model supports multiple saved provider/model configurations, explicit connection
+testing, default selection and per-conversation switching. Credentials remain
+server-side and a running task retains its admission-time selection. See
+[Saved API model configurations](api-model-profiles.md).

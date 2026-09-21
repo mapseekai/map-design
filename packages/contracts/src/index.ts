@@ -8,3 +8,4 @@ export * from './api/map-screenshots.js';
 export * from './sse/runs.js';
 export * from './api/map-text-attachments.js';
 export * from './api/map-thumbnails.js';
+export * from './api/api-profiles.js';

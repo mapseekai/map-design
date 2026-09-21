@@ -55,7 +55,8 @@ export function createMapDesignRunRouter(deps: CreateMapDesignRunRouterDependenc
     });
     if (terminalReplayed) unsubscribe();
     else if (closed || response.writableEnded) close();
-    request.once('close', close);
+    // A completed request body does not mean the streaming response disconnected.
+    response.once('close', close);
   });
   router.use((error: unknown, _request: Request, response: Response, next: NextFunction) => {
     if (response.headersSent) return next(error);

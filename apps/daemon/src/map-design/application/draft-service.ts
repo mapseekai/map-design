@@ -109,7 +109,7 @@ export class MapDraftService {
       throw error;
     }
     try {
-      assertMapDesignStyleResourceUrls(applied.style, context.projectId);
+      assertMapDesignStyleResourceUrls(applied.style, context.projectId, { allowExternal: true });
     } catch {
       throw new MapDraftError('STYLE_INVALID', 'The map style contains an unsafe resource URL.');
     }

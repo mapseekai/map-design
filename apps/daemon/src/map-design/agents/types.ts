@@ -23,6 +23,8 @@ export type MapRunInput = {
   reasoning: string | null;
   serviceTier: string | null;
   byokProvider?: MapDesignRunByokProviderSelection | undefined;
+  /** Server-owned immutable selection for this run; never serialized to events. */
+  apiProviderSnapshot?: import('@mapseekai/contracts').ByokProviderSelection;
   toolRuntime: SdkMapToolRuntime;
   toolCallback: RunToolCallback;
   signal: AbortSignal;

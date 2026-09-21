@@ -1,14 +1,21 @@
 import { mapThumbnailUrl } from '@mapseekai/contracts';
-import { Map as MapIcon, Ellipsis, FolderOpen, RotateCcw, Trash2 } from 'lucide-react';
+import { Map as MapIcon, Ellipsis, FolderOpen, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import type { MapDesignProjectSummary } from '@mapseekai/map-design-contracts';
 import { MapLoading, Alert, AlertDescription, Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, Card, CardContent, CardFooter, Popover, PopoverTrigger, PopoverContent, Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@mapseekai/components';
 import { useI18n } from '../../i18n';
 import { useState, useRef } from 'react';
+import { projectRenameCopy } from '../../i18n/locales/project-rename';
 import { projectFiltersCopy } from '../../i18n/locales/project-filters';
-interface RecentMapProjectsProps { showHeading?: boolean; projects: MapDesignProjectSummary[]; loading: boolean; error: string | null; projectErrors: Record<string, string>; pendingProjectIds: ReadonlySet<string>; onOpenProject(id: string): void; onRetryProject(id: string): void; onDeleteProject(id: string): void; }
-export function RecentMapProjects({ showHeading = true, projects, loading, error, projectErrors, pendingProjectIds, onOpenProject, onRetryProject, onDeleteProject }: RecentMapProjectsProps) {
+interface RecentMapProjectsProps { showHeading?: boolean; projects: MapDesignProjectSummary[]; loading: boolean; error: string | null; projectErrors: Record<string, string>; pendingProjectIds: ReadonlySet<string>; onOpenProject(id: string): void; onRetryProject(id: string): void; onDeleteProject(id: string): void; onRenameProject?(id: string, title: string): Promise<boolean>; }
+export function RecentMapProjects({ showHeading = true, projects, loading, error, projectErrors, pendingProjectIds, onOpenProject, onRetryProject, onDeleteProject, onRenameProject }: RecentMapProjectsProps) {
  const { t, locale } = useI18n();
  const copy = projectFiltersCopy[locale];
+ const renameCopy = projectRenameCopy[locale];
+ const [renameProject, setRenameProject] = useState<MapDesignProjectSummary | null>(null);
+ const [renameTitle, setRenameTitle] = useState('');
+ const [renaming, setRenaming] = useState(false);
+ const [renameError, setRenameError] = useState(false);
+ const renameInputRef = useRef<HTMLInputElement>(null);
  const [query, setQuery] = useState('');
  const [status, setStatus] = useState('all');
  const [actionProjectId, setActionProjectId] = useState<string | null>(null);
@@ -29,7 +36,7 @@ export function RecentMapProjects({ showHeading = true, projects, loading, error
  {!loading && !error && !projects.length ? <Empty variant="outline"><EmptyHeader><EmptyTitle>{t('mapDesign.recent.empty')}</EmptyTitle><EmptyDescription>{t('mapDesign.recent.emptyDetail')}</EmptyDescription></EmptyHeader></Empty> : null}
  {!loading && !error && projects.length > 0 && !sorted.length ? <p role="status" className="text-sm text-muted-foreground">{copy.empty}</p> : null}
  {sorted.length ? <ul className="flex list-none flex-wrap gap-3 p-0" aria-label={t('mapDesign.recent.title')}>
- {sorted.map(p => <li key={p.projectId} className="min-w-0" style={{ width: '18rem', maxWidth: '100%' }}><Card size="sm" variant="media" className="h-full cursor-pointer" onClick={() => onOpenProject(p.projectId)}>
+ {sorted.map(p => <li key={p.projectId} className="min-w-0" style={{ width: '15rem', maxWidth: '100%' }}><Card size="sm" variant="media" interactive className="h-full cursor-pointer" onClick={() => onOpenProject(p.projectId)}>
  <div className="relative aspect-video w-full overflow-hidden bg-muted">
    <MapIcon aria-hidden="true" className="absolute inset-0 m-auto size-8 text-muted-foreground/40" />
    <img src={mapThumbnailUrl(p.projectId)} alt={p.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" onError={event => { event.currentTarget.hidden = true; }} />
@@ -38,6 +45,10 @@ export function RecentMapProjects({ showHeading = true, projects, loading, error
        <PopoverTrigger render={<Button type="button" variant="outline" size="icon-sm" onClick={event => { actionTriggerRef.current = event.currentTarget; }} aria-label={`${copy.more}: ${p.title}`}><Ellipsis aria-hidden="true" /></Button>} />
        <PopoverContent align="end" size="sm" className="w-36" aria-label={`${copy.more}: ${p.title}`}>
          <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { setActionProjectId(null); onOpenProject(p.projectId); }}><FolderOpen aria-hidden="true" data-icon="inline-start" />{t('mapDesign.recent.open')}</Button>
+         {onRenameProject ? <Button size="sm" variant="ghost" className="w-full justify-start" disabled={pendingProjectIds.has(p.projectId)}
+           onClick={() => { setActionProjectId(null); setRenameProject(p); setRenameTitle(p.title); setRenameError(false); }}>
+           <Pencil aria-hidden="true" data-icon="inline-start" />{renameCopy.rename}
+         </Button> : null}
          {p.lifecycle === 'failed' ? <Button size="sm" variant="ghost" className="w-full justify-start" disabled={pendingProjectIds.has(p.projectId)} onClick={() => { setActionProjectId(null); onRetryProject(p.projectId); }}><RotateCcw aria-hidden="true" data-icon="inline-start" />{t('mapDesign.recent.retry')}</Button> : null}
          <Button size="sm" variant="destructive" className="w-full justify-start" disabled={pendingProjectIds.has(p.projectId)} onClick={() => { setActionProjectId(null); setDeleteProject(p); }}><Trash2 aria-hidden="true" data-icon="inline-start" />{t('common.delete')}</Button>
        </PopoverContent>
@@ -46,10 +57,32 @@ export function RecentMapProjects({ showHeading = true, projects, loading, error
  </div>
  {projectErrors[p.projectId] ? <CardContent><div className="py-2"><Alert variant="destructive"><AlertDescription>{projectErrors[p.projectId]}</AlertDescription></Alert></div></CardContent> : null}
  <CardFooter className="mt-auto"><div className="flex min-w-0 w-full flex-col items-start gap-1">
-   <Button type="button" variant="ghost" size="sm" className="w-full justify-start" title={p.title}><span className="truncate">{p.title}</span></Button>
+   <Button type="button" variant="ghost" size="sm" className="w-full justify-start" style={{ marginInlineStart: 'calc(-2.5 * var(--spacing) - 1px)' }} title={p.title}><span className="truncate">{p.title}</span></Button>
    <span className="text-xs text-muted-foreground">{copy.updated}: <time dateTime={p.updatedAt}>{new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(p.updatedAt))}</time></span>
  </div></CardFooter>
  </Card></li>)}</ul> : null}
+ {renameProject ? <Dialog ariaLabelledBy="rename-project-title" onClose={() => { if (!renaming) setRenameProject(null); }}
+   closeOnEscape={!renaming} closeOnBackdrop={!renaming} initialFocus={renameInputRef} finalFocus={actionTriggerRef}>
+   <form className="flex flex-col gap-4" onSubmit={async event => {
+     event.preventDefault();
+     if (renaming || !renameTitle.trim() || !onRenameProject) return;
+     setRenaming(true); setRenameError(false);
+     try {
+       if (await onRenameProject(renameProject.projectId, renameTitle.trim())) setRenameProject(null);
+       else setRenameError(true);
+     } catch { setRenameError(true); }
+     finally { setRenaming(false); }
+   }}>
+     <DialogHeader><DialogTitle id="rename-project-title">{renameCopy.rename}</DialogTitle></DialogHeader>
+     <Input ref={renameInputRef} aria-label={t('mapDesign.form.projectName')} value={renameTitle} maxLength={256} required disabled={renaming}
+       onChange={event => { setRenameTitle(event.target.value); setRenameError(false); }} onFocus={event => event.target.select()} />
+     {renameError ? <p role="alert" className="text-sm text-destructive">{renameCopy.error}</p> : null}
+     <DialogFooter>
+       <Button type="button" variant="outline" disabled={renaming} onClick={() => setRenameProject(null)}>{t('mapDesign.revision.cancel')}</Button>
+       <Button type="submit" disabled={renaming || !renameTitle.trim() || renameTitle.trim() === renameProject.title}>{renaming ? t('common.loading') : renameCopy.rename}</Button>
+     </DialogFooter>
+   </form>
+ </Dialog> : null}
  {deleteProject ? <Dialog role="alertdialog" onClose={() => setDeleteProject(null)} closeOnEscape initialFocus={cancelDeleteRef} finalFocus={actionTriggerRef}>
    <DialogHeader><DialogTitle>{t('common.delete')} “{deleteProject.title}”?</DialogTitle><DialogDescription>{copy.deleteWarning}</DialogDescription></DialogHeader>
    <DialogFooter>

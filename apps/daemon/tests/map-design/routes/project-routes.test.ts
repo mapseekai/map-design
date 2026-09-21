@@ -10,6 +10,7 @@ function setup() {
     create: vi.fn(),
     list: vi.fn(() => ({ projects: [] })),
     get: vi.fn(),
+    rename: vi.fn(),
     getConversation: vi.fn(() => ({
       id: 'conversation-1', projectId: 'project-1', messages: [],
       createdAt: '2026-08-27T00:00:00.000Z', updatedAt: '2026-08-27T00:00:00.000Z',
@@ -48,6 +49,19 @@ async function request(app: Express, route: string, init: RequestInit = {}) {
 }
 
 describe('MapDesign project legacy read routes', () => {
+  it('renames through a JSON PATCH and rejects foreign origins', async () => {
+    const { app, projectService } = setup();
+    const updated = { projectId: 'project-1', title: 'Renamed', updatedAt: '2026-09-20T00:00:00.000Z' };
+    projectService.rename.mockReturnValue(updated);
+    const path = '/api/map-design/projects/project-1';
+    const init = { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Renamed' }) };
+    const response = await request(app, path, init);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(updated);
+    expect(projectService.rename).toHaveBeenCalledWith('project-1', { title: 'Renamed' });
+    expect((await request(app, path, { ...init, headers: { ...init.headers, origin: 'https://untrusted.example' } })).status).toBe(403);
+    expect(projectService.rename).toHaveBeenCalledTimes(1);
+  });
   it('allows JSON escaping overhead for documents below the source byte limit', async () => {
     const { app, projectService } = setup();
     projectService.importCartography.mockReturnValue({ id: 'a'.repeat(64) });

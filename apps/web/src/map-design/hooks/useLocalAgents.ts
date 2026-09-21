@@ -1,3 +1,4 @@
+import { API_PROFILES_CHANGED } from '../api-profiles-client';
 import type { LocalAgentInfo } from '@mapseekai/contracts';
 import { useEffect, useState } from 'react';
 import { getLocalAgents } from '../../api/client';
@@ -14,18 +15,22 @@ export function useLocalAgents() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const controller = new AbortController();
-    void getLocalAgents(controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) setAgents(result.agents);
-      })
-      .catch((reason: unknown) => {
-        if (!controller.signal.aborted) setError(errorMessage(reason));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      controller?.abort();
+      const request = new AbortController(); controller = request;
+      void getLocalAgents(request.signal).then((result) => {
+        if (!request.signal.aborted) { setAgents(result.agents); setError(null); }
+      }).catch((reason: unknown) => {
+        if (!request.signal.aborted) setError(errorMessage(reason));
+      }).finally(() => { if (!request.signal.aborted) setLoading(false); });
+    };
+    refresh();
+    window.addEventListener(API_PROFILES_CHANGED, refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      controller?.abort(); window.removeEventListener(API_PROFILES_CHANGED, refresh); window.removeEventListener('focus', refresh);
+    };
   }, []);
 
   return { agents, loading, error };

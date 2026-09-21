@@ -1,3 +1,4 @@
+import { createMapRunHistory } from '../../../src/map-design/storage/run-history.js';
 import { EventEmitter } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -2323,4 +2324,37 @@ describe('MapDesign native Map Agent selection', () => {
     expect(state.buildArgs).not.toHaveBeenCalled();
     expect(state.spawn).not.toHaveBeenCalled();
   });
+});
+
+
+it('evicts completed runs from memory while preserving durable replay, SSE and provenance', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'map-run-history-')); const database = openMapDesignDatabase(root);
+  try {
+    const store = createMapDesignLocalStore(database);
+    store.createProject({ project: { projectId: 'map-1', title: 'Map', runtime: { agentId: 'codex' }, source: { url: 'https://example.com/style.json' }, designRequirement: 'Inspect', idempotencyKey: 'create' }, primaryConversationId: 'conversation-1', verifiedWorkingDirectory: null });
+    const child = new EventEmitter() as EventEmitter & { stdout: PassThrough; kill: () => boolean; pid: number };
+    child.stdout = new PassThrough(); child.kill = () => true; child.pid = 4321;
+    const history = createMapRunHistory(database);
+    const spawn = vi.fn(() => child);
+    const service = createMapDesignRunService({ store, runHistory: history, retainedRunLimit: 0,
+      agents: { get: () => ({ id: 'codex', bin: 'codex', streamFormat: 'json-event-stream', eventParser: 'codex', buildArgs: () => ['exec'] }), spawn, stageSkill: async () => undefined },
+      toolTokens: new ToolTokenRegistry(), dataDir: root, projectRoot: root, daemonUrl: () => 'http://localhost', mapContext: { getContext: async () => ({}) }, randomId: () => 'run-history',
+    });
+    const request = { projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Inspect', agentId: 'codex', clientRequestId: 'request-history', userMessageId: 'user-history', assistantMessageId: 'assistant-history' };
+    const run = await service.start(request);
+    child.stdout.write('{"type":"turn.started"}\n');
+    child.stdout.write('{"type":"item.completed","item":{"id":"message","type":"agent_message","text":"Inspection complete."}}\n');
+    child.stdout.end(); child.emit('close', 0); await waitForNextTick();
+    expect(service.getGrant(run.runId)).toBeNull();
+    expect(service.get(run.runId)?.status).toBe('succeeded');
+    expect(await service.start(request)).toMatchObject({ runId: run.runId, status: 'succeeded' }); expect(spawn).toHaveBeenCalledOnce();
+    await expect(service.start({ ...request, prompt: 'Different' })).rejects.toThrow(MapDesignRunConflictError);
+    const events: MapDesignRunEvent[] = []; service.subscribe(run.runId, (event) => events.push(event));
+    expect(events.map((event) => event.type)).toEqual(['message_completed', 'run_finished']);
+    expect(service.getTrustedRun(run.runId)).toMatchObject({ runId: run.runId, runtime: { id: 'codex' } });
+    const reopened = createMapRunHistory(database);
+    expect(reopened.findRequest('request-history')?.response.status).toBe('succeeded');
+    expect(reopened.get(run.runId)?.message?.content).toContain('Inspection complete.');
+    await service.shutdown();
+  } finally { closeMapDesignDatabase(database); rmSync(root, { recursive: true, force: true }); }
 });

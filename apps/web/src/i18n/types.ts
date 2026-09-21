@@ -68,8 +68,6 @@ export interface Dict {
   'mapDesign.runtime.runActiveDisabled': string;
   'mapDesign.run.startError': string;
   'mapDesign.run.toolLoopDetected': string;
-  'mapDesign.form.checkSource': string;
-  'mapDesign.form.checkingSource': string;
   'mapDesign.form.create': string;
   'mapDesign.form.creating': string;
   'mapDesign.form.designRequirement': string;
@@ -80,9 +78,13 @@ export interface Dict {
   'mapDesign.lifecycle.failed': string;
   'mapDesign.lifecycle.importing': string;
   'mapDesign.lifecycle.ready': string;
-  'mapDesign.preflight.checking': string;
-  'mapDesign.preflight.idle': string;
-  'mapDesign.preflight.title': string;
+  'mapDesign.preview.title': string;
+  'mapDesign.preview.idle': string;
+  'mapDesign.preview.invalidUrl': string;
+  'mapDesign.preview.loadError': string;
+  'mapDesign.preview.resourceError': string;
+  'mapDesign.preview.retry': string;
+  'mapDesign.preview.hint': string;
   'mapDesign.recent.empty': string;
   'mapDesign.recent.emptyDetail': string;
   'mapDesign.recent.open': string;

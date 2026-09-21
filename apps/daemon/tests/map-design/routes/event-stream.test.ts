@@ -23,6 +23,39 @@ describe('MapDesign event stream', () => {
     server = undefined;
   });
 
+  it('keeps publishing after request completion and releases the subscription on response disconnect', async () => {
+    let live: ((record: { sequence: number; event: MapStudioEvent }) => void) | undefined;
+    let responseOnServer: express.Response | undefined;
+    const unsubscribe = vi.fn();
+    const stopHeartbeat = vi.fn();
+    const { url } = await listen(createMapDesignEventStreamRouter({
+      outbox: { listAfter: () => ({ events: [], oldestAvailableSequence: null, latestSequence: null, gap: false }) },
+      publisher: {
+        publish: vi.fn(),
+        subscribe: (_projectId, listener) => { live = listener; return unsubscribe; },
+      },
+      projectReader: { getProject: async () => ({}) },
+      requireLocalDaemonRequest: (_request, _response, next) => next(),
+      scheduleHeartbeat: (callback) => { queueMicrotask(callback); return stopHeartbeat; },
+    }), (response) => { responseOnServer = response; });
+    const abort = new AbortController();
+    try {
+      const response = await fetch(`${url}/api/map-design/projects/${PROJECT_ID}/events`, { signal: abort.signal });
+      // Consume the incoming GET independently of the still-open SSE response.
+      responseOnServer!.req.resume();
+      await vi.waitFor(() => expect(responseOnServer!.req.destroyed).toBe(true));
+      expect(unsubscribe).not.toHaveBeenCalled();
+      expect(stopHeartbeat).not.toHaveBeenCalled();
+      live?.({ sequence: 1, event: EVENT });
+      expect(await readUntil(response, (text) => text.includes('id: 1'))).toContain('project.lifecycle.updated');
+      abort.abort();
+      await vi.waitFor(() => expect(unsubscribe).toHaveBeenCalledOnce());
+      expect(stopHeartbeat).toHaveBeenCalledOnce();
+    } finally {
+      abort.abort();
+    }
+  });
+
   it('authorizes navigation query identity and replays the durable outbox from Last-Event-ID', async () => {
     const publisher = new InMemoryMapStudioEventPublisher();
     const listAfter = vi.fn(() => ({

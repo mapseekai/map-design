@@ -1,3 +1,5 @@
+import { MAP_API_PROFILE_ID } from '@mapseekai/contracts';
+import { resolveMapApiExecutionSettings } from '@mapseekai/contracts';
 import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type {
@@ -23,7 +25,9 @@ export interface MapDesignConfigFileIO {
 export class MapDesignConfigValidationError extends Error {}
 
 const KEYS: Record<keyof MapDesignAppConfig, true> = {
+  apiExecution: true,
   agentId: true,
+  activeApiProfileId: true,
   agentModels: true,
   agentCliEnv: true,
   agentCliEnvIntent: true,
@@ -116,9 +120,9 @@ function sanitizeByokProviders(value: unknown): Record<string, ByokProviderSelec
   const providers: Record<string, ByokProviderSelection> = {};
   for (const [providerId, provider] of Object.entries(requireRecord(value, 'byokProviders', 32))) {
     requireIdentifier(providerId, 'byokProviders');
-    const record = requireRecord(provider, 'byokProviders', 7);
+    const record = requireRecord(provider, 'byokProviders', 9);
     if (!Object.hasOwn(record, 'protocol') || !isProtocol(record.protocol)) throw new MapDesignConfigValidationError('Invalid byokProviders');
-    for (const key of Object.keys(record)) if (!['protocol', 'apiKey', 'baseUrl', 'apiVersion', 'apiFormat', 'model', 'requiresApiKey'].includes(key)) throw new MapDesignConfigValidationError('Invalid byokProviders');
+    for (const key of Object.keys(record)) if (!['protocol', 'apiKey', 'baseUrl', 'apiVersion', 'apiFormat', 'model', 'requiresApiKey', 'name', 'connectionTest'].includes(key)) throw new MapDesignConfigValidationError('Invalid byokProviders');
     if (!Object.hasOwn(record, 'apiKey') || typeof record.apiKey !== 'string' || record.apiKey.length > 16_384) throw new MapDesignConfigValidationError('Invalid byokProviders');
     const sanitized: ByokProviderSelection = { protocol: record.protocol, apiKey: record.apiKey };
     const baseUrl = optionalString(record, 'baseUrl', 4_096, 'byokProviders');
@@ -135,6 +139,19 @@ function sanitizeByokProviders(value: unknown): Record<string, ByokProviderSelec
       if (typeof record.requiresApiKey !== 'boolean') throw new MapDesignConfigValidationError('Invalid byokProviders');
       sanitized.requiresApiKey = record.requiresApiKey;
     }
+    const name = optionalString(record, 'name', 120, 'byokProviders');
+    if (name !== undefined) sanitized.name = name;
+    if (record.connectionTest !== undefined) {
+      const check = requireRecord(record.connectionTest, 'connectionTest', 4);
+      if (Object.keys(check).some((key) => !['status', 'testedAt', 'latencyMs', 'code'].includes(key))
+        || !['passed', 'failed'].includes(String(check.status)) || typeof check.testedAt !== 'string'
+        || !Number.isFinite(Date.parse(check.testedAt)) || !Number.isSafeInteger(check.latencyMs)
+        || Number(check.latencyMs) < 0 || (check.code !== undefined && (typeof check.code !== 'string' || !/^[A-Z_]{1,64}$/u.test(check.code)))) {
+        throw new MapDesignConfigValidationError('Invalid connectionTest');
+      }
+      sanitized.connectionTest = { status: check.status as 'passed' | 'failed', testedAt: check.testedAt,
+        latencyMs: Number(check.latencyMs), ...(typeof check.code === 'string' ? { code: check.code } : {}) };
+    }
     providers[providerId] = sanitized;
   }
   return providers;
@@ -144,6 +161,16 @@ function validate(config: unknown): MapDesignAppConfig {
   const record = requireRecord(config, 'MapDesign configuration', 64);
   for (const key of Object.keys(record)) if (!Object.hasOwn(KEYS, key)) throw new MapDesignConfigValidationError(`Unknown config key: ${key}`);
   const sanitized: MapDesignAppConfig = {};
+  if (Object.hasOwn(record, 'activeApiProfileId')) {
+    if (record.activeApiProfileId !== null && (typeof record.activeApiProfileId !== 'string' || !MAP_API_PROFILE_ID.test(record.activeApiProfileId))) {
+      throw new MapDesignConfigValidationError('Invalid activeApiProfileId');
+    }
+    sanitized.activeApiProfileId = record.activeApiProfileId as string | null;
+  }
+  if (Object.hasOwn(record, 'apiExecution')) {
+    try { sanitized.apiExecution = resolveMapApiExecutionSettings(requireRecord(record.apiExecution, 'apiExecution', 4)); }
+    catch { throw new MapDesignConfigValidationError('Invalid API execution budget'); }
+  }
   if (Object.hasOwn(record, 'agentId')) {
     if (record.agentId !== null && (typeof record.agentId !== 'string' || record.agentId.length === 0 || record.agentId.length > 256)) throw new MapDesignConfigValidationError('Invalid agentId');
     sanitized.agentId = record.agentId;

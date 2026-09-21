@@ -1,3 +1,5 @@
+import { assertExternalMapResourceUrl } from './external-resource-url.js';
+
 const RESOURCE_SCHEMES = ['map-design-resource', 'pmtiles'] as const;
 
 export type MapDesignResourceScope = 'projects' | 'source-previews';
@@ -5,6 +7,7 @@ export type MapDesignResourceScope = 'projects' | 'source-previews';
 export interface MapDesignResourceUrlOptions {
   origin?: string;
   scope?: MapDesignResourceScope;
+  allowExternal?: boolean;
 }
 
 export function assertMapDesignResourceUrl(
@@ -13,6 +16,10 @@ export function assertMapDesignResourceUrl(
   options: MapDesignResourceUrlOptions = {},
 ): string {
   if (typeof value !== 'string' || value.length === 0) unsafe();
+  if (options.allowExternal && /^https?:/iu.test(value)
+    && (!options.origin || new URL(value).origin !== options.origin)) {
+    return assertExternalMapResourceUrl(value, options.origin);
+  }
   const custom = RESOURCE_SCHEMES.find((scheme) => value.startsWith(`${scheme}://`));
   const raw = custom ? value.slice(custom.length + 3) : value;
   const path = raw.startsWith('/')

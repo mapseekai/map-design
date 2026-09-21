@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type Database from 'better-sqlite3';
 
 import { MapDigestSchema, MapIdentifierSchema } from '@mapseekai/map-design-contracts';
-import { parseCartographyDesignSystem, type CartographyDesignSystem, type LoadedMapDesignSystem } from '../validation/design-system-loader.js';
+import { NO_DESIGN_SYSTEM, parseCartographyDesignSystem, type CartographyDesignSystem, type LoadedMapDesignSystem } from '../validation/design-system-loader.js';
 import { LEGACY_QUIET_WALKING_ID, loadLegacyDesignSystem } from '../validation/legacy-design-system.js';
 
 export interface CartographyBinding { id: string; digest: string }
@@ -31,6 +31,10 @@ export function registerBundledCartography(db: Database.Database, document: Cart
 export function loadPinnedCartography(db: Database.Database, binding: CartographyBinding): LoadedMapDesignSystem {
   MapIdentifierSchema.parse(binding.id);
   MapDigestSchema.parse(binding.digest);
+  if (binding.id === NO_DESIGN_SYSTEM.id) {
+    if (binding.digest !== NO_DESIGN_SYSTEM.digest) throw new TypeError('No-cartography binding digest mismatch.');
+    return NO_DESIGN_SYSTEM;
+  }
   const snapshot = db.prepare('SELECT id, digest, source FROM map_design_cartography_snapshots WHERE id = ? AND digest = ?')
     .get(binding.id, binding.digest) as Snapshot | undefined;
   if (snapshot) {
@@ -45,7 +49,7 @@ export function loadPinnedCartography(db: Database.Database, binding: Cartograph
 
 /** The library SHA-256 ID and runtime BLAKE3 digest serve different contracts. */
 export function selectProjectCartography(
-  db: Database.Database, projectId: string, fallback: CartographyBinding,
+  db: Database.Database, projectId: string, fallback: CartographyBinding = NO_DESIGN_SYSTEM,
 ): CartographyBinding {
   const row = db.prepare(`SELECT d.id, d.source FROM cartography_documents d
     JOIN project_cartography p ON p.cartography_id = d.id WHERE p.project_id = ?`)

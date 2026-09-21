@@ -22,6 +22,37 @@ describe('MapDesignSettings', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ config: {} }), { status: 200 })));
   });
 
+  it('edits and validates API execution budgets without sending saved secrets', async () => {
+    api.agents.mockResolvedValueOnce({ agents: [{ id: 'api', label: 'API Model', available: true, mapDesign: { nativeMapTools: true, publicReasoningSummary: true }, models: [{ id: 'default', label: 'Default' }] }] });
+    api.config.mockResolvedValueOnce({ config: { agentId: 'api' } });
+    render(<I18nProvider><MapDesignSettings /></I18nProvider>);
+    const steps = await screen.findByLabelText(/Maximum model steps/);
+    fireEvent.change(steps, { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    expect(fetch).not.toHaveBeenCalled();
+    fireEvent.change(steps, { target: { value: '64' } });
+    fireEvent.change(screen.getByLabelText(/Output tokens per call/), { target: { value: '32768' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]![1]!.body)))
+      .toEqual({ apiExecution: { maxSteps: 64, maxToolCalls: 192, maxOutputTokens: 32768, cartographyMaxOutputTokens: 32768 } });
+  });
+
+
+  it('preserves other saved runtime preferences when editing one local agent model', async () => {
+    api.config.mockResolvedValueOnce({ config: { agentId: 'claude', agentModels: {
+      claude: { model: 'old-model' }, codex: { model: 'untouched-model', reasoning: 'high' },
+    } } });
+    render(<MapDesignSettings />);
+    await screen.findByLabelText('Model');
+    selectValue(screen.getByLabelText('Model'), 'sonnet');
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]![1]!.body)).agentModels).toEqual({
+      claude: { model: 'sonnet' }, codex: { model: 'untouched-model', reasoning: 'high' },
+    });
+  });
+
   it('localizes settings labels and save errors in Chinese without changing the request', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })));
     render(<I18nProvider initial="zh-CN"><MapDesignSettings /></I18nProvider>);
@@ -192,16 +223,31 @@ describe('MapDesignSettings', () => {
   });
 });
 
-it('configures API response format without returning a saved credential to the server', async () => {
-  api.agents.mockResolvedValueOnce({ agents: [{ id: 'api', label: 'API Model', available: true, mapDesign: { nativeMapTools: true }, models: [{ id: 'default', label: 'Configured API model' }] }] });
+it('saves response format in the named model editor without resending a stored key', async () => {
+  api.agents.mockResolvedValueOnce({ agents: [{ id: 'api', label: 'API Model', available: true, mapDesign: { nativeMapTools: true }, models: [] }] });
   api.config.mockResolvedValueOnce({ config: { agentId: 'api', byokProviders: { default: { protocol: 'openai', apiKey: '[REDACTED]', model: 'configured-model' } } } });
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ config: {} }), { status: 200 })));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ activeProfileId: 'default', profiles: [
+    { id: 'default', name: 'configured-model', protocol: 'openai', apiFormat: 'responses', baseUrl: '', model: 'configured-model', hasApiKey: true, requiresApiKey: true }
+  ] }), { status: 200 })));
   render(<MapDesignSettings />);
-  await screen.findByLabelText('Response format');
-  expect(screen.getByText(/without a local CLI/)).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
   selectValue(screen.getByLabelText('Response format'), 'responses');
+  fireEvent.click(screen.getByRole('button', { name: 'Save model' }));
+  expect(await screen.findByText('configured-model：Model saved')).toBeVisible();
+  const call = vi.mocked(fetch).mock.calls[0]!;
+  expect(call[0]).toBe('/api/map-design/api-profiles/default');
+  expect(JSON.parse(String(call[1]?.body))).toMatchObject({ protocol: 'openai', apiFormat: 'responses', model: 'configured-model' });
+  expect(JSON.parse(String(call[1]?.body))).not.toHaveProperty('apiKey');
+});
+
+it('never reports settings saved while an API profile draft is still unsaved', async () => {
+  api.agents.mockResolvedValueOnce({ agents: [{ id: 'api', label: 'API Model', available: true, mapDesign: { nativeMapTools: true }, models: [] }] });
+  api.config.mockResolvedValueOnce({ config: { agentId: 'api' } });
+  vi.stubGlobal('fetch', vi.fn());
+  render(<MapDesignSettings />);
+  fireEvent.change(await screen.findByLabelText('Configuration name'), { target: { value: 'Not saved yet' } });
+  expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
-  await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
-  const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body));
-  expect(body.byokProviders.default).toEqual({ protocol: 'openai', apiFormat: 'responses' });
+  expect(screen.queryByText('Settings saved')).not.toBeInTheDocument();
+  expect(fetch).not.toHaveBeenCalled();
 });

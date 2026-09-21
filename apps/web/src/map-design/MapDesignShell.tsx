@@ -31,17 +31,17 @@ function ShellNavigation() {
     <Sidebar variant="floating" collapsible="icon" mobileTitle={labels.navigation} mobileDescription={labels.open}
       style={{ top: 'var(--app-titlebar-height, 0px)', height: 'calc(100dvh - var(--app-titlebar-height, 0px))' }}
       className="top-(--app-titlebar-height) h-[calc(100svh-var(--app-titlebar-height))]">
-      <SidebarHeader className="flex-row items-center group-data-[collapsible=icon]:flex-col">
+      <SidebarHeader className="flex-row items-center group-data-[collapsible=icon]:flex-col" style={{ paddingBottom: 4 }}>
         <InputGroup className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
           <InputGroupInput ref={searchRef} type="search" aria-label={labels.search} placeholder={labels.search}
             value={query} onChange={(event) => setQuery(event.target.value)} />
           <InputGroupAddon><Search aria-hidden="true" /></InputGroupAddon>
         </InputGroup>
-        <Button variant="ghost" size="icon-sm" aria-label={labels.search}
+        <SidebarMenuButton tooltip={labels.search} aria-label={labels.search}
           className="hidden group-data-[collapsible=icon]:inline-flex"
           onClick={() => { setOpen(true); requestAnimationFrame(() => searchRef.current?.focus()); }}>
           <Search aria-hidden="true" />
-        </Button>
+        </SidebarMenuButton>
         <TitlebarControl><Button variant="ghost" size="icon-sm" aria-label={open ? labels.collapse : labels.expand}
           aria-expanded={isMobile ? true : open} onClick={toggleSidebar}>
           {open ? <PanelLeftClose aria-hidden="true" /> : <PanelLeftOpen aria-hidden="true" />}
@@ -49,8 +49,8 @@ function ShellNavigation() {
       </SidebarHeader>
       <nav aria-label={labels.navigation} className="flex min-h-0 flex-1 flex-col">
       <SidebarContent>
-        <SidebarGroup>
-            <SidebarMenu>
+        <SidebarGroup className="pt-0">
+            <SidebarMenu className="gap-1">
               {navigationItems.filter(({ kind }) => copy[kind].toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).map(({ kind, icon: Icon }) =>
                 <SidebarMenuItem key={kind}>
                   <SidebarMenuButton isActive={route.kind === kind} tooltip={copy[kind]} aria-label={copy[kind]}

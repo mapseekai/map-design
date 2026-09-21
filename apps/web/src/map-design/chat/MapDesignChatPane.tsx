@@ -1,3 +1,4 @@
+import { apiProfilesCopy } from '../../i18n/locales/api-profiles';
 import { MapDesignChatSurface } from './MapDesignChatSurface';
 import { TitlebarControl } from '../components/MapDesignTitlebar';
 import type { MapScreenshot, MapTextAttachment } from '@mapseekai/contracts';
@@ -204,7 +205,7 @@ export function MapDesignChatPane({
     onCommentSubmissionChange={onCommentSubmissionChange}
     screenshots={sessionId === conversationId ? screenshots : []} onRemoveScreenshot={onRemoveScreenshot} onScreenshotsSent={onScreenshotsSent} />);
 
-  return <div className="grid h-full min-h-0 text-foreground data-[collapsed=true]:block" data-collapsed={collapsed}>
+  return <div className="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] text-foreground data-[collapsed=true]:block" data-collapsed={collapsed}>
     {collapsed ? <aside className="flex min-h-full flex-col items-center gap-1 bg-muted p-1" aria-label={t('mapDesign.conversation.railCollapsed')}>
       <TitlebarControl><Button variant="ghost" size="icon" ref={onExpandButtonMount} className="shrink-0" type="button" aria-label={t('mapDesign.conversation.expand')} disabled={readOnly} onClick={expandReadOnlySafe}>
         <PanelLeftOpen data-icon="inline-start" aria-hidden="true" />
@@ -214,7 +215,7 @@ export function MapDesignChatPane({
       </Button>
       {activeSessionIds.size > 0 ? <span className="mt-1 size-2 rounded-full bg-primary" role="status"><span className="sr-only">{t('mapDesign.conversation.runActive')}</span></span> : null}
     </aside> : null}
-    <div className="grid min-h-0 [&[hidden]]:hidden" hidden={collapsed} aria-hidden={collapsed}>{sessions}</div>
+    <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] [&[hidden]]:hidden" hidden={collapsed} aria-hidden={collapsed}>{sessions}</div>
   </div>;
 }
 
@@ -235,7 +236,7 @@ function ConversationSession({ projectId, conversationId, cartographyLabel, cart
   onRemoveScreenshot?(id: string): void;
   onScreenshotsSent?(ids: string[]): void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const conversationRuntime = useConversationRuntime({ projectId, conversationId, disabled: runtimeDisabled });
   const runtime = conversationRuntime.runtime;
   const conversation = useMapDesignConversation(projectId, conversationId);
@@ -243,6 +244,8 @@ function ConversationSession({ projectId, conversationId, cartographyLabel, cart
   useLayoutEffect(() => { onRunActivityChange(conversationId, run.sending, selected); }, [conversationId, onRunActivityChange, run.sending, selected]);
   const selectedAgent = runtime ? runtimeAgents.find((agent) => agent.id === runtime.agentId) : undefined;
   const catalogChecksEnabled = runtimeAgents.length > 0 || agentsLoading || Boolean(agentsError);
+  const apiProfileUnavailable = selectedAgent?.id === 'api' && selectedAgent.modelCatalogSource === 'configured'
+    && !selectedAgent.models?.some((model) => model.id === runtime?.model && model.enabled);
   const catalogBlocked = catalogChecksEnabled && (
     agentsLoading
     || Boolean(agentsError)
@@ -250,11 +253,12 @@ function ConversationSession({ projectId, conversationId, cartographyLabel, cart
     || selectedAgent.mapDesign.nativeMapTools !== true
   );
   const effectiveAgentBlocked = agentBlocked
+    || apiProfileUnavailable
     || catalogBlocked
     || runtime === null
     || conversationRuntime.loading
     || Boolean(conversationRuntime.error);
-  const effectiveAgentStatusMessage = agentStatusMessage
+  const effectiveAgentStatusMessage = (apiProfileUnavailable ? apiProfilesCopy[locale].unavailable : null) ?? agentStatusMessage
     ?? (agentsLoading ? null
       : agentsError || (catalogChecksEnabled && !selectedAgent?.available)
         ? t('mapDesign.workspace.agentUnavailable')

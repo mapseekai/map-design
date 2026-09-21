@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MapDesignRuntimeSelectionSchema } from './studio.js';
 import { CartographySampleBindingsSchema } from './cartography-sample.js';
 import { MapDigestSchema, mapStringByteLength } from './project.js';
 
@@ -67,7 +68,7 @@ export const CartographyInitializeUrlInputSchema = z.strictObject({
 export type CartographyInitializeUrlInput = z.infer<typeof CartographyInitializeUrlInputSchema>;
 export const CartographyGenerateInputSchema = z.strictObject({
   jobId: z.string().uuid(),
-  runtime: z.enum(['api', 'codex']).default('codex'),
+  runtime: z.union([z.enum(['api', 'codex']), MapDesignRuntimeSelectionSchema]).default('codex'),
   name: z.string().trim().min(1).max(256), requirements: z.string().trim().min(1).max(8000),
 });
 export const CartographyDraftOutputSchema = z.strictObject({

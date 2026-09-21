@@ -5,6 +5,7 @@ import { Button, type PanelImperativeHandle } from '@mapseekai/components';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useI18n } from '../i18n';
 import { navigationCopy } from '../i18n/locales/navigation';
+import { importRateLimitCopy } from '../i18n/locales/import-failure';
 import { navigate } from '../router';
 import { getMapDesignProject, MapDesignClientError, retryMapDesignImport } from './client';
 import { MapDesignStudio } from './MapDesignStudio';
@@ -31,7 +32,7 @@ interface WorkspaceState {
   cartography?: CartographySummary;
 }
 
-type WorkspaceError = 'load-failed' | 'import-failed';
+type WorkspaceError = 'load-failed' | 'import-failed' | 'import-rate-limited';
 
 const IMPORT_POLL_MS = 250;
 const CURRENT_MAP_DESIGN_PROJECT_VIEW: MapDesignProjectView = { kind: 'current' };
@@ -275,7 +276,7 @@ export function MapDesignWorkspace({ projectId, onMissingProject, onOpenSettings
         if (!isCurrent()) return null;
         if (aggregate.project.lifecycle === 'ready') return aggregate;
         if (aggregate.project.lifecycle === 'failed') {
-          setError('import-failed');
+          setError(aggregate.project.failure?.code === 'IMPORT_RATE_LIMITED' ? 'import-rate-limited' : 'import-failed');
           return null;
         }
         setImporting(true);
@@ -341,10 +342,10 @@ export function MapDesignWorkspace({ projectId, onMissingProject, onOpenSettings
   const backHome = <Button type="button" variant="ghost" onClick={() => navigate({ kind: 'home' })}>{navigationCopy[locale].backHome}</Button>;
   if (error) {
     return <div className="grid place-items-center text-muted-foreground" style={{ minHeight: 'calc(100dvh - var(--app-titlebar-height, 0px))' }} role="alert">
-      <p>{error === 'import-failed'
+      <p>{error === 'import-rate-limited' ? importRateLimitCopy[locale] : error === 'import-failed'
           ? t('mapDesign.workspace.importFailed')
           : t('mapDesign.workspace.loadError')}</p>
-      {error === 'import-failed'
+      {error !== 'load-failed'
           ? <Button type="button" onClick={retryImport}>{t('mapDesign.workspace.retryImport')}</Button>
           : <Button type="button" onClick={() => setRetry((attempt) => attempt + 1)}>{t('mapDesign.conversation.retry')}</Button>}
       {backHome}
@@ -393,7 +394,7 @@ export function MapDesignWorkspace({ projectId, onMissingProject, onOpenSettings
       aria-label={mobileLayout ? undefined : t('mapDesign.conversation.chatRegion')} aria-labelledby={mobileLayout ? 'map-design-mobile-chat-tab' : undefined}
       data-mobile-view-active={!mobileLayout || mobileView === 'chat'} hidden={mobileLayout && mobileView !== 'chat'}
       aria-hidden={drawerModalActive || (mobileLayout && mobileView !== 'chat') || undefined}>
-      <div className="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] group-data-[chat-collapsed=true]/workspace:block group-data-[chat-collapsed=true]/workspace:overflow-hidden [&>div]:min-h-0" role="region" aria-label={t('mapDesign.conversation.chatRegion')}>
+      <div className="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] group-data-[chat-collapsed=true]/workspace:block group-data-[chat-collapsed=true]/workspace:overflow-hidden [&>div]:min-h-0" role="region" aria-label={t('mapDesign.conversation.chatRegion')}>
         {selectedConversation && !layout.chatCollapsed ? <MapDesignConversationHeader conversations={conversations.conversations} selectedId={selectedConversation.conversationId}
         creating={conversations.creating} readOnly={readOnly} error={conversations.error} notice={conversations.notice} onSelect={conversations.select} onDelete={conversations.remove}
         onCreate={() => { if (!readOnly) void conversations.create(); }} onRetry={conversations.failure ? () => { if (!readOnly) void conversations.retry(); } : undefined}

@@ -1,3 +1,4 @@
+import { gatewayTileSuffix } from '../resources/tile-template.js';
 import type { MapDesignResourceScope } from '@mapseekai/map-design-contracts';
 import { validateStyleDocument, type StyleDocument } from 'maplibre-style-tools/core';
 
@@ -5,6 +6,7 @@ import { canonicalJsonBytes } from '../storage/canonical-json.js';
 import type { MapDesignBlobStore } from '../storage/types.js';
 import type { PinnedTransport } from './pinned-transport.js';
 import { detectMapSource } from './source-detector.js';
+import { fetchImportResource, ImportHttpError } from './import-fetch.js';
 import {
   createResourceId,
   resourceGatewayPath,
@@ -24,6 +26,7 @@ export async function rewriteStyleResources(input: {
   blobStore?: Pick<MapDesignBlobStore, 'putBytes'>;
   transport?: PinnedTransport;
   resourceScope?: MapDesignResourceScope;
+  signal?: AbortSignal;
 }): Promise<RewrittenStyleResources> {
   const validated = validateStyleDocument(input.style);
   if (!validated.ok) throw new TypeError('Source Style is structurally invalid');
@@ -63,13 +66,17 @@ export async function rewriteStyleResources(input: {
       throw new TypeError('Style source documents require pinned transport and blob storage');
     }
     const requestedUrl = new URL(resolveHttpTemplate(rawUrl, input.approvedFinalUrl));
-    const response = await input.transport.fetch({
+    const requestedKey = `source-document\0${preserveTemplateBraces(requestedUrl.href)}`;
+    const cached = byKey.get(requestedKey);
+    if (cached) return resourceGatewayPath(input.projectId, cached.id, 'source.json', input.resourceScope);
+    const response = await fetchImportResource(input.transport, {
       url: requestedUrl,
       purpose: 'document',
       accept: ['application/vnd.mapbox.tilejson+json', 'application/json'],
+      ...(input.signal ? { signal: input.signal } : {}),
     });
     if (response.status !== 200) {
-      throw new TypeError('Style source document returned an invalid status');
+      throw new ImportHttpError(response.status, 'source-metadata');
     }
     const detected = detectMapSource(response);
     if (detected.kind !== 'tilejson' || !isRecord(detected.document)) {
@@ -85,7 +92,7 @@ export async function rewriteStyleResources(input: {
         'tile',
         tile,
         tileMediaType(tile),
-        `tiles/${tileSuffix(tile)}`,
+        `tiles/${gatewayTileSuffix(tile)}`,
         response.finalUrl,
       );
       return [gatewayUrl];
@@ -93,7 +100,10 @@ export async function rewriteStyleResources(input: {
     const sourceUrl = preserveTemplateBraces(response.finalUrl.href);
     const key = `source-document\0${sourceUrl}`;
     const existing = byKey.get(key);
-    if (existing) return resourceGatewayPath(input.projectId, existing.id, 'source.json', input.resourceScope);
+    if (existing) {
+      byKey.set(requestedKey, existing);
+      return resourceGatewayPath(input.projectId, existing.id, 'source.json', input.resourceScope);
+    }
     const bytes = canonicalJsonBytes(document);
     const blob = await input.blobStore.putBytes(
       input.projectId,
@@ -112,6 +122,7 @@ export async function rewriteStyleResources(input: {
       contentDigest: blob.digest,
     };
     byKey.set(key, resource);
+    byKey.set(requestedKey, resource);
     resources.push(resource);
     return resourceGatewayPath(input.projectId, resource.id, 'source.json', input.resourceScope);
   };
@@ -150,7 +161,7 @@ export async function rewriteStyleResources(input: {
     if (Array.isArray(mutableSource.tiles)) {
       mutableSource.tiles = mutableSource.tiles.map((tile) => {
         if (typeof tile !== 'string') throw new TypeError(`Invalid tile URL in source ${sourceId}`);
-        return addRemote('tile', tile, tileMediaType(tile), `tiles/${tileSuffix(tile)}`);
+        return addRemote('tile', tile, tileMediaType(tile), `tiles/${gatewayTileSuffix(tile)}`);
       });
     }
     if (mutableSource.type === 'geojson' && typeof mutableSource.data === 'string') {
@@ -191,11 +202,6 @@ function preserveTemplateBraces(value: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function tileSuffix(value: string): string {
-  const match = value.match(/\{y\}([^/?#]*)/u);
-  return `{z}/{x}/{y}${match?.[1] ?? ''}`;
 }
 
 function tileMediaType(value: string): string {

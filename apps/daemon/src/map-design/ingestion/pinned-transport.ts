@@ -1,6 +1,8 @@
 import type { LookupFunction } from 'node:net';
 
 import { Agent } from 'undici';
+import { PooledPinnedDispatcher } from './pinned-pool.js';
+import { decodeResponseBody } from './decoded-body.js';
 
 import { FETCH_LIMITS, type FetchLimit, type FetchPurpose } from './fetch-limits.js';
 import {
@@ -31,6 +33,7 @@ export interface PinnedFetchResponse {
 
 export interface PinnedTransport {
   fetch(request: PinnedFetchRequest): Promise<PinnedFetchResponse>;
+  close?(): Promise<void>;
 }
 
 export interface DestroyableBody extends AsyncIterable<Uint8Array> {
@@ -55,6 +58,7 @@ export interface RawPinnedResponse {
 
 export interface PinnedRequestDispatcher {
   request(target: PinnedTarget, request: PinnedDispatchRequest): Promise<RawPinnedResponse>;
+  close?(): Promise<void>;
 }
 
 export interface TransportClock {
@@ -106,7 +110,7 @@ function assertSafeHeaderValue(value: string, label: string): void {
 }
 
 function buildHeaders(request: PinnedFetchRequest): Readonly<Record<string, string>> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { 'accept-encoding': request.range ? 'identity' : 'gzip, deflate, br' };
   if (request.accept !== undefined) {
     if (request.accept.length === 0 || request.accept.length > ACCEPT_MAX_VALUES) {
       throw new PinnedTransportError('Invalid Accept header values');
@@ -282,10 +286,11 @@ async function readBoundedBody(
 
 export function createPinnedTransport(options: CreatePinnedTransportOptions = {}): PinnedTransport {
   const resolver = options.resolver;
-  const dispatcher = options.dispatcher ?? new UndiciPinnedDispatcher();
+  const dispatcher = options.dispatcher ?? new PooledPinnedDispatcher();
   const clock = options.clock ?? systemClock;
 
   return {
+    close: async () => { await dispatcher.close?.(); },
     async fetch(request): Promise<PinnedFetchResponse> {
       const requestedUrl = new URL(request.url.href);
       const headers = buildHeaders(request);
@@ -370,13 +375,23 @@ export function createPinnedTransport(options: CreatePinnedTransportOptions = {}
             continue;
           }
 
-          const body = await readBoundedBody(response, limit.maxBodyBytes, controller.signal);
+          const wireBody = await readBoundedBody(response, limit.maxBodyBytes, controller.signal);
+          const body = await decodeResponseBody(wireBody, responseHeaders['content-encoding'],
+            limit.maxBodyBytes, controller.signal, request.range !== undefined);
+          let decodedHeaders = responseHeaders;
+          if (body !== wireBody) {
+            const headers: Record<string, string> = { ...responseHeaders, 'content-length': String(body.byteLength) };
+            delete headers['content-encoding'];
+            delete headers['content-md5'];
+            delete headers.etag;
+            decodedHeaders = headers;
+          }
           return {
             requestedUrl,
             finalUrl: new URL(currentUrl.href),
             redirects,
             status: response.statusCode,
-            headers: responseHeaders,
+            headers: decodedHeaders,
             body,
           };
         }

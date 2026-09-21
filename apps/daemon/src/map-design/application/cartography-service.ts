@@ -1,4 +1,4 @@
-import { parseCartographyDesignSystem } from '../validation/design-system-loader.js';
+import { NO_DESIGN_SYSTEM, parseCartographyDesignSystem } from '../validation/design-system-loader.js';
 import { createHash } from 'node:crypto';
 import { lintCartography } from '@mapseekai/cartography.md';
 import {
@@ -101,6 +101,10 @@ export class CartographyService {
       const binding = db.prepare('SELECT design_system_id AS id, design_system_digest AS digest FROM map_design_projects WHERE project_id = ?')
         .get(projectId) as { id: string; digest: string } | undefined;
       if (binding) {
+        if (binding.id === NO_DESIGN_SYSTEM.id) {
+          if (binding.digest !== NO_DESIGN_SYSTEM.digest) throw new MapDraftError('SOURCE_UNAVAILABLE', 'The no-cartography binding is corrupt.');
+          return null;
+        }
         const pinned = db.prepare('SELECT source FROM map_design_cartography_snapshots WHERE id = ? AND digest = ?')
           .get(binding.id, binding.digest) as { source: string } | undefined;
         if (!pinned) throw new MapDraftError('SOURCE_UNAVAILABLE', 'The pinned CARTOGRAPHY.md is unavailable.');

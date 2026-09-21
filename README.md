@@ -17,6 +17,14 @@ pnpm tools-dev status
 `pnpm tools-dev stop` to stop them and `pnpm tools-dev logs` to inspect their
 logs.
 
+## Map preview and creation
+
+Paste a public MapLibre Style URL in Web Home to preview it directly in the
+browser, without a separate source check or a configured agent. Map preview and
+project creation have independent states: a preview error does not block creating
+an editable project. The daemon retains import-time validation and resource
+management. See [Quickstart](QUICKSTART.md) for supported sources and CORS notes.
+
 ## CLI
 
 `md` is the daemon CLI. Its top-level commands are `agents`, `config`,
@@ -31,6 +39,18 @@ md project create --name <name> --source-url <url> --runtime <adapter> --prompt-
 Set `MAP_DESIGN_DAEMON_URL` instead of passing `--daemon-url`; one is required.
 See [Quickstart](QUICKSTART.md) for a runnable stdin example and Web Home
 controls.
+
+## Online resources and API execution
+
+New Style projects keep an editable local Style and load public dependencies
+on demand. Home and Studio share the same direct-resource policy; existing
+resource-gateway projects continue to work. Remote data is not an offline
+snapshot and remains subject to CORS and service availability.
+
+The built-in API Model has configurable step, tool-call and output budgets in
+Settings. Failed calls are tracked individually, with explicit repair links;
+finished run history and provenance remain in SQLite rather than accumulating
+in memory. See [resource and runtime reliability](docs/resource-runtime-reliability.md).
 
 ## Workspace
 

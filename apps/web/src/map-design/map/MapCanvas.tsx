@@ -3,13 +3,11 @@ import {
   type MapOptions,
   type StyleSpecification,
 } from 'maplibre-gl';
-import { assertMapDesignResourceUrl } from '@mapseekai/map-design-contracts';
+import { createMapResourceTransform } from './resource-request';
 
 import { prepareMapStyleForRuntime } from './runtime-style';
-import { MapLibreCanvas, type OwnedMap } from './MapLibreCanvas';
+import { MapLibreCanvas, type OwnedMap, type MapCanvasError } from './MapLibreCanvas';
 import type { MapDesignProtocolOptions, MapLibreProtocolApi } from './map-lifecycle';
-import { PMTILES_PROTOCOL } from './pmtiles-protocol';
-import { MAP_DESIGN_RESOURCE_PROTOCOL } from './resource-protocol';
 
 export type { OwnedMap } from './MapLibreCanvas';
 
@@ -20,7 +18,7 @@ export interface MapCanvasProps {
   maplibre?: MapLibreProtocolApi;
   protocolOptions?: MapDesignProtocolOptions;
   createMap?: (options: MapOptions) => OwnedMap;
-  onMapError?: () => void;
+  onMapError?: (event?: MapCanvasError) => void;
   onMapIdle?: () => void;
   onMapReady?: (map: OwnedMap) => void;
   layoutRevision?: number;
@@ -44,14 +42,7 @@ export function MapCanvas({
     return createMap({
       ...options,
       style,
-      transformRequest: (url) => {
-        if (url.startsWith(`${PMTILES_PROTOCOL}://`)) {
-          assertMapDesignResourceUrl(url, projectId, { origin });
-          return { url };
-        }
-        const resource = new URL(assertMapDesignResourceUrl(url, projectId, { origin }));
-        return { url: `${MAP_DESIGN_RESOURCE_PROTOCOL}://${resource.pathname}` };
-      },
+      transformRequest: createMapResourceTransform({ projectId, origin }),
     });
   };
 

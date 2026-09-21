@@ -1,3 +1,6 @@
+import { apiProfileIdFromModel } from '@mapseekai/contracts';
+import { resolveApiProfile } from './api-profile-service.js';
+import type { MapRunHistory } from '../storage/run-history.js';
 import { isMapDraftError } from './errors.js';
 import type { MapTextAttachmentService } from './text-attachment-service.js';
 import { spawn as spawnChild } from 'node:child_process';
@@ -50,6 +53,9 @@ export interface LocalAgentRegistry {
 
 
 export interface CreateMapDesignRunServiceDeps {
+  runHistory?: MapRunHistory;
+  retainedRunLimit?: number;
+  retainedRunTtlMs?: number;
   store: MapDesignLocalStore;
   agents: LocalAgentRegistry;
   toolTokens: MapDesignToolTokenRegistry;
@@ -149,6 +155,20 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
   const sdkToolRuntime = deps.sdkToolRuntime
     ?? (deps.nativeToolRegistry ? createSdkMapToolRuntime(deps.nativeToolRegistry) : null);
   let shuttingDown = false;
+  const retentionLimit = Math.max(0, Math.min(128, deps.retainedRunLimit ?? 0));
+  const retentionTtl = Math.max(1, Math.min(3_600_000, deps.retainedRunTtlMs ?? 300_000));
+  const pruneFinished = () => {
+    if (!deps.runHistory) return;
+    const finished = [...runs.entries()].filter(([, run]) => run.terminal);
+    let excess = Math.max(0, finished.length - retentionLimit);
+    for (const [id, run] of finished) {
+      if (excess <= 0 && now() - Date.parse(run.response.finishedAt ?? '') < retentionTtl) continue;
+      if (excess > 0) excess--;
+      runs.delete(id);
+      run.listeners.clear();
+      for (const [key, value] of clientRequestRuns) if (value.runId === id) clientRequestRuns.delete(key);
+    }
+  };
 
   const emit = (active: ActiveRun, event: MapDesignRunEvent): void => {
     const snapshot = immutableSnapshot(event);
@@ -235,7 +255,9 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
     const message = immutableSnapshot(publishEventSnapshot(active));
     deps.comments?.finish(active.response.projectId, active.response.runId, status);
     emit(active, { type: 'message_completed', runId: active.response.runId, message });
+    deps.runHistory?.finish(active.response, message);
     emit(active, { type: 'run_finished', run: active.response });
+    pruneFinished();
   };
   const onMapAdapterEvent = (active: ActiveRun, event: MapAgentEvent): void => {
     if (active.terminal || (active.canceling && event.kind !== 'tool_result')) return;
@@ -249,10 +271,16 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
 
   const service: MapDesignRunService & { getGrant(runId: string): ToolTokenGrant | null } = {
     async start(request) {
+      pruneFinished();
       if (Object.hasOwn(request, 'viewedRevision')) {
         throw new MapDesignRunRequestError('Historical map revisions are read-only.');
       }
       const digest = requestDigest(request);
+      const durable = deps.runHistory?.findRequest(request.clientRequestId);
+      if (durable) {
+        if (durable.requestDigest !== digest) throw new MapDesignRunConflictError('The client request identifier was reused with a different request.');
+        return runs.get(durable.response.runId)?.response ?? durable.response;
+      }
       const prior = clientRequestRuns.get(request.clientRequestId);
       if (prior) {
         if (prior.digest !== digest) throw new MapDesignRunConflictError('The client request identifier was reused with a different request.');
@@ -300,9 +328,10 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
         request.runtimeRevision,
       );
       const resolved = deps.runtimeCatalog.resolveChoice(choice.agentId, choice);
-      if (resolved.agentId === 'api' && resolved.model === 'default') {
-        const configuredModel = deps.config?.read().byokProviders?.default?.model?.trim();
-        if (configuredModel) resolved.model = configuredModel;
+      const apiProviderSnapshot = resolved.agentId === 'api' && !request.byokProvider
+        ? resolveApiProfile(deps.config?.read() ?? {}, resolved.model) : undefined;
+      if (resolved.agentId === 'api' && (resolved.model === 'default' || apiProfileIdFromModel(resolved.model))) {
+        if (apiProviderSnapshot?.model) resolved.model = apiProviderSnapshot.model;
       }
       const agent = deps.agents.get(resolved.agentId);
       if (!agent) throw new MapDesignRunRequestError('The requested local agent is unavailable.');
@@ -369,19 +398,25 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
         deps.toolTokens.revokeRun(runId, 'manual');
         throw new MapDesignRunRequestError('The local map tool callback is unavailable.');
       }
+      const response: MapDesignRunResponse = { runId, projectId: request.projectId, conversationId: request.conversationId, status: 'running', startedAt: createdAt };
       try {
         const persist = () => {
           if (comments.length) deps.comments!.claim(request.projectId, comments, runId);
           deps.store.appendMessage({ message: user, runId });
           deps.store.appendMessage({ message: assistant, runId });
+          deps.runHistory?.start({ response, clientRequestId: request.clientRequestId, requestDigest: digest, message: assistant,
+        trusted: { runId, projectId: request.projectId,
+          runtime: { id: resolved.agentId, version: resolved.agentVersion ?? 'local', adapter: resolved.adapter },
+          model: { id: resolved.model, provider: resolved.agentId } },
+      });
         };
-        if (comments.length) deps.store.inTransaction(persist);
+        if (comments.length || deps.runHistory) deps.store.inTransaction(persist);
         else persist();
       } catch (error) {
         callback.close();
         throw error;
       }
-      const response: MapDesignRunResponse = { runId, projectId: request.projectId, conversationId: request.conversationId, status: 'running', startedAt: createdAt };
+
       const cwd = project.workingDirectory ?? deps.projectRoot;
       const active: ActiveRun = {
         response,
@@ -436,6 +471,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
             reasoning: resolved.reasoning ?? null,
             serviceTier: resolved.serviceTier ?? null,
             ...(request.byokProvider === undefined ? {} : { byokProvider: request.byokProvider }),
+            ...(apiProviderSnapshot ? { apiProviderSnapshot } : {}),
             toolRuntime: sdkToolRuntime,
             toolCallback: callback,
             signal: active.abortController.signal,
@@ -475,14 +511,14 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
       }
       return active.response;
     },
-    get: (runId) => runs.get(runId)?.response ?? null,
+    get: (runId) => { pruneFinished(); return runs.get(runId)?.response ?? deps.runHistory?.get(runId)?.response ?? null; },
     isConversationRunning: (conversationId) => [...runs.values()].some((run) =>
       run.response.conversationId === conversationId && run.response.status === 'running'),
     isProjectRunning: (projectId) => [...runs.values()].some((run) =>
       !run.terminal && run.response.projectId === projectId),
     async cancel(runId) {
       const active = runs.get(runId);
-      if (!active) return null;
+      if (!active) return deps.runHistory?.get(runId)?.response ?? null;
       if (active.terminal) return active.response.status === 'canceled' ? { runId, status: 'canceled' } : active.response;
       if (active.canceling && active.cancellation) return active.cancellation;
       active.canceling = true;
@@ -508,9 +544,17 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
     },
     subscribe(runId, listener) {
       const active = runs.get(runId);
-      if (!active) return () => undefined;
+      if (!active) {
+        const stored = deps.runHistory?.get(runId);
+        if (stored) {
+          if (stored.message) listener({ type: 'message_completed', runId, message: stored.message });
+          listener({ type: 'run_finished', run: stored.response });
+        }
+        return () => undefined;
+      }
       if (active.snapshotTimer) publishEventSnapshot(active);
       for (const event of active.events) listener(event);
+      if (active.terminal) return () => undefined;
       active.listeners.add(listener);
       return () => active.listeners.delete(listener);
     },
@@ -526,7 +570,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
     },
     getTrustedRun(runId) {
       const active = runs.get(runId);
-      if (!active) return null;
+      if (!active) return deps.runHistory?.get(runId)?.trusted ?? null;
       return {
         runId,
         projectId: active.response.projectId,

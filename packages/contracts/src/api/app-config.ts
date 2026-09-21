@@ -1,3 +1,4 @@
+import type { MapApiConnectionTest } from './api-profiles.js';
 export interface AgentModelPrefs {
   model?: string;
   reasoning?: string;
@@ -16,6 +17,8 @@ export type ByokProtocol =
   | 'aihubmix';
 
 export interface ByokProviderSelection {
+  name?: string;
+  connectionTest?: MapApiConnectionTest;
   protocol: ByokProtocol;
   apiKey: string;
   baseUrl?: string;
@@ -25,7 +28,35 @@ export interface ByokProviderSelection {
   requiresApiKey?: boolean;
 }
 
+export interface MapDesignApiExecutionSettings {
+  maxSteps?: number;
+  maxToolCalls?: number;
+  maxOutputTokens?: number;
+  cartographyMaxOutputTokens?: number;
+}
+
+export const MAP_API_EXECUTION_DEFAULTS = Object.freeze({
+  maxSteps: 48, maxToolCalls: 192, maxOutputTokens: 16_384, cartographyMaxOutputTokens: 32_768,
+});
+export const MAP_API_EXECUTION_BOUNDS = Object.freeze({
+  maxSteps: [1, 128], maxToolCalls: [1, 512], maxOutputTokens: [256, 131_072], cartographyMaxOutputTokens: [256, 131_072],
+} as const);
+
+export function resolveMapApiExecutionSettings(input: MapDesignApiExecutionSettings = {}): Required<MapDesignApiExecutionSettings> {
+  const limits: Required<MapDesignApiExecutionSettings> = { ...MAP_API_EXECUTION_DEFAULTS };
+  for (const [key, value] of Object.entries(input)) {
+    if (!Object.hasOwn(MAP_API_EXECUTION_BOUNDS, key)) throw new RangeError('Unknown API execution setting');
+    const name = key as keyof typeof limits;
+    const [min, max] = MAP_API_EXECUTION_BOUNDS[name];
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < min || value > max) throw new RangeError('Invalid API execution budget');
+    limits[name] = value;
+  }
+  return limits;
+}
+
 export interface MapDesignAppConfig {
+  activeApiProfileId?: string | null;
+  apiExecution?: MapDesignApiExecutionSettings;
   agentId?: string | null;
   agentModels?: Record<string, AgentModelPrefs>;
   agentCliEnv?: AgentCliEnvPrefs;

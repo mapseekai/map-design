@@ -7,11 +7,22 @@ import * as client from '../../src/map-design/client';
 import { createCartographyEdit } from '../../src/map-design/cartography-edit-client';
 vi.mock('../../src/map-design/cartography-edit-client', () => ({ createCartographyEdit: vi.fn() }));
 import { ApiClientError } from '../../src/api/request';
+import { selectValue } from '../helpers/select';
+import { useLocalAgents } from '../../src/map-design/hooks/useLocalAgents';
+vi.mock('../../src/map-design/hooks/useLocalAgents', () => ({ useLocalAgents: vi.fn() }));
 vi.mock('../../src/map-design/client', () => ({ listCartographies: vi.fn(), getCartography: vi.fn(), deleteCartography: vi.fn(), updateCartography: vi.fn(), importCartography: vi.fn(), importCartographyUrl: vi.fn(), initializeCartography: vi.fn(), initializeCartographyUrl: vi.fn(), generateCartography: vi.fn() }));
 const document = { id: 'a'.repeat(64), name: 'Quiet Atlas', description: 'Warm paper', version: '0.4.0' };
 const source = '---\nname: Quiet Atlas\nversion: "0.4.0"\n---\n## Overview\nWarm paper.';
 const draft = { source, reportMarkdown: 'Conversion evidence', reportJson: '{"bindings":[]}' };
 beforeEach(() => {
+  vi.mocked(useLocalAgents).mockReturnValue({ loading: false, error: null, agents: [
+    { id: 'api', label: 'API Model', available: true, modelCatalogSource: 'fallback',
+      mapDesign: { nativeMapTools: true, publicReasoningSummary: true },
+      models: [
+        { id: 'api-profile:first', label: 'First model', enabled: true, default: true, reasoningOptions: [], serviceTierOptions: [] },
+        { id: 'api-profile:second', label: 'Second model', enabled: true, default: false, reasoningOptions: [], serviceTierOptions: [] },
+      ] },
+  ] });
   vi.mocked(client.listCartographies).mockResolvedValue({ documents: [] });
   vi.mocked(client.getCartography).mockResolvedValue({ ...document, source });
   vi.mocked(client.importCartography).mockResolvedValue(document);
@@ -99,10 +110,15 @@ it('generates a fresh AI draft without creating a map project', async () => {
   render(<I18nProvider><CartographyManager /></I18nProvider>);
   fireEvent.click(screen.getByRole('button', { name: 'Add specification' }));
   fireEvent.click(screen.getByRole('tab', { name: 'Create with AI' }));
+  await selectValue(screen.getByRole('combobox', { name: 'Local agent' }), 'api');
+  await selectValue(screen.getByRole('combobox', { name: 'Saved API models' }), 'api-profile:second');
   fireEvent.change(screen.getByLabelText('Specification name'), { target: { value: 'Quiet Atlas' } });
   fireEvent.change(screen.getByLabelText('Design brief'), { target: { value: 'Calm walking map' } });
   await act(async () => { fireEvent.submit(screen.getByLabelText('Design brief').closest('form')!); });
   expect(await screen.findByLabelText('CARTOGRAPHY.md')).toHaveValue(source);
+  expect(client.generateCartography).toHaveBeenCalledWith(expect.objectContaining({
+    runtime: { agentId: 'api', model: 'api-profile:second' },
+  }), expect.any(AbortSignal));
   expect(client.importCartography).not.toHaveBeenCalled();
 });
 

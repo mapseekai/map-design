@@ -30,9 +30,10 @@ describe('MapDesign agent catalog contracts', () => {
     } satisfies LocalAgentInfo;
 
     expect(LocalAgentInfoSchema.parse(agent)).toEqual(agent);
+    expect(LocalAgentInfoSchema.parse({ ...agent, modelCatalogSource: 'configured' }).modelCatalogSource).toBe('configured');
     expect(() => LocalAgentInfoSchema.parse({ ...agent, supportsCustomModel: 'yes' })).toThrow();
-    expect(AgentModelCatalogSourceSchema.options).toEqual(['live', 'remembered', 'fallback']);
-    expectTypeOf<AgentModelCatalogSource>().toEqualTypeOf<'live' | 'remembered' | 'fallback'>();
+    expect(AgentModelCatalogSourceSchema.options).toEqual(['live', 'remembered', 'fallback', 'configured']);
+    expectTypeOf<AgentModelCatalogSource>().toEqualTypeOf<'live' | 'remembered' | 'fallback' | 'configured'>();
   });
 
   // Mutation caught: accepting an unrecognized model-catalog provenance or unbounded warning from an unavailable runtime.
@@ -48,6 +49,7 @@ describe('MapDesign agent catalog contracts', () => {
     };
 
     expect(LocalAgentInfoSchema.parse(agent)).toEqual(agent);
+    expect(LocalAgentInfoSchema.parse({ ...agent, modelCatalogSource: 'configured' }).modelCatalogSource).toBe('configured');
     expect(() => LocalAgentInfoSchema.parse({ ...agent, modelCatalogSource: 'cached' })).toThrow();
     expect(() => LocalAgentInfoSchema.parse({ ...agent, internalPath: '/private/catalog.json' })).toThrow();
   });

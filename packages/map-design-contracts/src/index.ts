@@ -13,3 +13,4 @@ export * from './tools.js';
 export * from './comments.js';
 export * from './style-edit.js';
 export * from './style-document.js';
+export * from './external-resource-url.js';

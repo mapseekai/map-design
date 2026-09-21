@@ -17,10 +17,12 @@ import {
 const defaultMapLibre: MapLibreProtocolApi = { addProtocol, removeProtocol, setWorkerUrl };
 const mapLibreWorkerUrl = '/maplibre/maplibre-gl-worker.mjs';
 
+export interface MapCanvasError { error?: unknown; sourceId?: string; status?: number; retryAfter?: string }
+
 export interface OwnedMap {
   remove(): void;
   resize(): void;
-  on?(type: 'error' | 'idle', listener: () => void): { unsubscribe(): void };
+  on?(type: 'error' | 'idle' | 'load', listener: (event?: MapCanvasError) => void): { unsubscribe(): void };
 }
 
 export interface MapLibreCanvasProps {
@@ -30,7 +32,9 @@ export interface MapLibreCanvasProps {
   protocolOptions?: MapDesignProtocolOptions;
   transformRequest?: MapOptions['transformRequest'];
   createMap?: (options: MapOptions) => OwnedMap;
-  onMapError?: () => void;
+  onMapError?: (event?: MapCanvasError) => void;
+  onMapLoad?: () => void;
+  resourceGateway?: boolean;
   onMapReady?: (map: OwnedMap) => void;
   onMapIdle?: () => void;
   layoutRevision?: number;
@@ -44,6 +48,8 @@ export function MapLibreCanvas({
   transformRequest,
   createMap = (options) => new Map(options),
   onMapError,
+  onMapLoad,
+  resourceGateway = true,
   onMapReady,
   onMapIdle,
   layoutRevision = 0,
@@ -57,6 +63,7 @@ export function MapLibreCanvas({
   const protocolOptionsRef = useRef(protocolOptions);
   const createMapRef = useRef(createMap);
   const onMapErrorRef = useRef(onMapError);
+  const onMapLoadRef = useRef(onMapLoad);
   const onMapReadyRef = useRef(onMapReady);
   const onMapIdleRef = useRef(onMapIdle);
   styleRef.current = style;
@@ -64,6 +71,7 @@ export function MapLibreCanvas({
   protocolOptionsRef.current = protocolOptions;
   createMapRef.current = createMap;
   onMapErrorRef.current = onMapError;
+  onMapLoadRef.current = onMapLoad;
   onMapReadyRef.current = onMapReady;
   onMapIdleRef.current = onMapIdle;
 
@@ -93,7 +101,9 @@ export function MapLibreCanvas({
     const container = containerRef.current;
     if (!container) return;
     maplibre.setWorkerUrl?.(mapLibreWorkerUrl);
-    const releaseProtocols = acquireMapDesignProtocols(maplibre, protocolOptionsRef.current);
+    const releaseProtocols = resourceGateway
+      ? acquireMapDesignProtocols(maplibre, protocolOptionsRef.current)
+      : () => undefined;
     const mapStyle = typeof styleRef.current === 'string'
       ? styleRef.current
       : JSON.parse(JSON.stringify(styleRef.current)) as StyleSpecification;
@@ -108,16 +118,30 @@ export function MapLibreCanvas({
       });
     } catch (error) {
       releaseProtocols();
-      throw error;
+      if (resourceGateway || !onMapErrorRef.current) throw error;
+      onMapErrorRef.current();
+      return;
     }
     let idleReported = false;
-    const errorSubscription = map.on?.('error', () => {
+    let active = true;
+    const errorSubscription = map.on?.('error', (event) => {
+      if (!active) return;
       idleReported = false;
-      onMapErrorRef.current?.();
+      const raw = event?.error as { status?: unknown; retryAfter?: unknown } | undefined;
+      const details: MapCanvasError = {};
+      if (event?.sourceId) details.sourceId = event.sourceId;
+      if (typeof raw?.status === 'number' && Number.isInteger(raw.status) && raw.status >= 100 && raw.status <= 599) details.status = raw.status;
+      if (typeof raw?.retryAfter === 'string' && raw.retryAfter.length <= 128 && !/[\r\n]/u.test(raw.retryAfter)) details.retryAfter = raw.retryAfter;
+      // Never send upstream URLs, credentials or arbitrary error text to application UI.
+      if (Object.keys(details).length) onMapErrorRef.current?.(details);
+      else onMapErrorRef.current?.();
     });
+    const loadSubscription = onMapLoadRef.current
+      ? map.on?.('load', () => { if (active) onMapLoadRef.current?.(); })
+      : undefined;
     const idleSubscription = onMapIdleRef.current
       ? map.on?.('idle', () => {
-          if (idleReported) return;
+          if (!active || idleReported) return;
           idleReported = true;
           onMapIdleRef.current?.();
         })
@@ -127,6 +151,7 @@ export function MapLibreCanvas({
     } catch (error) {
       try {
         errorSubscription?.unsubscribe();
+        loadSubscription?.unsubscribe();
         idleSubscription?.unsubscribe();
       } finally {
         try { map.remove(); } finally { releaseProtocols(); }
@@ -136,15 +161,17 @@ export function MapLibreCanvas({
     mapRef.current = map;
     map.resize();
     return () => {
+      active = false;
       if (mapRef.current === map) mapRef.current = null;
       try {
         errorSubscription?.unsubscribe();
+        loadSubscription?.unsubscribe();
         idleSubscription?.unsubscribe();
       } finally {
         try { map.remove(); } finally { releaseProtocols(); }
       }
     };
-  }, [maplibre, protocolFetch, protocolOptionsKey]);
+  }, [maplibre, protocolFetch, protocolOptionsKey, resourceGateway]);
 
   return <div ref={containerRef} className={className} />;
 }

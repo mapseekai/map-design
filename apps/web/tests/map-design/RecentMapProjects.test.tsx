@@ -13,6 +13,33 @@ const failedProject = {
 
 afterEach(cleanup);
 
+it('renames without opening the project, retains failed input, and supports cancel', async () => {
+  const onRenameProject = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+  const onOpenProject = vi.fn();
+  render(<I18nProvider><RecentMapProjects projects={[failedProject]} loading={false} error={null}
+    projectErrors={{}} pendingProjectIds={new Set()} onOpenProject={onOpenProject}
+    onRetryProject={vi.fn()} onDeleteProject={vi.fn()} onRenameProject={onRenameProject} /></I18nProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'More actions: Failed map' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename' }));
+  const dialog = await screen.findByRole('dialog');
+  const input = within(dialog).getByRole('textbox', { name: 'Project name' });
+  expect(input).toHaveValue('Failed map');
+  fireEvent.change(input, { target: { value: '   ' } });
+  expect(within(dialog).getByRole('button', { name: 'Rename' })).toBeDisabled();
+  fireEvent.change(input, { target: { value: '  New atlas  ' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Rename' }));
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Unable to rename');
+  expect(input).toHaveValue('  New atlas  ');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Rename' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(onRenameProject).toHaveBeenLastCalledWith('failed-map', 'New atlas');
+  expect(onOpenProject).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'More actions: Failed map' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename' }));
+  fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+  expect(onRenameProject).toHaveBeenCalledTimes(2);
+});
+
 describe('RecentMapProjects', () => {
   it('offers local retry, open, and delete actions for canonical project records', () => {
     const onOpenProject = vi.fn();

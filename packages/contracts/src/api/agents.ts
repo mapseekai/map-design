@@ -12,7 +12,7 @@ export interface LocalAgentModelOption {
   defaultServiceTier?: string;
 }
 
-export type AgentModelCatalogSource = 'live' | 'remembered' | 'fallback';
+export type AgentModelCatalogSource = 'live' | 'remembered' | 'fallback' | 'configured';
 
 export type MapAgentUnsupportedReason =
   | 'native-tools-unavailable'
@@ -62,6 +62,7 @@ export const AgentModelCatalogSourceSchema = z.enum([
   'live',
   'remembered',
   'fallback',
+  'configured',
 ]);
 export const MapAgentUnsupportedReasonSchema = z.enum([
   'native-tools-unavailable',

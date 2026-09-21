@@ -109,7 +109,7 @@ beforeEach(() => {
   })));
 });
 
-describe('MapDesignRuntimeSwitcher', () => {
+describe('MapDesignRuntimeSwitcher', async () => {
   it('restores each model last confirmed reasoning and displays it in the model list', async () => {
     const view = renderSwitcher();
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
@@ -117,6 +117,8 @@ describe('MapDesignRuntimeSwitcher', () => {
     fireEvent.keyDown(screen.getByRole('combobox', { name: 'Reasoning' }), { key: 'ArrowDown' });
     chooseSelectOption('xhigh');
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Reasoning' })).toHaveTextContent('xhigh'));
+    await confirmSelection();
+    fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
     fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Terra/iu }));
     expect(screen.getByRole('combobox', { name: 'Reasoning' })).toHaveTextContent('high');
     expect(screen.getByRole('option', { name: /GPT 5.6 Sol/iu })).toHaveTextContent('Reasoning: xhigh');
@@ -130,18 +132,20 @@ describe('MapDesignRuntimeSwitcher', () => {
     expect(screen.getByRole('combobox', { name: 'Reasoning' })).toHaveTextContent('xhigh');
   });
 
-  it('remembers an explicit default instead of restoring another model intensity', () => {
+  it('remembers an explicit default instead of restoring another model intensity', async () => {
     renderSwitcher();
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
     fireEvent.keyDown(screen.getByRole('combobox', { name: 'Reasoning' }), { key: 'ArrowDown' });
     chooseSelectOption('Default');
+    await confirmSelection();
+    fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
     fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Sol/iu }));
     expect(screen.getByRole('combobox', { name: 'Reasoning' })).toHaveTextContent('medium');
     fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Terra/iu }));
     expect(screen.getByRole('combobox', { name: 'Reasoning' })).toHaveTextContent('Default');
   });
 
-  it('ignores removed reasoning values and malformed saved preferences', () => {
+  it('ignores removed reasoning values and malformed saved preferences', async () => {
     localStorage.setItem('map-design.runtime-reasoning.v1', JSON.stringify({
       [JSON.stringify(['opencode', 'openai/gpt-5.6-sol'])]: 'removed-option',
     }));
@@ -155,7 +159,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     expect(screen.getByRole('button', { name: /Change runtime/iu })).toHaveTextContent('high');
   });
 
-  it('does not persist a pending runtime and remembers only confirmed props', () => {
+  it('does not persist a pending runtime and remembers only confirmed props', async () => {
     const view = renderSwitcher({ saving: true });
     expect(localStorage.getItem('map-design.runtime-reasoning.v1')).toBeNull();
     view.rerender(<I18nProvider initial="en"><Harness saving={false} /></I18nProvider>);
@@ -163,7 +167,7 @@ describe('MapDesignRuntimeSwitcher', () => {
       .toEqual({ [JSON.stringify(['opencode', 'openai/gpt-5.6-terra'])]: 'high' });
   });
 
-  it('does not remember a requested selection without a confirmed runtime update', () => {
+  it('does not remember a requested selection without a confirmed runtime update', async () => {
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
       disabled={false} disabledReason={null} saving={false} notice={null} onChange={async () => undefined} /></I18nProvider>);
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
@@ -172,7 +176,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     expect(preferences[JSON.stringify(['opencode', 'openai/gpt-5.6-sol'])]).toBeUndefined();
   });
 
-  it('remains usable when preference storage is unavailable', () => {
+  it('remains usable when preference storage is unavailable', async () => {
     const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('storage unavailable'); });
     const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('storage unavailable'); });
     try {
@@ -182,13 +186,13 @@ describe('MapDesignRuntimeSwitcher', () => {
     } finally { get.mockRestore(); set.mockRestore(); }
   });
 
-  it('renders the compact Agent, model, and reasoning chip', () => {
+  it('renders the compact Agent, model, and reasoning chip', async () => {
     renderSwitcher();
     expect(screen.getByRole('button', { name: /Change runtime.*OpenCode.*GPT 5\.6 Terra.*high/iu }))
       .toHaveTextContent('OpenCode · GPT 5.6 Terra · high');
   });
 
-  it('lists supported installed Agents first while retaining every Agent and exact disabled reasons', () => {
+  it('lists supported installed Agents first while retaining every Agent and exact disabled reasons', async () => {
     renderSwitcher();
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
     const list = screen.getByRole('listbox', { name: 'Agents' });
@@ -215,18 +219,19 @@ describe('MapDesignRuntimeSwitcher', () => {
     expect(screen.queryByRole('option', { name: /GPT 5.6 Terra/iu })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Luna/iu }));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /Change runtime/iu, hidden: true })).toHaveTextContent('OpenCode · GPT 5.6 Luna'));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Change runtime/iu, hidden: true })).toHaveTextContent('OpenCode · GPT 5.6 Terra'));
     expect(screen.getByRole('combobox', { name: 'Reasoning' })).toHaveTextContent('Default');
     expect(screen.queryByRole('combobox', { name: 'Service tier' })).not.toBeInTheDocument();
   });
 
-  it('writes catalog origin for catalog rows and custom origin only through the supported custom entry', () => {
+  it('writes catalog origin for catalog rows and custom origin only through the supported custom entry', async () => {
     const onChange = vi.fn(async () => undefined);
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
       disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
 
     fireEvent.click(screen.getByRole('option', { name: /GPT 5\.6 Luna/iu }));
+    await confirmSelection();
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
       model: 'openai/gpt-5.6-luna', modelOrigin: 'catalog',
     }));
@@ -235,12 +240,13 @@ describe('MapDesignRuntimeSwitcher', () => {
       target: { value: 'provider/deliberate-custom' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Use custom model' }));
+    await confirmSelection();
     expect(onChange).toHaveBeenLastCalledWith({
       agentId: 'opencode', model: 'provider/deliberate-custom', modelOrigin: 'custom',
     });
   });
 
-  it('can replace a same-id custom model with the explicit catalog selection', () => {
+  it('can replace a same-id custom model with the explicit catalog selection', async () => {
     const onChange = vi.fn(async () => undefined);
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={{
       ...runtime,
@@ -250,6 +256,8 @@ describe('MapDesignRuntimeSwitcher', () => {
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
 
     fireEvent.click(screen.getByRole('option', { name: /GPT 5\.6 Terra/iu }));
+
+    await confirmSelection();
 
     expect(onChange).toHaveBeenCalledOnce();
     expect(onChange).toHaveBeenCalledWith({
@@ -261,13 +269,14 @@ describe('MapDesignRuntimeSwitcher', () => {
     });
   });
 
-  it('preserves valid options, uses explicit defaults, and otherwise omits them on model changes', () => {
+  it('preserves valid options, uses explicit defaults, and otherwise omits them on model changes', async () => {
     const onChange = vi.fn(async () => undefined);
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
       disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
 
     fireEvent.click(screen.getByRole('option', { name: /GPT 5\.6 Luna/iu }));
+    await confirmSelection();
     expect(onChange).toHaveBeenLastCalledWith({
       agentId: 'opencode',
       model: 'openai/gpt-5.6-luna',
@@ -275,6 +284,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     });
 
     fireEvent.click(screen.getByRole('option', { name: /GPT 5\.6 Sol/iu }));
+    await confirmSelection();
     expect(onChange).toHaveBeenLastCalledWith({
       agentId: 'opencode',
       model: 'openai/gpt-5.6-sol',
@@ -284,7 +294,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     });
   });
 
-  it('renders localized Default options that clear saved reasoning and service tier', () => {
+  it('renders localized Default options that clear saved reasoning and service tier', async () => {
     const onChange = vi.fn(async () => undefined);
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
       disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
@@ -294,6 +304,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     const serviceTier = screen.getByRole('combobox', { name: 'Service tier' });
     fireEvent.keyDown(reasoning, { key: 'ArrowDown' });
     chooseSelectOption('Default');
+    await confirmSelection();
     expect(onChange).toHaveBeenLastCalledWith({
       agentId: 'opencode',
       model: 'openai/gpt-5.6-terra',
@@ -302,15 +313,15 @@ describe('MapDesignRuntimeSwitcher', () => {
     });
     fireEvent.keyDown(serviceTier, { key: 'ArrowDown' });
     chooseSelectOption('Default');
+    await confirmSelection();
     expect(onChange).toHaveBeenLastCalledWith({
       agentId: 'opencode',
       model: 'openai/gpt-5.6-terra',
       modelOrigin: 'catalog',
-      reasoning: 'high',
     });
   });
 
-  it('does not reset valid high and priority options when reselecting the current Agent', () => {
+  it('does not reset valid high and priority options when reselecting the current Agent', async () => {
     const onChange = vi.fn(async () => undefined);
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
       disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
@@ -324,7 +335,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     expect(screen.getByRole('combobox', { name: 'Service tier' })).toHaveTextContent('priority');
   });
 
-  it('does not reset valid high and priority options when reselecting the current model', () => {
+  it('does not reset valid high and priority options when reselecting the current model', async () => {
     const onChange = vi.fn(async () => undefined);
     render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
       disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
@@ -358,7 +369,7 @@ describe('MapDesignRuntimeSwitcher', () => {
 
     const panel = screen.getByRole('dialog', { name: 'Runtime settings' });
     const close = within(panel).getByRole('button', { name: 'Close' });
-    const last = within(panel).getByRole('combobox', { name: 'Service tier' });
+    const last = within(panel).getByRole('button', { name: 'Confirm' });
     expect(document.body).toContainElement(panel);
     expect(trigger.parentElement).not.toContainElement(panel);
     expect(background.closest('[aria-hidden="true"]')).not.toBeNull();
@@ -385,14 +396,15 @@ describe('MapDesignRuntimeSwitcher', () => {
     fireEvent.keyDown(openCode, { key: 'ArrowDown' });
     expect(screen.getByRole('option', { name: /Pi/iu })).toHaveFocus();
     fireEvent.keyDown(document.activeElement ?? openCode, { key: 'Enter' });
-    await waitFor(() => expect(trigger).toHaveTextContent('Pi · Claude Sonnet'));
+    await waitFor(() => expect(screen.getByRole('option', { name: /Pi/iu })).toHaveAttribute('aria-selected', 'true'));
+    expect(trigger).toHaveTextContent('OpenCode · GPT 5.6 Terra');
     expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
     fireEvent.keyDown(screen.getByRole('dialog', { name: 'Runtime settings' }), { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Runtime settings' })).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
   });
 
-  it('disables the trigger with precise historical and active-run reasons', () => {
+  it('disables the trigger with precise historical and active-run reasons', async () => {
     const view = renderSwitcher({ disabled: true, disabledReason: 'Runtime cannot change while a run is active.' });
     const disabledTrigger = screen.getByRole('button', { name: /Change runtime/iu });
     expect(disabledTrigger).toBeDisabled();
@@ -405,7 +417,7 @@ describe('MapDesignRuntimeSwitcher', () => {
     expect(screen.getByText('Return to current version to change runtime.')).toBeInTheDocument();
   });
 
-  it('announces saving without allowing another runtime mutation', () => {
+  it('announces saving without allowing another runtime mutation', async () => {
     renderSwitcher({ saving: true });
     expect(screen.getByRole('button', { name: /Change runtime/iu })).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('Saving runtime…');
@@ -428,4 +440,60 @@ describe('MapDesignRuntimeSwitcher', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(trigger).toHaveFocus();
   });
+});
+
+it('switches named API profiles independently even when the remote model names match', async () => {
+  const onChange = vi.fn(async () => undefined);
+  const entries: LocalAgentInfo[] = [{ id: 'api', label: 'API Model', available: true,
+    mapDesign: { nativeMapTools: true, publicReasoningSummary: true }, modelCatalogSource: 'configured',
+    models: [
+      { id: 'api-profile:a', label: 'Primary · shared-model', enabled: true, default: true, reasoningOptions: [], serviceTierOptions: [] },
+      { id: 'api-profile:b', label: 'Secondary · shared-model', enabled: true, default: false, reasoningOptions: [], serviceTierOptions: [] },
+    ] }];
+  render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={entries}
+    runtime={{ agentId: 'api', model: 'api-profile:a', modelOrigin: 'catalog', revision: 1, updatedAt: '2026-09-20T00:00:00Z' }}
+    disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Change runtime/ }));
+  expect(screen.getByText('Saved API models')).toBeVisible();
+  fireEvent.click(screen.getByRole('option', { name: 'Secondary · shared-model' }));
+  await confirmSelection();
+  expect(onChange).toHaveBeenCalledWith({ agentId: 'api', model: 'api-profile:b', modelOrigin: 'catalog' });
+});
+
+async function confirmSelection() {
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+  await waitFor(() => {
+    const button = screen.queryByRole('button', { name: 'Confirm' });
+    if (button) expect(button).not.toBeDisabled();
+  });
+}
+
+it('retains the draft after a failed confirmation and discards it on Escape', async () => {
+  const onChange = vi.fn(async () => { throw new Error('Save failed'); });
+  render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
+    disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Change runtime/ }));
+  fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Luna/ }));
+  await confirmSelection();
+  expect(screen.getByRole('option', { name: /GPT 5.6 Luna/ })).toHaveAttribute('aria-selected', 'true');
+  expect(onChange).toHaveBeenCalledOnce();
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  fireEvent.click(screen.getByRole('button', { name: /Change runtime/ }));
+  expect(screen.getByRole('option', { name: /GPT 5.6 Terra/ })).toHaveAttribute('aria-selected', 'true');
+});
+
+it('keeps choices local until confirmation and discards canceled changes', async () => {
+  const onChange = vi.fn(async () => undefined);
+  render(<I18nProvider initial="en"><MapDesignRuntimeSwitcher agents={agents} runtime={runtime}
+    disabled={false} disabledReason={null} saving={false} notice={null} onChange={onChange} /></I18nProvider>);
+  fireEvent.click(screen.getByRole('button', { name: /Change runtime/ }));
+  fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Luna/ }));
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(onChange).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: /Change runtime/ }));
+  expect(screen.getByRole('option', { name: /GPT 5.6 Terra/ })).toHaveAttribute('aria-selected', 'true');
+  fireEvent.click(screen.getByRole('option', { name: /GPT 5.6 Luna/ }));
+  await confirmSelection();
+  expect(onChange).toHaveBeenCalledExactlyOnceWith({ agentId: 'opencode', model: 'openai/gpt-5.6-luna', modelOrigin: 'catalog' });
 });

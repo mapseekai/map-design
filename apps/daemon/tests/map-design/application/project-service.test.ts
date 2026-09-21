@@ -37,8 +37,8 @@ function openFixture(options: { enqueue?: () => boolean; verifyWorkingDirectoryG
   const prepare = vi.fn((database: Database.Database, projectId: string) => {
     if (options.prepare) return options.prepare(database, projectId);
     const source = testDesignSystem();
-    const fallback = pinCartographyDocument(database, source.id, source.source);
-    const binding = selectProjectCartography(database, projectId, fallback);
+    pinCartographyDocument(database, source.id, source.source);
+    const binding = selectProjectCartography(database, projectId);
     database.prepare(`INSERT INTO map_design_projects (project_id, lifecycle_state, design_system_id, design_system_digest, draft_revision, created_at, updated_at) VALUES (?, 'importing', ?, ?, 0, ?, ?)`)
       .run(projectId, binding.id, binding.digest, NOW, NOW);
     database.prepare(`INSERT INTO map_design_import_jobs (project_id, status, import_request_json, import_request_digest, attempt, queued_at) VALUES (?, 'queued', '{}', 'a', 1, ?)`)
@@ -85,6 +85,35 @@ it('rejects an unknown cartography before creating a project', async () => {
   try {
     await expect(service.create({ ...project(), cartographyId: 'f'.repeat(64) })).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(db.prepare('SELECT * FROM projects').all()).toEqual([]);
+  } finally { closeMapDesignDatabase(db); }
+});
+
+it('persists a trimmed project rename and rejects invalid names without changing the project', async () => {
+  const { db, service } = openFixture();
+  try {
+    await service.create(project());
+    const updated = service.rename('project-1', { title: '  Renamed atlas  ' });
+    expect(updated.title).toBe('Renamed atlas');
+    expect(service.list().projects.find(item => item.projectId === 'project-1')?.title).toBe('Renamed atlas');
+    expect(db.prepare('SELECT title FROM projects WHERE id = ?').get('project-1')).toEqual({ title: 'Renamed atlas' });
+    for (const title of ['', '   ', 'a'.repeat(257)]) {
+      expect(() => service.rename('project-1', { title })).toThrow();
+    }
+    expect(() => service.rename('missing', { title: 'New name' })).toThrow('not found');
+    expect(db.prepare('SELECT title FROM projects WHERE id = ?').get('project-1')).toEqual({ title: 'Renamed atlas' });
+  } finally { closeMapDesignDatabase(db); }
+});
+
+it('keeps an unspecified cartography absent on create, replay and reopen', async () => {
+  const { db, service, queryService } = openFixture();
+  try {
+    const input = project();
+    const created = await service.create(input);
+    expect(created.cartography).toBeUndefined();
+    expect(await service.create(input)).toEqual(created);
+    queryService.getProject.mockResolvedValue(created.project);
+    expect((await service.get(input.projectId)).cartography).toBeUndefined();
+    expect(db.prepare('SELECT * FROM project_cartography').all()).toEqual([]);
   } finally { closeMapDesignDatabase(db); }
 });
 

@@ -59,7 +59,7 @@ export async function loadRevisionEvidence(
     if (!styleResult.ok) throw new TypeError('invalid historical style');
     const style = styleResult.style;
     try {
-      assertMapDesignStyleResourceUrls(style, projectId);
+      assertMapDesignStyleResourceUrls(style, projectId, { allowExternal: true });
     } catch {
       throw new MapDraftError(
         'STYLE_INVALID',

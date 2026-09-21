@@ -12,6 +12,17 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe('MapDesignShell sidebar', () => {
+  it('uses the same sidebar button primitive for collapsed search and navigation', () => {
+    localStorage.setItem('mapdesign.sidebar.open', 'false');
+    render(<MapDesignShell>Content</MapDesignShell>);
+    const search = screen.getByRole('button', { name: 'Search navigation' });
+    const home = screen.getByRole('button', { name: 'Home' });
+    expect(search.getAttribute('data-slot')).toBe(home.getAttribute('data-slot'));
+    expect(search.getAttribute('data-size')).toBe(home.getAttribute('data-size'));
+    fireEvent.click(search);
+    expect(localStorage.getItem('mapdesign.sidebar.open')).toBe('true');
+  });
+
   it('reserves the same explicit desktop height for the titlebar and project content', () => {
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(min-width: 768px)', addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     window.history.replaceState({}, '', '/projects/project-1');

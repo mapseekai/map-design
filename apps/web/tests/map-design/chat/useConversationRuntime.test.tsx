@@ -161,7 +161,7 @@ describe('useConversationRuntime', () => {
 
     await act(async () => result.current.update({ agentId: 'opencode' }));
 
-    expect(result.current.notice).toBe('Runtime saved to this conversation.');
+    expect(result.current.notice).toBeNull();
   });
 
   it('replays an uncertain logical update with the same request and idempotency key', async () => {

@@ -896,6 +896,22 @@ describe('MapDesignWorkspace', () => {
     expect(api.retryImport).toHaveBeenCalledWith('map-1', expect.stringMatching(/^map-import-retry:map-1:/), expect.any(AbortSignal));
   });
 
+  it('explains upstream rate limiting safely and permits retrying the same project', async () => {
+    const failed = project('map-1', 'Transit atlas', 'failed');
+    api.project.mockResolvedValueOnce({ ...failed, project: { ...failed.project,
+      failure: { code: 'IMPORT_RATE_LIMITED', message: 'untrusted upstream body must not be displayed' },
+    } }).mockResolvedValueOnce(project('map-1', 'Transit atlas'));
+    api.conversation.mockResolvedValue(conversation('map-1'));
+    api.config.mockResolvedValue(configured);
+    api.retryImport.mockResolvedValue(project('map-1', 'Transit atlas', 'importing').project);
+    render(<MapDesignWorkspace projectId="map-1" onMissingProject={vi.fn()} onOpenSettings={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('HTTP 429');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('untrusted upstream body');
+    fireEvent.click(screen.getByRole('button', { name: 'Retry import' }));
+    await screen.findByTestId('studio');
+    expect(api.retryImport).toHaveBeenCalledWith('map-1', expect.any(String), expect.any(AbortSignal));
+  });
+
   it('shows import failure without loading companions when the lifecycle has failed', async () => {
     api.project.mockResolvedValue(project('map-1', 'Transit atlas', 'failed'));
     api.conversation.mockRejectedValue(new Error('companion must not load'));
