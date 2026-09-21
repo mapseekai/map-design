@@ -51,6 +51,23 @@ afterEach(() => {
 });
 
 describe('MapSourceForm independent preview and creation', () => {
+  it('shows CLI models, resets them on runtime switches and submits the selected model', async () => {
+    const model = (id: string, label: string, isDefault = false) => ({ id, label, default: isDefault, enabled: true, reasoningOptions: [], serviceTierOptions: [] });
+    const create = renderForm([
+      { ...defaultAgents[1]!, models: [model('codex-default', 'Codex default', true), model('codex-other', 'Codex other')] },
+      { ...defaultAgents[1]!, id: 'oh-my-pi', label: 'Oh My Pi', models: [model('kimi-code/k3-256k', 'Kimi K3', true)] },
+    ]);
+    fillForm();
+    expect(screen.getByLabelText('Models')).toHaveTextContent('Codex default');
+    selectValue(screen.getByLabelText('Models'), 'codex-other');
+    selectValue(screen.getByLabelText(/local agent/i), 'oh-my-pi');
+    expect(screen.getByLabelText('Models')).toHaveTextContent('Kimi K3');
+    submit();
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      runtime: { agentId: 'oh-my-pi', model: 'kimi-code/k3-256k' },
+    }), expect.any(AbortSignal)));
+  });
+
   it('previews a URL without a name, brief or agent and never requests preflight', async () => {
     renderForm([]);
     fireEvent.change(screen.getByLabelText(/public map url/i), { target: { value: SOURCE_URL } });

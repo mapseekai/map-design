@@ -398,6 +398,7 @@ describe('MapDesignRuntimeSwitcher', async () => {
     fireEvent.keyDown(document.activeElement ?? openCode, { key: 'Enter' });
     await waitFor(() => expect(screen.getByRole('option', { name: /Pi/iu })).toHaveAttribute('aria-selected', 'true'));
     expect(trigger).toHaveTextContent('OpenCode · GPT 5.6 Terra');
+    expect(screen.getByText('Pi · Models: Claude Sonnet (anthropic/claude-sonnet)')).toBeVisible();
     expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
     fireEvent.keyDown(screen.getByRole('dialog', { name: 'Runtime settings' }), { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Runtime settings' })).not.toBeInTheDocument();

@@ -10,6 +10,14 @@ function tempRoot(): string { const root = mkdtempSync(join(tmpdir(), 'map-desig
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 
 describe('MapDesignConfigStore', () => {
+  it('persists runtime opt-outs and validates model identifiers', () => {
+    const store = createMapDesignConfigStore(tempRoot());
+    store.update({ runtimePreferences: { 'oh-my-pi': { enabled: false, disabledModels: ['provider/model', 'provider/model'] } } });
+    expect(store.read().runtimePreferences).toEqual({ 'oh-my-pi': { enabled: false, disabledModels: ['provider/model'] } });
+    expect(() => store.update({ runtimePreferences: { local: { disabledModels: ['--unsafe'] } } })).toThrow();
+    expect(() => store.update({ runtimePreferences: { local: { enabled: 'yes' as unknown as boolean } } })).toThrow();
+  });
+
   it('persists only Plan 1 keys and preserves a BYOK secret', () => {
     const store = createMapDesignConfigStore(tempRoot());
     const config = store.update({

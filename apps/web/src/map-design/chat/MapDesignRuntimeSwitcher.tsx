@@ -1,5 +1,6 @@
 import { apiProfilesCopy } from '../../i18n/locales/api-profiles';
 import { runtimeConfirmCopy } from '../../i18n/locales/runtime-confirm';
+import { runtimeSettingsCopy } from '../../i18n/locales/runtime-settings';
 import { Badge, Button, Field, FieldGroup, FieldLabel, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@mapseekai/components';
 import type {
   LocalAgentInfo,
@@ -31,7 +32,7 @@ export interface MapDesignRuntimeSwitcherProps {
 }
 
 function isSupported(agent: LocalAgentInfo): boolean {
-  return agent.available && agent.mapDesign.nativeMapTools && agent.mapDesign.reason === undefined;
+  return agent.available && agent.enabled !== false && agent.mapDesign.nativeMapTools && agent.mapDesign.reason === undefined;
 }
 
 function defaultModel(agent: LocalAgentInfo | undefined): LocalAgentModelOption | undefined {
@@ -151,6 +152,7 @@ export function MapDesignRuntimeSwitcher({
   const customModelValid = activeAgent?.supportsCustomModel === true
     && CUSTOM_MODEL_IDENTIFIER.test(customModelIdentifier);
   const disabledReasonFor = useCallback((agent: LocalAgentInfo): string | null => {
+    if (agent.enabled === false) return runtimeSettingsCopy[locale].disabled;
     if (!agent.available || agent.mapDesign.reason === 'agent-unavailable') {
       return t('mapDesign.runtime.agentUnavailable');
     }
@@ -164,7 +166,7 @@ export function MapDesignRuntimeSwitcher({
     }
     if (!agent.mapDesign.nativeMapTools) return t('mapDesign.runtime.nativeToolsUnavailable');
     return null;
-  }, [t]);
+  }, [t, locale]);
 
   const restoreTriggerFocus = useCallback(() => {
     const trigger = triggerRef.current;
@@ -305,7 +307,7 @@ export function MapDesignRuntimeSwitcher({
       aria-haspopup="dialog"
       aria-expanded={open}
       disabled={disabled || saving}
-      title={disabledReason ?? undefined}
+      title={disabledReason ?? chipParts.join(' · ')}
     >
       <Sparkles data-icon="inline-start" aria-hidden="true" />
       <span className="truncate">{chipParts.join(' · ')}</span>
@@ -327,6 +329,10 @@ export function MapDesignRuntimeSwitcher({
           <DialogDescription>{t('mapDesign.runtime.settingsHint')}</DialogDescription></DialogHeader>
         <DialogClose aria-label={t('common.close')} render={<Button variant="ghost" size="icon-sm" type="button" />}><X data-icon="inline-start" aria-hidden="true" /></DialogClose>
       </div>
+      <p className="min-w-0 break-words text-sm text-muted-foreground" aria-live="polite" aria-atomic="true">
+        {activeAgent?.label ?? runtime.agentId} · {t('mapDesign.runtime.models')}: {activeModel?.label ?? runtime.model ?? t('mapDesign.runtime.default')}
+        {runtime.model && runtime.model !== 'default' && activeModel?.label && activeModel.label !== runtime.model ? ` (${runtime.model})` : ''}
+      </p>
       <div className="grid min-h-0 grid-cols-1 gap-3 md:grid-cols-[minmax(150px,.75fr)_minmax(210px,1.25fr)]">
         <section className="grid min-w-0 content-start gap-2 [&_h3]:text-xs [&_h3]:text-muted-foreground">
           <h3>{t('mapDesign.runtime.agents')}</h3>

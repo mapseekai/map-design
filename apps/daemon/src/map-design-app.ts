@@ -91,7 +91,7 @@ export function createMapDesignApp(options: {
     sourcePreviewService: options.mapServices.sourceImportService,
     requireLocalDaemonRequest: requireLocal,
   }));
-  app.use(createMapDesignSystemRouter({ config: options.config, agents: options.agents, requireLocalDaemonRequest: requireLocal, version: options.version ?? 'dev' }));
+  app.use(createMapDesignSystemRouter({ config: options.config, agents: options.agents, requireLocalDaemonRequest: requireLocal, version: options.version ?? 'dev', ...(options.cartographyRoots ? { dataRoot: options.cartographyRoots.dataRoot } : {}) }));
   app.use(createMapDesignPreviewRouter({ previewFulfillmentService: options.mapServices.previewFulfillmentService, projectReader: options.mapServices.queryService, requireLocalDaemonRequest: requireLocal }));
   app.use(createMapDesignRevisionUiRouter({
     revisionService: options.mapServices.revisionService,

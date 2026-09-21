@@ -51,6 +51,25 @@ function inspection(
 }
 
 describe('MapDesign runtime catalog', () => {
+  it('keeps disabled runtimes discoverable but refuses execution and custom model bypasses', () => {
+    const runtime = definition({ id: 'local', supportsCustomModel: true, fallbackModels: [{ id: 'one', label: 'One' }, { id: 'two', label: 'Two' }] });
+    let preferences = { enabled: true, disabledModels: ['one'] };
+    const catalog = createMapDesignRuntimeCatalog({ definitions: [runtime], inspect: inspection,
+      apiConfig: () => ({ runtimePreferences: { local: preferences } }) });
+    expect(catalog.list()[0]?.models?.find(model => model.id === 'one')?.enabled).toBe(false);
+    expect(catalog.resolveChoice('local', { agentId: 'local', model: 'two' }).model).toBe('two');
+    for (const modelOrigin of ['catalog', 'custom'] as const) {
+      expect(() => catalog.resolveChoice('local', { agentId: 'local', model: 'one', modelOrigin })).toThrow();
+    }
+    expect(catalog.normalizeSaved({ agentId: 'local', model: 'one' }).runtime.model).toBe('one');
+    preferences = { enabled: false, disabledModels: [] };
+    expect(catalog.list()[0]).toMatchObject({ available: true, enabled: false });
+    expect(() => catalog.resolveChoice('local', { agentId: 'local', model: 'two' })).toThrow();
+    expect(catalog.normalizeSaved({ agentId: 'local', model: 'two' })).toHaveProperty('normalizationNotice');
+    preferences = { enabled: true, disabledModels: [] };
+    expect(catalog.resolveChoice('local', { agentId: 'local', model: 'one' }).model).toBe('one');
+  });
+
   it('prefers valid fresh models, merges fallback controls, and projects safe versions', async () => {
     const liveModels: RuntimeModelOption[] = [{
       id: 'openai/gpt-5.6-terra',

@@ -29,7 +29,7 @@ export function MapSourceForm({ agents, onCreate }: MapSourceFormProps) {
     return /^[a-f0-9]{64}$/.test(id) ? id : '';
   });
   const [agentId, setAgentId] = useState('');
-  const [apiModel, setApiModel] = useState('');
+  const [selectedModelId, setSelectedModelId] = useState('');
   const [workingDirectory, setWorkingDirectory] = useState<{ path: string; token: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
@@ -43,20 +43,22 @@ export function MapSourceForm({ agents, onCreate }: MapSourceFormProps) {
       createController.current?.abort();
     };
   }, []);
-  const selectedAgent = agents.find((agent) => agent.id === agentId && agent.available) ?? null;
-  const apiModels = selectedAgent?.id === 'api' ? selectedAgent.models?.filter((model) => model.enabled) ?? [] : [];
-  const selectedApiModel = apiModel ? apiModels.find((model) => model.id === apiModel) : apiModels.find((model) => model.default);
+  const selectedAgent = agents.find((agent) => agent.id === agentId && agent.available && agent.enabled !== false) ?? null;
+  const models = selectedAgent?.models?.filter((model) => model.enabled) ?? [];
+  const selectedModel = selectedModelId ? models.find((model) => model.id === selectedModelId) : models.find((model) => model.default) ?? models[0];
   const selectedAgentSupportsMapEditing = selectedAgent?.mapDesign.nativeMapTools === true;
   const parsedSourceUrl = parseMapSourceUrl(sourceUrl);
   const fieldsComplete = Boolean(title.trim() && title.trim().length <= 256
     && parsedSourceUrl && designRequirement.trim() && designRequirement.trim().length <= 16_384);
-  const canCreate = fieldsComplete && selectedAgentSupportsMapEditing && !createLoading && (selectedAgent?.id !== 'api' || !!selectedApiModel);
+  const hasSelectableModel = selectedAgent?.models?.length ? Boolean(selectedModel) : selectedAgent?.id !== 'api';
+  const canCreate = fieldsComplete && selectedAgentSupportsMapEditing && !createLoading && hasSelectableModel;
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createController.current) return;
     if (!selectedAgent) { setError(copy.agentRequired); return; }
     if (!selectedAgentSupportsMapEditing) { setError(t('mapDesign.agent.mapEditingUnavailable')); return; }
-    if (selectedAgent.id === 'api' && !selectedApiModel) { setError(apiModels.length ? apiProfilesCopy[locale].selectModel : apiProfilesCopy[locale].empty); return; }
+    if (!hasSelectableModel && selectedAgent.id !== 'api') { setError(t('mapDesign.runtime.modelUnavailable')); return; }
+    if (selectedAgent.id === 'api' && !selectedModel) { setError(models.length ? apiProfilesCopy[locale].selectModel : apiProfilesCopy[locale].empty); return; }
     if (!parsedSourceUrl) { setError(t('mapDesign.preview.invalidUrl')); return; }
     if (!fieldsComplete) { setError(copy.fieldsRequired); return; }
     const request = new AbortController();
@@ -65,7 +67,7 @@ export function MapSourceForm({ agents, onCreate }: MapSourceFormProps) {
     setCreateLoading(true);
     setError(null);
     try {
-      await onCreate({ projectId, title: title.trim(), source: { url: parsedSourceUrl }, designRequirement: designRequirement.trim(), runtime: { agentId: selectedAgent.id, ...(selectedAgent.id === 'api' && selectedApiModel ? { model: selectedApiModel.id } : {}) }, ...(cartographyId ? { cartographyId } : {}), ...(workingDirectory ? { workingDirectory } : {}), idempotencyKey: `map-create:${projectId}` }, request.signal);
+      await onCreate({ projectId, title: title.trim(), source: { url: parsedSourceUrl }, designRequirement: designRequirement.trim(), runtime: { agentId: selectedAgent.id, ...(selectedModel ? { model: selectedModel.id } : {}) }, ...(cartographyId ? { cartographyId } : {}), ...(workingDirectory ? { workingDirectory } : {}), idempotencyKey: `map-create:${projectId}` }, request.signal);
     } catch {
       if (!request.signal.aborted && mounted.current) setError(copy.createError);
     } finally {
@@ -94,9 +96,9 @@ export function MapSourceForm({ agents, onCreate }: MapSourceFormProps) {
         <Field><FieldLabel htmlFor="mapsourceform-2"><span>{t('mapDesign.form.sourceUrl')}</span></FieldLabel><Input id="mapsourceform-2" type="url" value={sourceUrl} maxLength={4096} aria-invalid={Boolean(sourceUrl.trim() && !parsedSourceUrl)} data-testid="home-hero-input" onChange={(event) => { setSourceUrl(event.target.value); setError(null); }} autoComplete="url" /></Field>
         <Field><FieldLabel htmlFor="mapsourceform-3"><span>{t('mapDesign.form.designRequirement')}</span></FieldLabel><Textarea id="mapsourceform-3" value={designRequirement} maxLength={16_384} onChange={(event) => { setDesignRequirement(event.target.value); setError(null); }} rows={4} /></Field>
         <CartographyPicker value={cartographyId} onChange={setCartographyId} disabled={createLoading} />
-        <AgentModelFields id="mapsourceform-4" agents={agents} agentId={agentId} model={apiModel} disabled={createLoading}
+        <AgentModelFields id="mapsourceform-4" agents={agents} agentId={agentId} model={selectedModelId} disabled={createLoading}
           onAgentChange={(value) => { setAgentId(value); setError(null); }}
-          onModelChange={(value) => { setApiModel(value); setError(null); }} />
+          onModelChange={(value) => { setSelectedModelId(value); setError(null); }} />
         {selectedAgent && !selectedAgentSupportsMapEditing ? <p className="text-sm text-muted-foreground" role="status">{t('mapDesign.agent.mapEditingUnavailable')}</p> : null}
         {getMapDesignHost() ? <Button type="button" variant="outline" onClick={() => { void pickDirectory(); }} disabled={createLoading}>{copy.chooseDirectory}</Button> : null}
         {workingDirectory ? <p className="text-sm text-muted-foreground" role="status">{copy.directorySelected}</p> : null}

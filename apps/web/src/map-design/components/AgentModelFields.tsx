@@ -10,9 +10,9 @@ export function AgentModelFields({ id, agents, agentId, model, disabled = false,
 }) {
   const { t, locale } = useI18n();
   const copy = sourceFormCopy[locale];
-  const selectedAgent = agents.find(agent => agent.id === agentId && agent.available);
-  const apiModels = selectedAgent?.id === 'api' ? selectedAgent.models?.filter(model => model.enabled) ?? [] : [];
-  const selectedApiModel = model ? apiModels.find(item => item.id === model) : apiModels.find(item => item.default);
+  const selectedAgent = agents.find(agent => agent.id === agentId && agent.available && agent.enabled !== false);
+  const models = selectedAgent?.models?.filter(model => model.enabled) ?? [];
+  const selectedModel = model ? models.find(item => item.id === model) : models.find(item => item.default) ?? models[0];
   const agentOptionLabel = (agent: LocalAgentInfo) => {
     if (!agent.available || agent.mapDesign.reason === 'agent-unavailable') return agent.label;
     if (!agent.mapDesign.nativeMapTools) return `${agent.label} — ${t('mapDesign.agent.mapEditingUnavailable')}`;
@@ -26,25 +26,25 @@ export function AgentModelFields({ id, agents, agentId, model, disabled = false,
       <FieldLabel htmlFor={id}>{copy.agent}</FieldLabel>
       <Select disabled={disabled} value={agentId || '__none__'}
         items={[{ value: '__none__', label: copy.selectAgent }, ...agents.map(agent => ({ value: agent.id, label: agentOptionLabel(agent) }))]}
-        onValueChange={value => onAgentChange(value === '__none__' ? '' : value ?? '')}>
+        onValueChange={value => { onAgentChange(value === '__none__' ? '' : value ?? ''); onModelChange(''); }}>
         <SelectTrigger id={id}><SelectValue /></SelectTrigger>
         <SelectContent><SelectGroup>
           <SelectItem data-value="__none__" value="__none__">{copy.selectAgent}</SelectItem>
-          {agents.map(agent => <SelectItem key={agent.id} data-value={agent.id} value={agent.id} disabled={!agent.available}>
+          {agents.map(agent => <SelectItem key={agent.id} data-value={agent.id} value={agent.id} disabled={!agent.available || agent.enabled === false}>
             {agentOptionLabel(agent)}
           </SelectItem>)}
         </SelectGroup></SelectContent>
       </Select>
     </Field>
-    {selectedAgent?.id === 'api' ? <Field>
-      <FieldLabel htmlFor={`${id}-model`}>{apiProfilesCopy[locale].title}</FieldLabel>
-      <Select disabled={disabled} value={selectedApiModel?.id ?? '__none__'}
-        items={[{ value: '__none__', label: apiModels.length ? apiProfilesCopy[locale].selectModel : apiProfilesCopy[locale].empty }, ...apiModels.map(model => ({ value: model.id, label: model.label }))]}
+    {selectedAgent ? <Field>
+      <FieldLabel htmlFor={`${id}-model`}>{selectedAgent.id === 'api' ? apiProfilesCopy[locale].title : t('mapDesign.runtime.models')}</FieldLabel>
+      <Select disabled={disabled || !models.length} value={selectedModel?.id ?? '__none__'}
+        items={[{ value: '__none__', label: selectedAgent.id === 'api' ? models.length ? apiProfilesCopy[locale].selectModel : apiProfilesCopy[locale].empty : t('mapDesign.runtime.default') }, ...models.map(model => ({ value: model.id, label: model.label }))]}
         onValueChange={value => onModelChange(value === '__none__' ? '' : value ?? '')}>
         <SelectTrigger id={`${id}-model`}><SelectValue /></SelectTrigger>
         <SelectContent><SelectGroup>
-          {!apiModels.length ? <SelectItem value="__none__">{apiProfilesCopy[locale].empty}</SelectItem> : null}
-          {apiModels.map(model => <SelectItem key={model.id} value={model.id} data-value={model.id}>{model.label}</SelectItem>)}
+          {!models.length ? <SelectItem value="__none__">{selectedAgent.id === 'api' ? apiProfilesCopy[locale].empty : t('mapDesign.runtime.default')}</SelectItem> : null}
+          {models.map(model => <SelectItem key={model.id} value={model.id} data-value={model.id}>{model.label}</SelectItem>)}
         </SelectGroup></SelectContent>
       </Select>
     </Field> : null}

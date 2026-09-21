@@ -248,6 +248,28 @@ async function configureOmpAttempt(
   server.send(response(prompt));
 }
 
+it.each([
+  ['403 permission denied: private-credential', 'API_AUTH_FAILED'],
+  ['401 unauthorized: private-credential', 'API_AUTH_FAILED'],
+  ['Connection failed: private-credential', 'API_REQUEST_FAILED'],
+])('reports an upstream model failure at RPC completion: %s', async (errorMessage, code) => {
+  const state = await start();
+  state.server.send({ type: 'agent_end', messages: [{ role: 'assistant', stopReason: 'error', errorMessage }] });
+  const terminal = await state.handle.done;
+  expect(terminal).toMatchObject({ status: 'failed', error: { code } });
+  expect(JSON.stringify(terminal)).not.toContain('private-credential');
+  expect(state.events.at(-1)).toEqual({ kind: 'run_finished', status: 'failed' });
+});
+
+it('accepts a successful model retry after an earlier upstream error', async () => {
+  const state = await start();
+  state.server.send({ type: 'agent_end', messages: [
+    { role: 'assistant', stopReason: 'error', errorMessage: 'Temporary failure' },
+    { role: 'assistant', stopReason: 'stop' },
+  ] });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded' });
+});
+
 defineMapAgentAdapterConformance('Oh My Pi RPC', {
   async registration() {
     const state = await start();

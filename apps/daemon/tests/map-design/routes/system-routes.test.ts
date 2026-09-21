@@ -65,6 +65,17 @@ async function request(app: Express, method: 'GET' | 'PUT', body?: unknown, path
 }
 
 describe('MapDesign system config route', () => {
+  it('merges per-runtime switches without replacing another runtime or saved credentials', async () => {
+    const { app, config } = setup();
+    config.update({ runtimePreferences: { first: { enabled: false }, second: { disabledModels: ['old'] } },
+      agentCliEnv: { second: { TOKEN: 'private' } } });
+    const response = await request(app, 'PUT', { runtimePreferences: { second: { enabled: false } } });
+    expect(response.status).toBe(200);
+    expect(config.read().runtimePreferences).toEqual({ first: { enabled: false }, second: { enabled: false, disabledModels: ['old'] } });
+    expect(config.read().agentCliEnv?.second).toEqual({ TOKEN: 'private' });
+    expect(JSON.stringify(await response.json())).not.toContain('private');
+  });
+
   it('distinguishes keyless configurations from saved redacted credentials', async () => {
     const { app, config } = setup();
     config.update({ byokProviders: {

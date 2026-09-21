@@ -13,6 +13,7 @@ export interface LocalAgentModelOption {
 }
 
 export type AgentModelCatalogSource = 'live' | 'remembered' | 'fallback' | 'configured';
+export const MAP_RUNTIME_DISABLED_NOTICE = 'runtime-disabled';
 
 export type MapAgentUnsupportedReason =
   | 'native-tools-unavailable'
@@ -36,6 +37,7 @@ export interface LocalAgentInfo {
   id: string;
   label: string;
   available: boolean;
+  enabled?: boolean;
   mapDesign: MapAgentCapability;
   executable?: string;
   version?: string;
@@ -97,6 +99,7 @@ export const LocalAgentInfoSchema = z.object({
   id: agentIdentifierSchema,
   label: z.string().trim().min(1).max(256),
   available: z.boolean(),
+  enabled: z.boolean().optional(),
   mapDesign: MapAgentCapabilitySchema,
   executable: z.string().trim().min(1).max(1_024).optional(),
   version: z.string().trim().min(1).max(256).optional(),

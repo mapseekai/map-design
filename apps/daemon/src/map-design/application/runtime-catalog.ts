@@ -1,4 +1,4 @@
-import { MAP_API_PROFILE_UNAVAILABLE_NOTICE, type MapDesignAppConfig } from '@mapseekai/contracts';
+import { MAP_API_PROFILE_UNAVAILABLE_NOTICE, MAP_RUNTIME_DISABLED_NOTICE, type MapDesignAppConfig } from '@mapseekai/contracts';
 import { configuredApiCatalog, resolveConfiguredApiChoice } from './api-profile-catalog.js';
 import type {
   LocalAgentInfo,
@@ -95,7 +95,17 @@ export function createMapDesignRuntimeCatalog(options: {
     return pending;
   };
 
-  const currentSnapshot = () => options.apiConfig ? configuredApiCatalog(snapshot, options.apiConfig()) : snapshot;
+  const currentSnapshot = () => {
+    const config = options.apiConfig?.();
+    const catalog = config ? configuredApiCatalog(snapshot, config) : snapshot;
+    return freezeSnapshot(catalog.map(agent => {
+      const preference = config?.runtimePreferences?.[agent.id];
+      return { ...agent, enabled: preference?.enabled !== false,
+        ...(agent.models ? { models: agent.models.map(model => ({ ...model,
+          enabled: model.enabled && !preference?.disabledModels?.includes(model.id),
+        })) } : {}) };
+    }));
+  };
 
   const resolveChoice = (
     agentId: string,
@@ -105,6 +115,7 @@ export function createMapDesignRuntimeCatalog(options: {
     let definition = definitionsById.get(agentId);
     const current = currentSnapshot();
     let agent = current.find((candidate) => candidate.id === agentId);
+    if (agent?.enabled === false || options.apiConfig?.().runtimePreferences?.[agentId]?.disabledModels?.includes(input.model ?? '')) throw invalidInput();
     if (agentId === 'api' && options.apiConfig) {
       return resolveConfiguredApiChoice(agent, options.apiConfig(), input);
     }
@@ -112,6 +123,7 @@ export function createMapDesignRuntimeCatalog(options: {
     let normalizationNotice: string | undefined;
     if (!definition || !agent?.available || !agent.mapDesign.nativeMapTools) {
       agent = current.find((candidate) => candidate.available
+        && candidate.enabled !== false
         && candidate.mapDesign.nativeMapTools
         && (candidate.models ?? []).some((model) => model.enabled));
       definition = agent ? definitionsById.get(agent.id) : undefined;
@@ -194,6 +206,10 @@ export function createMapDesignRuntimeCatalog(options: {
     list: currentSnapshot,
     resolveChoice,
     normalizeSaved(input) {
+      if (currentSnapshot().find(agent => agent.id === input.agentId)?.enabled === false
+        || options.apiConfig?.().runtimePreferences?.[input.agentId]?.disabledModels?.includes(input.model ?? '')) {
+        return { runtime: input, normalizationNotice: MAP_RUNTIME_DISABLED_NOTICE };
+      }
       if (input.agentId === 'api' && options.apiConfig) {
         try {
           const resolved = resolveChoice(input.agentId, input);

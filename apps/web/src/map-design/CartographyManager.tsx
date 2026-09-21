@@ -27,10 +27,11 @@ export function CartographyManager() {
   const [generationAgent, setGenerationAgent] = useState('');
   const [generationModel, setGenerationModel] = useState('');
   const generationRuntime = generationAgent === 'codex' ? 'codex' : 'api';
-  const selectedAgent = agents.find(agent => agent.id === generationAgent && agent.available);
+  const selectedAgent = agents.find(agent => agent.id === generationAgent && agent.available && agent.enabled !== false);
   const apiModels = selectedAgent?.models?.filter(model => model.enabled) ?? [];
-  const selectedModel = generationModel ? apiModels.find(model => model.id === generationModel) : apiModels.find(model => model.default);
-  const canGenerate = !!selectedAgent && selectedAgent.mapDesign.nativeMapTools && (generationAgent !== 'api' || !!selectedModel);
+  const selectedModel = generationModel ? apiModels.find(model => model.id === generationModel) : apiModels.find(model => model.default) ?? apiModels[0];
+  const hasSelectableModel = selectedAgent?.models?.length ? Boolean(selectedModel) : generationAgent !== 'api';
+  const canGenerate = !!selectedAgent && selectedAgent.mapDesign.nativeMapTools && hasSelectableModel;
 
   const text = cartographyManagerCopy[locale];
   const library = cartographyLibraryCopy[locale];
@@ -121,7 +122,7 @@ export function CartographyManager() {
         const result = await initializeCartographyUrl({ name: name.trim(), url: styleUrl.trim(), ...(styleFileName.trim() ? { fileName: styleFileName.trim() } : {}) }, signal);
         if (!signal.aborted) setDraft(result);
       } else if (mode === 'ai') {
-        const result = await generateCartography({ name: name.trim(), requirements: brief.trim(), runtime: { agentId: generationAgent, ...(generationAgent === 'api' && selectedModel ? { model: selectedModel.id } : {}) } }, signal);
+        const result = await generateCartography({ name: name.trim(), requirements: brief.trim(), runtime: { agentId: generationAgent, ...(selectedModel ? { model: selectedModel.id } : {}) } }, signal);
         if (!signal.aborted) setDraft(result);
       } else {
         if (!file || file.size > (mode === 'style' ? CARTOGRAPHY_STYLE_MAX_BYTES : CARTOGRAPHY_MAX_BYTES)) throw new Error('Invalid file size');

@@ -55,6 +55,7 @@ export function resolveMapApiExecutionSettings(input: MapDesignApiExecutionSetti
 }
 
 export interface MapDesignAppConfig {
+  runtimePreferences?: Record<string, { enabled?: boolean; disabledModels?: string[] }>;
   activeApiProfileId?: string | null;
   apiExecution?: MapDesignApiExecutionSettings;
   agentId?: string | null;

@@ -25,6 +25,7 @@ export interface MapDesignConfigFileIO {
 export class MapDesignConfigValidationError extends Error {}
 
 const KEYS: Record<keyof MapDesignAppConfig, true> = {
+  runtimePreferences: true,
   apiExecution: true,
   agentId: true,
   activeApiProfileId: true,
@@ -161,6 +162,21 @@ function validate(config: unknown): MapDesignAppConfig {
   const record = requireRecord(config, 'MapDesign configuration', 64);
   for (const key of Object.keys(record)) if (!Object.hasOwn(KEYS, key)) throw new MapDesignConfigValidationError(`Unknown config key: ${key}`);
   const sanitized: MapDesignAppConfig = {};
+  if (Object.hasOwn(record, 'runtimePreferences')) {
+    sanitized.runtimePreferences = Object.fromEntries(Object.entries(requireRecord(record.runtimePreferences, 'runtimePreferences', 64)).map(([id, value]) => {
+      if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$/u.test(id)) throw new MapDesignConfigValidationError('Invalid runtimePreferences');
+      const preference = requireRecord(value, 'runtimePreferences', 2);
+      if (Object.keys(preference).some(key => !['enabled', 'disabledModels'].includes(key))
+        || (preference.enabled !== undefined && typeof preference.enabled !== 'boolean')
+        || (preference.disabledModels !== undefined && (!Array.isArray(preference.disabledModels)
+          || preference.disabledModels.length > 1024 || preference.disabledModels.some(model => typeof model !== 'string'
+            || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/u.test(model))))) {
+        throw new MapDesignConfigValidationError('Invalid runtimePreferences');
+      }
+      return [id, { ...(typeof preference.enabled === 'boolean' ? { enabled: preference.enabled } : {}),
+        ...(Array.isArray(preference.disabledModels) ? { disabledModels: [...new Set(preference.disabledModels as string[])] } : {}) }];
+    }));
+  }
   if (Object.hasOwn(record, 'activeApiProfileId')) {
     if (record.activeApiProfileId !== null && (typeof record.activeApiProfileId !== 'string' || !MAP_API_PROFILE_ID.test(record.activeApiProfileId))) {
       throw new MapDesignConfigValidationError('Invalid activeApiProfileId');

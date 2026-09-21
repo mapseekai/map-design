@@ -1,4 +1,5 @@
 import { createApiProfileRouter } from './api-profile-routes.js';
+import { createLocalRuntimeRouter } from './local-runtime-routes.js';
 import { Router, json, type RequestHandler } from 'express';
 import type { MapDesignAppConfig, UpdateMapDesignAppConfigRequest } from '@mapseekai/contracts';
 import { MapDesignConfigValidationError, type MapDesignConfigStore } from '../storage/config-store.js';
@@ -10,6 +11,10 @@ function mergeConfigPatch(current: MapDesignAppConfig, patch: unknown): UpdateMa
   if (typeof patch !== 'object' || patch === null || Array.isArray(patch)) return patch as UpdateMapDesignAppConfigRequest;
   const patchRecord = patch as Record<string, unknown>;
   const next: Record<string, unknown> = { ...patchRecord };
+  if (patchRecord.runtimePreferences && typeof patchRecord.runtimePreferences === 'object' && !Array.isArray(patchRecord.runtimePreferences)) {
+    next.runtimePreferences = { ...current.runtimePreferences, ...Object.fromEntries(Object.entries(patchRecord.runtimePreferences).map(([id, value]) =>
+      [id, value && typeof value === 'object' && !Array.isArray(value) ? { ...current.runtimePreferences?.[id], ...value } : value])) };
+  }
   if (typeof patchRecord.byokProviders === 'object' && patchRecord.byokProviders !== null && !Array.isArray(patchRecord.byokProviders)) {
     const providers: Record<string, unknown> = { ...(current.byokProviders ?? {}) };
     for (const [providerId, provider] of Object.entries(patchRecord.byokProviders)) {
@@ -45,6 +50,7 @@ export function createMapDesignSystemRouter(deps: {
   agents: MapDesignLocalAgentRegistry;
   requireLocalDaemonRequest: RequestHandler;
   version: string;
+  dataRoot?: string;
 }): Router {
   const router = Router();
   router.use('/api', deps.requireLocalDaemonRequest);
@@ -60,6 +66,7 @@ export function createMapDesignSystemRouter(deps: {
     }
   });
   router.use(createApiProfileRouter(deps.config));
+  router.use(createLocalRuntimeRouter(deps.agents, deps.dataRoot));
   return router;
 }
 

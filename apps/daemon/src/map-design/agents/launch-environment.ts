@@ -1,11 +1,14 @@
 const SAFE_OS_ENVIRONMENT_KEYS = [
   'APPDATA',
+  'ALL_PROXY',
   'COLORTERM',
   'COMSPEC',
   'FORCE_COLOR',
   'HOMEDRIVE',
   'HOMEPATH',
   'HOME',
+  'HTTP_PROXY',
+  'HTTPS_PROXY',
   'LANG',
   'LANGUAGE',
   'LC_ALL',
@@ -13,6 +16,9 @@ const SAFE_OS_ENVIRONMENT_KEYS = [
   'LOCALAPPDATA',
   'LOGNAME',
   'NO_COLOR',
+  'NO_PROXY',
+  'NODE_EXTRA_CA_CERTS',
+  'NODE_USE_ENV_PROXY',
   'PATH',
   'Path',
   'PATHEXT',
@@ -34,6 +40,10 @@ const SAFE_OS_ENVIRONMENT_KEYS = [
   'XDG_CONFIG_HOME',
   'XDG_DATA_HOME',
   'XDG_STATE_HOME',
+  'all_proxy',
+  'http_proxy',
+  'https_proxy',
+  'no_proxy',
 ] as const;
 
 /**

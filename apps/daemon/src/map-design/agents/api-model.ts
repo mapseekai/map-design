@@ -3,12 +3,13 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { APICallError, type LanguageModel } from 'ai';
 import type { MapDesignRunByokProviderSelection } from '@mapseekai/contracts';
+import { apiFetch } from './api-fetch.js';
 
 export class ApiModelConfigurationError extends Error {
   constructor() { super('Configure an OpenAI-compatible or Anthropic API, API key and model in Settings.'); }
 }
 
-export function createApiModel(provider: (MapDesignRunByokProviderSelection & { model?: string | undefined }) | undefined, modelOverride?: string | null, fetchImplementation: typeof fetch = fetch): LanguageModel {
+export function createApiModel(provider: (MapDesignRunByokProviderSelection & { model?: string | undefined }) | undefined, modelOverride?: string | null, fetchImplementation: typeof fetch = apiFetch): LanguageModel {
   if (!provider || !['openai', 'anthropic'].includes(provider.protocol)) throw new ApiModelConfigurationError();
   const model = (modelOverride && modelOverride !== 'default' ? modelOverride : provider.model)?.trim();
   const apiKey = provider.apiKey.trim();

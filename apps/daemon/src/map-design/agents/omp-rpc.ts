@@ -220,6 +220,17 @@ export function createOhMyPiMapAgentAdapter(
           }
           if (!Array.isArray(frame.messages)) throw new OmpProtocolError();
           if (cancelRequested) return;
+          const lastAssistant = frame.messages.map(record).reverse().find((message) => message?.role === 'assistant');
+          if (lastAssistant?.stopReason === 'error') {
+            // RPC completion does not imply that the upstream model succeeded.
+            // Never expose its raw error, which may contain credentials or URLs.
+            const denied = typeof lastAssistant.errorMessage === 'string'
+              && /^(?:401|403)\b/u.test(lastAssistant.errorMessage);
+            finish({ status: 'failed', error: denied
+              ? { code: 'API_AUTH_FAILED', message: 'The model API rejected authentication. Check the saved API key and endpoint.' }
+              : { code: 'API_REQUEST_FAILED', message: 'The model API request failed. Check the endpoint, response format and model configuration.' } });
+            return;
+          }
           finish({ status: 'succeeded' });
           return;
         }
