@@ -157,4 +157,22 @@ describe("tools-dev shared ports", () => {
     assert.match(options.webPort ?? "", /^\d+$/);
     assert.notEqual(options.webPort, options.daemonPort);
   });
+  it("preserves daemon and trusted web ports during a daemon-only restart", async () => {
+    const options: { daemonPort?: string; webPort?: string } = {};
+    await resolveSharedPortsFromRunningState(["daemon"], options, {
+      daemonUrl: async () => "http://127.0.0.1:42969",
+      webUrl: async () => "http://127.0.0.1:42583",
+    });
+    assert.deepEqual(options, { daemonPort: "42969", webPort: "42583" });
+  });
+
+  it("keeps explicit ports for a daemon-only restart", async () => {
+    const options = { daemonPort: "5100", webPort: "5200" };
+    await resolveSharedPortsFromRunningState(["daemon"], options, {
+      daemonUrl: async () => "http://127.0.0.1:42969",
+      webUrl: async () => "http://127.0.0.1:42583",
+    });
+    assert.deepEqual(options, { daemonPort: "5100", webPort: "5200" });
+  });
+
 });
