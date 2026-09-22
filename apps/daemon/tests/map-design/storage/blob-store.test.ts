@@ -12,6 +12,7 @@ import {
 import { blobPath } from '../../../src/map-design/storage/paths.js';
 
 const PROJECT_ID = 'map-project-1';
+const nativePlatform = process.platform;
 
 async function capturedFailure(operation: () => Promise<unknown>): Promise<unknown> {
   try {
@@ -35,6 +36,7 @@ describe('MapDesignBlobStore', () => {
   });
 
   afterEach(async () => {
+    Object.defineProperty(process, 'platform', { value: nativePlatform });
     await rm(dataRoot, { recursive: true, force: true });
   });
 
@@ -195,6 +197,59 @@ describe('MapDesignBlobStore', () => {
       .putJson(PROJECT_ID, 'styles', { exists: 'first' })).rejects.toThrow('link failed');
     const blobDir = path.dirname(blobPath(dataRoot, PROJECT_ID, 'styles', digest));
     expect(await readdir(blobDir)).toEqual([]);
+  });
+
+  it.each(['win32', 'linux'] as const)('handles directory EPERM only on Windows when running as %s', async (platform) => {
+    const blobDir = path.join(dataRoot, 'mapdesign', 'projects', PROJECT_ID, 'blobs', 'styles');
+    const failure = Object.assign(new Error('directory sync denied'), { code: 'EPERM' });
+    const operations: BlobStoreFileSystem = {
+      ...fs.promises,
+      open: async (target, flags, mode) => {
+        const handle = await fs.promises.open(target, flags, mode);
+        if (target !== blobDir) return handle;
+        return new Proxy(handle, {
+          get(original, property, receiver) {
+            if (property === 'sync') return async () => { throw failure; };
+            return Reflect.get(original, property, receiver);
+          },
+        });
+      },
+    };
+    Object.defineProperty(process, 'platform', { value: platform });
+    const store = createMapDesignBlobStore(dataRoot, { fileSystem: operations });
+
+    const publication = store.putJson(PROJECT_ID, 'styles', { directory: 'unsupported sync' });
+
+    if (platform === 'win32') {
+      const blob = await publication;
+      await expect(store.getJson(PROJECT_ID, 'styles', blob.digest)).resolves.toEqual({ directory: 'unsupported sync' });
+      expect(await readdir(blobDir)).toEqual([`${blob.digest}.json`]);
+    } else {
+      await expect(publication).rejects.toBe(failure);
+    }
+  });
+
+  it('rejects file EPERM and cleans unpublished bytes on Windows', async () => {
+    const failure = Object.assign(new Error('file sync denied'), { code: 'EPERM' });
+    const operations: BlobStoreFileSystem = {
+      ...fs.promises,
+      open: async (target, flags, mode) => {
+        const handle = await fs.promises.open(target, flags, mode);
+        return new Proxy(handle, {
+          get(original, property, receiver) {
+            if (property === 'sync') return async () => { throw failure; };
+            return Reflect.get(original, property, receiver);
+          },
+        });
+      },
+    };
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+
+    const publication = createMapDesignBlobStore(dataRoot, { fileSystem: operations })
+      .putJson(PROJECT_ID, 'styles', { file: 'sync denied' });
+
+    await expect(publication).rejects.toBe(failure);
+    expect(await readdir(path.join(dataRoot, 'mapdesign', 'projects', PROJECT_ID, 'blobs', 'styles'))).toEqual([]);
   });
 
   it('preserves a published immutable blob when directory fsync fails', async () => {

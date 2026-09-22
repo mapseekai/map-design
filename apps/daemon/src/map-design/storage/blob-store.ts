@@ -84,7 +84,14 @@ class FileMapDesignBlobStore implements MapDesignBlobStore {
 
   private async syncDirectory(directory: string): Promise<void> {
     const handle = await this.fileSystem.open(directory, 'r');
-    await preserveOperationFailure(async () => handle.sync(), async () => handle.close());
+    await preserveOperationFailure(async () => {
+      try {
+        await handle.sync();
+      } catch (error: unknown) {
+        // Windows cannot fsync a directory opened for reading; file contents are already synced.
+        if (process.platform !== 'win32' || !isCode(error, 'EPERM')) throw error;
+      }
+    }, async () => handle.close());
   }
 
   private async removeIfPresent(target: string): Promise<void> {
