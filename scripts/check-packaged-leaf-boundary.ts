@@ -33,6 +33,10 @@ const allowedConsumerPrefixes = new Map([
 
 const allowedConsumers = new Map([
   [
+    "e2e/lib/playwright/packaged-protocol.ts",
+    "the isolated Electron fixture is exercised by the guarded packaged CI block",
+  ],
+  [
     "apps/packaged/esbuild.config.mjs",
     "the packaged build owns these entrypoints; the config itself remains medium-tier",
   ],
@@ -58,6 +62,8 @@ const requiredWorkspaceUnitBlock = `if [ "\${{ needs.scopes.outputs.tools_dev_te
             pnpm --filter @mapseekai/desktop test
             pnpm --filter @mapseekai/packaged test
             pnpm --filter @mapseekai/tools-pack test
+            pnpm -C e2e exec playwright install-deps chromium
+            xvfb-run --auto-servernum pnpm -C e2e exec playwright test -c playwright.config.ts ui/packaged-protocol.test.ts
           fi`;
 
 export type PackagedLeafConsumptionViolation = {
@@ -191,6 +197,15 @@ function scopeBoundaryErrors(): string[] {
   ]);
   const errors: string[] = [];
 
+  for (const filePath of ["e2e/lib/playwright/packaged-protocol.ts", "e2e/ui/packaged-protocol.test.ts"]) {
+    const { outputs } = evaluateScopeOutputs([filePath], "medium", {
+      deriveWorkspaceValidationFromTestScopes: true,
+    });
+    if (!outputs.tools_pack_tests_required || !outputs.workspace_validation_required) {
+      errors.push(`${filePath} must arm packaged protocol validation`);
+    }
+  }
+
   for (const filePath of [
     "apps/desktop/src/main/index.ts",
     "apps/desktop/tests/main/runtime.test.ts",
@@ -218,6 +233,10 @@ function scopeBoundaryErrors(): string[] {
   return errors;
 }
 
+export function hasGuardedWorkspaceUnitCommands(workflow: string): boolean {
+  return workflow.replace(/\r\n/g, "\n").includes(requiredWorkspaceUnitBlock);
+}
+
 export async function checkPackagedLeafBoundary(): Promise<boolean> {
   const violations: PackagedLeafConsumptionViolation[] = [];
   for (const root of checkedRoots) {
@@ -230,7 +249,7 @@ export async function checkPackagedLeafBoundary(): Promise<boolean> {
 
   const workflow = await readFile(path.join(repoRoot, ".github/workflows/ci.yml"), "utf8");
   const errors = scopeBoundaryErrors();
-  if (!workflow.includes(requiredWorkspaceUnitBlock)) {
+  if (!hasGuardedWorkspaceUnitCommands(workflow)) {
     errors.push("ci.yml no longer contains the guarded tools-dev and packaged unit command block");
   }
 

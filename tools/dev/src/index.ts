@@ -465,7 +465,7 @@ async function spawnWebRuntime(config: ToolDevConfig, options: CliOptions): Prom
           path.join(config.workspaceRoot, "apps/web/node_modules"),
           path.join(config.workspaceRoot, "node_modules"),
         ]),
-        ...createWebSidecarEnv({ daemonPort, webPort }),
+        ...createWebSidecarEnv({ daemonPort, daemonUrl: daemonStatus.url, webPort }),
         ...(options.parentPid == null ? {} : { [TOOLS_DEV_PARENT_PID_ENV]: String(options.parentPid) }),
         ...(options.prod === true
           ? { NODE_ENV: "production", MAP_DESIGN_WEB_OUTPUT_MODE: "server", MAP_DESIGN_WEB_PROD: "1" }

@@ -40,6 +40,17 @@
   html, body, #root { height: 100%; }
   code, kbd, pre { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 }
+@media (max-width: 639px) {
+  #map-design-map-surface .maplibregl-ctrl-bottom-right > .maplibregl-ctrl-attrib.maplibregl-compact-show {
+    box-sizing: border-box;
+    width: calc(100% - 64px);
+    max-width: calc(100% - 64px);
+  }
+  #map-design-map-surface .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

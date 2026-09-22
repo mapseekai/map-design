@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type Database from 'better-sqlite3';
 
 import { resetDesktopAuthForTests, setDesktopAuthSecret, verifyDesktopWorkingDirectoryGrant } from '../../../src/desktop-auth.js';
@@ -208,7 +208,7 @@ describe('local MapDesign project lifecycle routes', () => {
       createHmac('sha256', secret).update(`${pickerPath}\n${nonce}\n${expiry}`).digest('base64url'),
     ].join('~');
     try {
-      const path = '/picked/project';
+      const path = resolve('/picked/project');
       const token = signDesktopProducerToken(path, 'desktop-nonce');
       const accepted = await request(app, '/api/map-design/projects', {
         method: 'POST', headers: { 'content-type': 'application/json' },

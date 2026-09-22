@@ -3,6 +3,29 @@ import {describe, expect, it} from 'vitest';
 import {sanitizeReference} from '../src/sanitize.js';
 
 describe('sanitizeReference', () => {
+  it.each([
+    'C:\\tiles\\{z}\\{x}\\{y}.pbf',
+    'c:/tiles/{z}/{x}/{y}.pbf',
+  ])('recognizes a drive-qualified local tile template: %s', (template) => {
+    expect(sanitizeReference(template)).toEqual({
+      value: template,
+      credentialRedacted: false,
+      validHttpUrl: false,
+      explicitLocalTemplate: true,
+    });
+  });
+
+  it.each([
+    'C:tiles/{z}/{x}/{y}.pbf',
+    'c://tiles.example/{z}/{x}/{y}.pbf',
+    '//tiles.example/{z}/{x}/{y}.pbf',
+    '\\\\tiles.example\\{z}\\{x}\\{y}.pbf',
+    'C:/tiles/{z}/{x}/{y}.pbf?token=secret',
+    'C:\\tiles\\{z}\\{x}\\{y}.pbf#private',
+  ])('does not classify ambiguous or opaque references as local: %s', (template) => {
+    expect(sanitizeReference(template).explicitLocalTemplate).toBe(false);
+  });
+
   it('redacts authority credentials and opaque URL parts while preserving template braces', () => {
     expect(
       sanitizeReference(

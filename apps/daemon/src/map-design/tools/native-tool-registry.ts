@@ -7,26 +7,20 @@ import {
   MapDiscardDraftInputSchema,
   MapGetContextInputSchema,
   MapInspectInputSchema,
-  MapInspectOutputSchema,
   MapRenderPreviewInputSchema,
   MapSearchLayersInputSchema,
-  MapSearchLayersOutputSchema,
   MapToolInputSchemas,
   MapToolNameSchema,
   MapToolOutputSchemas,
   MapUpdateSemanticsInputSchema,
   MapValidateInputSchema,
-  type MapInspectInput,
   type MapToolName,
 } from '@mapseekai/map-design-contracts';
 import type { SafeToolSummary } from '@mapseekai/contracts';
-import {
-  type InspectStyleInput,
-} from 'maplibre-style-tools/capabilities';
 import { STYLE_TOOL_ERROR_CODES, type StyleDocument, type StyleToolError } from 'maplibre-style-tools/core';
 
 import type { MapDraftService } from '../application/draft-service.js';
-import { MapDraftError, isMapDraftError } from '../application/errors.js';
+import { isMapDraftError } from '../application/errors.js';
 import {
   isMapPreviewRequestCancellation,
   type MapPreviewRequestService,
@@ -41,6 +35,8 @@ import {
   summarizeNativeMapTool,
 } from './safe-tool-summary.js';
 import { nativeMapToolDefinitions } from './model-tool-definitions.js';
+import { sdkInspectionInput } from './sdk-read-preflight.js';
+import { mapModelContent } from './model-tool-content.js';
 import type {
   MapDesignNativeToolRegistry,
   MapNativeToolCallContext,
@@ -69,7 +65,6 @@ const MAX_SAFE_DETAIL_ENTRIES = 8;
 const MAX_SAFE_DETAIL_KEY_LENGTH = 64;
 const MAX_SAFE_DETAIL_STRING_LENGTH = 256;
 const MAX_SAFE_POINTER_SEGMENTS = 16;
-const MAX_MODEL_CONTENT_BYTES = 256 * 1024;
 const TRUSTED_SDK_POINTER_ROOTS = new Set(['transaction', 'operations', 'layers', 'sources']);
 const SAFE_POINTER_SEGMENT = /^(?:[A-Za-z_][A-Za-z0-9_-]*|0|[1-9][0-9]*)$/u;
 const UNSAFE_SDK_DETAIL_KEY = /(error|message|path|provider|style|url)/iu;
@@ -88,6 +83,10 @@ export interface CreateMapDesignNativeToolRegistryDependencies {
 }
 
 type NativeMapToolError = Extract<MapNativeToolResult, { ok: false }>['error'];
+
+class MapReadPreflightError extends Error {
+  constructor(readonly failure: NativeMapToolError) { super(failure.message); }
+}
 
 export function createMapDesignNativeToolRegistry(
   deps: CreateMapDesignNativeToolRegistryDependencies,
@@ -114,13 +113,9 @@ export function createMapDesignNativeToolRegistry(
       if (revisionFailure) return { ok: false, toolUseId, error: revisionFailure };
 
       try {
-        const sdkFailure = NATIVE_IDEMPOTENT_WRITES.has(name)
-          ? null
-          : await preflightSdk(deps, sdk, context, name, nativeInput);
-        if (sdkFailure) return { ok: false, toolUseId, error: sdkFailure };
         if (context.signal.aborted) return cancelled(toolUseId);
 
-        const operation = invoke(deps, context, name, nativeInput);
+        const operation = invoke(deps, context, name, nativeInput, sdk);
         const output = ATOMIC_MUTATIONS.has(name)
           ? await operation
           : await abortable(operation, context.signal);
@@ -130,9 +125,10 @@ export function createMapDesignNativeToolRegistry(
           ok: true,
           toolUseId,
           summary: summarizeNativeMapTool(name, nativeInput, validatedOutput),
-          ...modelContent(name, validatedOutput),
+          ...mapModelContent(name, validatedOutput),
         };
       } catch (error) {
+        if (error instanceof MapReadPreflightError) return { ok: false, toolUseId, error: error.failure };
         if (isMapPreviewRequestCancellation(error)) return cancelled(toolUseId);
         if (isMapDraftError(error)) {
           return {
@@ -153,25 +149,6 @@ export function createMapDesignNativeToolRegistry(
       }
     },
   };
-}
-
-function modelContent(name: MapToolName, output: unknown): { modelContent: string } | Record<string, never> {
-  let value: unknown;
-  switch (name) {
-    case 'map_inspect':
-      value = MapInspectOutputSchema.parse(output);
-      break;
-    case 'map_search_layers':
-      value = MapSearchLayersOutputSchema.parse(output);
-      break;
-    default:
-      return {};
-  }
-  const serialized = JSON.stringify(value);
-  if (Buffer.byteLength(serialized, 'utf8') > MAX_MODEL_CONTENT_BYTES) {
-    throw new TypeError('Map tool model content exceeds the bounded response limit.');
-  }
-  return { modelContent: serialized };
 }
 
 function normalizeNativeInput(name: MapToolName, input: unknown, runId: string): unknown {
@@ -221,102 +198,37 @@ function sdkTransactionFields(transaction: unknown): unknown {
   };
 }
 
-async function preflightSdk(
-  deps: CreateMapDesignNativeToolRegistryDependencies,
-  sdk: MapStyleSdk,
-  context: MapNativeToolCallContext,
-  name: MapToolName,
-  input: unknown,
-): Promise<NativeMapToolError | null> {
-  const inspectionInput = sdkInspectionInput(name, input);
-  if (inspectionInput === null) return null;
-  const style = await loadStyle(deps, context.projectId);
-  if (context.signal.aborted) return cancelled(context.toolUseId).error;
-
-  const result = sdk.inspect(style, inspectionInput!);
-  return result.success ? null : sdkError(result.error);
-}
-
-function sdkInspectionInput(name: MapToolName, input: unknown): InspectStyleInput | null {
-  switch (name) {
-    case 'map_get_context':
-      MapGetContextInputSchema.parse(input);
-      return { action: 'getContext' };
-    case 'map_inspect':
-      return mapInspectInput(MapInspectInputSchema.parse(input));
-    case 'map_search_layers': {
-      const request = MapSearchLayersInputSchema.parse(input);
-      return {
-        action: 'listLayers',
-        ...(request.query === undefined ? {} : { query: request.query }),
-        ...(request.types?.length === 1 ? { type: request.types[0] } : {}),
-        ...(request.sourceId === undefined ? {} : { source: request.sourceId }),
-        ...(request.sourceLayer === undefined ? {} : { sourceLayer: request.sourceLayer }),
-        limit: request.limit,
-      };
-    }
-    case 'map_validate':
-      MapValidateInputSchema.parse(input);
-      return { action: 'validateCurrentMap' };
-    case 'map_render_preview':
-      MapRenderPreviewInputSchema.parse(input);
-      return { action: 'validateCurrentMap' };
-    case 'map_apply_transaction':
-    case 'map_update_semantics':
-    case 'map_commit_revision':
-    case 'map_discard_draft':
-      return null;
-  }
-}
-
-function mapInspectInput(input: MapInspectInput): InspectStyleInput {
-  switch (input.target.kind) {
-    case 'root':
-      return { action: 'getRoot' };
-    case 'layer':
-      return { action: 'getLayer', layerId: input.target.layerId };
-    case 'source':
-      return { action: 'getSource', sourceId: input.target.sourceId };
-    case 'source-layer':
-      return { action: 'listSourceLayers', sourceId: input.target.sourceId };
-  }
-}
-
-async function loadStyle(
-  deps: Pick<CreateMapDesignNativeToolRegistryDependencies, 'repository' | 'blobStore'>,
-  projectId: string,
-): Promise<StyleDocument> {
-  const project = deps.repository.get(projectId);
-  if (!project) throw new MapDraftError('NOT_FOUND', 'The map project was not found.');
-  if (project.lifecycleState !== 'ready' || !project.draftStyleDigest) {
-    throw new MapDraftError('PROJECT_NOT_READY', 'The map project is not ready.');
-  }
-  try {
-    return await deps.blobStore.getJson<StyleDocument>(projectId, 'styles', project.draftStyleDigest);
-  } catch {
-    throw new MapDraftError('SOURCE_UNAVAILABLE', 'The current map draft could not be loaded.');
-  }
-}
-
 function invoke(
   deps: CreateMapDesignNativeToolRegistryDependencies,
   context: MapNativeToolCallContext,
   name: MapToolName,
   input: unknown,
+  sdk: MapStyleSdk,
 ): Promise<unknown> {
   const runContext = {
     projectId: context.projectId,
     runId: context.runId,
     signal: context.signal,
   };
+  const beforeRead = (style: StyleDocument) => {
+    if (context.signal.aborted) throw new DOMException('Canceled', 'AbortError');
+    const inspection = sdkInspectionInput(name, input);
+    if (inspection === null) return;
+    const result = sdk.inspect(style, inspection);
+    if (!result.success) {
+      const failure = sdkError(result.error);
+      throw new MapReadPreflightError(failure);
+    }
+    if (context.signal.aborted) throw new DOMException('Canceled', 'AbortError');
+  };
   switch (name) {
     case 'map_get_context':
       MapGetContextInputSchema.parse(input);
-      return deps.query.getContext(context.projectId);
+      return deps.query.getContext(context.projectId, beforeRead);
     case 'map_inspect':
-      return deps.query.inspect(context.projectId, MapInspectInputSchema.parse(input));
+      return deps.query.inspect(context.projectId, MapInspectInputSchema.parse(input), beforeRead);
     case 'map_search_layers':
-      return deps.query.searchLayers(context.projectId, MapSearchLayersInputSchema.parse(input));
+      return deps.query.searchLayers(context.projectId, MapSearchLayersInputSchema.parse(input), beforeRead);
     case 'map_apply_transaction':
       return deps.draft.applyTransaction(runContext, MapApplyTransactionInputSchema.parse(input));
     case 'map_update_semantics':

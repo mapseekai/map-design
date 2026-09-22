@@ -2,16 +2,22 @@ import { z } from 'zod';
 import { CartographySampleBindingsSchema } from './cartography-sample.js';
 import { CartographyDescriptionSchema, CartographyPreviewSchema, CartographySourceSchema, CartographySummarySchema } from './cartography.js';
 import { MapDigestSchema, MapSafeRevisionSchema } from './project.js';
+import { MapDesignRuntimeSelectionSchema } from './studio.js';
 
 export const CartographyEditRuntimeSchema = z.enum(['api', 'codex']);
-export const CartographyEditCreateSchema = z.strictObject({
+export const CartographyEditCreateSchema = z.union([z.strictObject({
   sourceDocumentId: MapDigestSchema.optional(),
   source: CartographySourceSchema,
   description: CartographyDescriptionSchema.default(''),
   reportMarkdown: z.string().max(2 * 1024 * 1024).default(''),
   runtime: CartographyEditRuntimeSchema.default('api'),
   initialPrompt: z.string().trim().min(1).max(8000),
-});
+}), z.strictObject({
+  name: z.string().trim().min(1).max(256),
+  requirements: z.string().trim().min(1).max(8000),
+  description: CartographyDescriptionSchema.default(''),
+  runtime: MapDesignRuntimeSelectionSchema.extend({ modelOrigin: z.enum(['catalog', 'custom']).optional() }),
+})]);
 export const CartographyEditTurnSchema = z.strictObject({
   requestId: z.string().uuid(),
   expectedRevision: MapSafeRevisionSchema,

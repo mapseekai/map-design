@@ -5,14 +5,14 @@ import type { Locator, Page } from '@playwright/test';
 export async function createAndOpenReadyMapProject(
   page: Page,
   daemonUrl: string,
-  options: { agentId?: string; projectPrefix?: string; title?: string } = {},
+  options: { agentId?: string; projectPrefix?: string; title?: string; sourceUrl?: string } = {},
 ): Promise<string> {
   const projectId = `${options.projectPrefix ?? 'layout'}-${crypto.randomUUID()}`;
   const response = await fetch(`${daemonUrl}/api/map-design/projects`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       projectId, title: options.title ?? 'Layout acceptance map',
-      source: { url: 'https://demotiles.maplibre.org/style.json' },
+      source: { url: options.sourceUrl ?? 'https://demotiles.maplibre.org/style.json' },
       designRequirement: 'Keep the map deterministic and legible.',
       runtime: { agentId: options.agentId ?? 'codex' }, idempotencyKey: `map-create:${projectId}`,
     }),
@@ -22,13 +22,30 @@ export async function createAndOpenReadyMapProject(
     .toBe('ready');
   await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('region', { name: 'Map canvas' })).toBeVisible();
-  await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
+  await waitForRenderedMapWithRetry(page);
   return projectId;
 }
 
 export async function waitForRenderedMap(map: Locator): Promise<void> {
   await expect(map).toBeVisible();
   await expect.poll(async () => renderedMapFrame(await map.screenshot())).toBe(true);
+}
+
+export async function waitForMapResources(page: Page): Promise<void> {
+  await waitForRenderedMapWithRetry(page);
+  await expect(page.getByRole('region', { name: 'Map canvas', exact: true }).getByRole('alert')).toHaveCount(0);
+}
+
+async function waitForRenderedMapWithRetry(page: Page): Promise<void> {
+  const map = page.getByRole('region', { name: 'Map canvas', exact: true });
+  const resourceAlert = map.getByRole('alert');
+  const renderedMap = map.getByRole('region', { name: 'Map', exact: true });
+  await expect(renderedMap).toBeVisible();
+  await expect.poll(async () => (await resourceAlert.isVisible()) || renderedMapFrame(await renderedMap.screenshot())).toBe(true);
+  if (await resourceAlert.isVisible()) {
+    await resourceAlert.getByRole('button', { name: 'Retry', exact: true }).click();
+  }
+  await waitForRenderedMap(renderedMap);
 }
 
 function renderedMapFrame(image: Buffer): boolean {

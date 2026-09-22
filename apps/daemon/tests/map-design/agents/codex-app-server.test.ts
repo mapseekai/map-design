@@ -34,7 +34,6 @@ class FakeAppServer {
     return true;
   });
   readonly child = Object.assign(new EventEmitter(), {
-    pid: 4321,
     stdin: this.stdin,
     stdout: this.stdout,
     stderr: this.stderr,

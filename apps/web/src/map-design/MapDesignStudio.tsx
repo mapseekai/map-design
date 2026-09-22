@@ -1,6 +1,6 @@
 import { resourceErrorCopy } from '../i18n/locales/resource-error';
 import { MapLoading } from '@mapseekai/components';
-import { Button, Alert, ResizablePanelGroup, ResizablePanel, ResizableHandle, type PanelImperativeHandle } from '@mapseekai/components';
+import { Button, Alert, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@mapseekai/components';
 import {
   mapCommitPreviewIntentSummary,
   type MapRenderPreviewOutput,
@@ -11,6 +11,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { lazy, Suspense, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { useI18n } from '../i18n';
+import { resizablePanelWidth } from './resizable-panel-width';
 import {
   commitMapDesignRevisionFromPreview,
   fulfillMapDesignPreview,
@@ -180,7 +181,6 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
   const updateCoordinates = useCallback((coordinates: { lat: number; lng: number }) => {
     setMapStatus((current) => ({ ...current, coordinates }));
   }, []);
-  const inspectorPanelRef = useRef<PanelImperativeHandle | null>(null);
   const resolvedInspectorWidth = inspectorWidth ?? uncontrolledInspectorWidth;
   const setInspectorOpen = useCallback((open: boolean) => {
     onInspectorOpenChange?.(open);
@@ -401,10 +401,10 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
     data-inspector-placement={presentedInspectorPlacement}
     data-direction={typeof document !== 'undefined' && document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr'}
     style={{ '--map-inspector-width': `${Math.min(420, Math.max(280, resolvedInspectorWidth))}px` } as CSSProperties}>
-    <ResizablePanelGroup orientation="horizontal" className="min-h-0 min-w-0" onLayoutChanged={(_, meta) => {
+    <ResizablePanelGroup orientation="horizontal" className="min-h-0 min-w-0" onLayoutChanged={(nextLayout, meta) => {
       if (!meta.isUserInteraction) return;
-      const width = inspectorPanelRef.current?.getSize().inPixels;
-      if (width !== undefined) setInspectorWidth(width);
+      const group = mapColumnRef.current?.closest('[data-slot="resizable-panel-group"]');
+      if (group instanceof HTMLElement && nextLayout.inspector !== undefined) setInspectorWidth(resizablePanelWidth(group, nextLayout.inspector));
     }}>
     <ResizablePanel id="studio-map" minSize={0} className="min-h-0">
     <section ref={mapColumnRef} className="relative grid h-full min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)] bg-muted" aria-label={t('mapDesign.studio.mapCanvas')}
@@ -476,7 +476,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
     </ResizablePanel>
     {presentedInspectorPlacement === 'docked' && !fullscreen ? <>
       <ResizableHandle withHandle aria-label={t('mapDesign.studio.inspectorResize')} variant="subtle" />
-      <ResizablePanel id="inspector" panelRef={inspectorPanelRef} defaultSize={resolvedInspectorWidth} minSize={280} maxSize={420} className="min-h-0">
+      <ResizablePanel id="inspector" defaultSize={resolvedInspectorWidth} minSize={280} maxSize={420} className="min-h-0">
         {inspector}
       </ResizablePanel>
     </> : null}

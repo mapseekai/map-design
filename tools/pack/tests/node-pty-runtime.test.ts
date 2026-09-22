@@ -2,7 +2,12 @@ import { chmod, mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const { withPosixPermissions } = await import("./posix-permissions.js");
+  return withPosixPermissions(await importOriginal<typeof import("node:fs/promises")>());
+});
 
 import {
   prepareNodePtyRuntime,
@@ -19,6 +24,12 @@ describe("node-pty packaged runtime closure", () => {
       await writeFile(join(prebuildRoot, "pty.node"), Buffer.alloc(32 * 1024, 1));
       await writeFile(join(prebuildRoot, "spawn-helper"), "#!/bin/sh\nexit 0\n", "utf8");
       await chmod(join(prebuildRoot, "spawn-helper"), 0o644);
+
+      await expect(validateNodePtyRuntime({
+        appRoot: root,
+        arch: "arm64",
+        platform: "darwin",
+      })).resolves.toMatch(/spawn-helper is not executable/);
 
       await expect(prepareNodePtyRuntime({
         appRoot: root,

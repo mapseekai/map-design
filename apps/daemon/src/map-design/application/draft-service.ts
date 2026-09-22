@@ -22,11 +22,12 @@ import { sha256CanonicalJson } from 'maplibre-style-tools/bridge';
 
 import { canonicalJson } from '../storage/canonical-json.js';
 import type { MapDesignBlobStore } from '../storage/types.js';
-import { validateMapDesign } from '../validation/map-validator.js';
+import { validateMapSnapshot } from './map-validation-cache.js';
 import type { LoadedMapDesignSystem } from '../validation/design-system-loader.js';
 import type { MapDraftEventBus, MapDraftUpdatedEnvelope } from './event-bus.js';
 import { MapDraftError, invalidInput, isMapDraftError } from './errors.js';
 import { requestDigest } from './request-digest.js';
+import { expandMapTransaction } from './compact-transaction.js';
 
 type SqliteDb = Database.Database;
 type MutationOperation = Extract<MapToolName, 'map_apply_transaction' | 'map_update_semantics'>;
@@ -99,10 +100,10 @@ export class MapDraftService {
     }
 
     const current = await this.loadCurrent(project, context.projectId);
-    const transaction = 'transaction' in parsed ? parsed.transaction : null;
+    const transaction = 'transaction' in parsed ? expandMapTransaction(parsed.transaction) : null;
     const applied = 'style' in parsed
       ? finalizeStyleReplacement(current.style, parsed.style)
-      : applyStyleTransaction(current.style, parsed.transaction);
+      : applyStyleTransaction(current.style, transaction);
     if (!applied.ok) {
       const error = libraryError(applied.error);
       if ('style' in parsed) throw new MapDraftError('STYLE_INVALID', 'The style document is invalid.', error.details === undefined ? {} : { details: error.details });
@@ -113,7 +114,7 @@ export class MapDraftService {
     } catch {
       throw new MapDraftError('STYLE_INVALID', 'The map style contains an unsafe resource URL.');
     }
-    const validation = validateMapDesign({ style: applied.style, semantics: current.semantics, sourceManifest: current.sourceManifest, designSystem: current.designSystem });
+    const validation = validateMapSnapshot(context.projectId, { style: applied.style, semantics: current.semantics, sourceManifest: current.sourceManifest, designSystem: current.designSystem });
     assertValid(validation.findings);
     const noOp = applied.diff.length === 0 && canonicalJson(applied.style) === canonicalJson(current.style);
     const nextRevision = noOp ? project.draftRevision : project.draftRevision + 1;
@@ -146,7 +147,7 @@ export class MapDraftService {
     this.assertRevision(project, parsed.expectedRevision);
 
     const current = await this.loadCurrent(project, context.projectId);
-    const validation = validateMapDesign({ style: current.style, semantics: parsed.semantics, sourceManifest: current.sourceManifest, designSystem: current.designSystem });
+    const validation = validateMapSnapshot(context.projectId, { style: current.style, semantics: parsed.semantics, sourceManifest: current.sourceManifest, designSystem: current.designSystem });
     assertValid(validation.findings);
     const noOp = canonicalJson(parsed.semantics) === canonicalJson(current.semantics);
     const semanticBlob = noOp ? null : await this.deps.blobStore.putJson(context.projectId, 'semantics', parsed.semantics);

@@ -237,6 +237,8 @@ jobs:
             pnpm --filter @mapseekai/desktop test
             pnpm --filter @mapseekai/packaged test
             pnpm --filter @mapseekai/tools-pack test
+            pnpm -C e2e exec playwright install-deps chromium
+            xvfb-run --auto-servernum pnpm -C e2e exec playwright test -c playwright.config.ts ui/packaged-protocol.test.ts
           fi
 
 

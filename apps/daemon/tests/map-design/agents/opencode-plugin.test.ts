@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
+import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,7 +52,6 @@ class FakeOpenCodeProcess {
     return true;
   });
   readonly child = Object.assign(new EventEmitter(), {
-    pid: 7162,
     stdin: this.stdin,
     stdout: this.stdout,
     stderr: this.stderr,
@@ -76,7 +76,9 @@ const roots: string[] = [];
 afterEach(async () => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  await Promise.all(roots.splice(0).map((root) => rm(root, {
+    recursive: true, force: true, maxRetries: 5, retryDelay: 20,
+  })));
 });
 
 async function pluginRoot(): Promise<string> {
@@ -219,7 +221,7 @@ async function start(options: {
   const handle = await adapter.startMapRun(options.input ?? runInput(), TOOLS, (event) => events.push(event));
   const [, args, spawnOptions] = spawn.mock.calls.at(-1)!;
   const config = JSON.parse(String(spawnOptions.env.OPENCODE_CONFIG_CONTENT)) as Record<string, unknown>;
-  const pluginPath = new URL((config.plugin as string[]).at(-1)!).pathname;
+  const pluginPath = fileURLToPath((config.plugin as string[]).at(-1)!);
   return { adapter, args, config, events, handle, pluginPath, root, server, spawn, spawnOptions };
 }
 
@@ -461,7 +463,7 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
     const firstArgs = spawn.mock.calls[0]![1];
     const firstEnvironment = spawn.mock.calls[0]![2].env;
     const firstConfig = JSON.parse(String(firstEnvironment.OPENCODE_CONFIG_CONTENT)) as { plugin: string[] };
-    const firstPluginPath = new URL(firstConfig.plugin.at(-1)!).pathname;
+    const firstPluginPath = fileURLToPath(firstConfig.plugin.at(-1)!);
     expect(firstArgs).toContain('ses_stale');
     expect(rejected.input).toEqual([input.resumePrompt]);
 
@@ -472,7 +474,7 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
     const replacementArgs = spawn.mock.calls[1]![1];
     const replacementEnvironment = spawn.mock.calls[1]![2].env;
     const replacementConfig = JSON.parse(String(replacementEnvironment.OPENCODE_CONFIG_CONTENT)) as { plugin: string[] };
-    const replacementPluginPath = new URL(replacementConfig.plugin.at(-1)!).pathname;
+    const replacementPluginPath = fileURLToPath(replacementConfig.plugin.at(-1)!);
     expect(replacementArgs).not.toContain('-s');
     expect(replacement.input).toEqual([input.prompt]);
     expect(replacementPluginPath).not.toBe(firstPluginPath);
@@ -803,7 +805,7 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
       expect(args).toEqual(['debug', 'agent', 'build']);
       queueMicrotask(async () => {
         const config = JSON.parse(String(options.env.OPENCODE_CONFIG_CONTENT)) as { plugin: string[] };
-        const source = await readFile(new URL(config.plugin[0]!).pathname, 'utf8');
+        const source = await readFile(fileURLToPath(config.plugin[0]!), 'utf8');
         await loadGeneratedPlugin({ source, env: options.env });
         server.close(0);
       });
@@ -855,7 +857,7 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
       expect(args).toEqual(['debug', 'agent', 'build']);
       queueMicrotask(async () => {
         const config = JSON.parse(String(options.env.OPENCODE_CONFIG_CONTENT)) as { plugin: string[] };
-        const source = await readFile(new URL(config.plugin.at(-1)!).pathname, 'utf8');
+        const source = await readFile(fileURLToPath(config.plugin.at(-1)!), 'utf8');
         await loadGeneratedPlugin({ source, env: options.env });
         server.close(0);
       });

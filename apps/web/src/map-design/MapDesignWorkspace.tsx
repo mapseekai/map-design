@@ -4,6 +4,7 @@ import { MAP_SCREENSHOT_MAX_COUNT, type MapScreenshot } from '@mapseekai/contrac
 import { Button, type PanelImperativeHandle } from '@mapseekai/components';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useI18n } from '../i18n';
+import { resizablePanelWidth } from './resizable-panel-width';
 import { navigationCopy } from '../i18n/locales/navigation';
 import { importRateLimitCopy } from '../i18n/locales/import-failure';
 import { navigate } from '../router';
@@ -376,10 +377,10 @@ export function MapDesignWorkspace({ projectId, onMissingProject, onOpenSettings
       onViewChange={setMobileViewCommitted} />
     <MapDesignWorkspacePanels
       groupProps={{ disabled: mobileLayout || fullscreen || layout.chatCollapsed || compactLayout,
-        onLayoutChanged: (_, meta) => {
+        onLayoutChanged: (nextLayout, meta) => {
           if (!meta.isUserInteraction || mobileLayout || fullscreen || layout.chatCollapsed || compactLayout) return;
-          const width = chatPanelRef.current?.getSize().inPixels;
-          if (width !== undefined) layout.setChatWidth(width);
+          const group = chatColumnRef.current?.closest('[data-slot="resizable-panel-group"]');
+          if (group instanceof HTMLElement && nextLayout.chat !== undefined) layout.setChatWidth(resizablePanelWidth(group, nextLayout.chat));
           commitLayout();
         },
       }}

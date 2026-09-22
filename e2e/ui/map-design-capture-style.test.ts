@@ -1,5 +1,5 @@
 import { expect, test } from '@/playwright/suite';
-import { createAndOpenReadyMapProject, waitForRenderedMap } from '@/playwright/map-design-project';
+import { createAndOpenReadyMapProject, waitForMapResources, waitForRenderedMap } from '@/playwright/map-design-project';
 import type { Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 
@@ -73,6 +73,7 @@ test('[P1] screenshots reach chat and direct styles preview, cancel and persist'
 });
 
 async function pickStyleFeature(page: Page) {
+  await waitForMapResources(page);
   const canvas = page.locator('#map-design-map-surface canvas.maplibregl-canvas');
   const bounds = await canvas.boundingBox();
   if (!bounds) throw new Error('Map canvas missing');

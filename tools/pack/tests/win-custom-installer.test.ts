@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -100,6 +100,12 @@ async function generateInstallerScript(root: string, portable: boolean): Promise
   await writeFakeMakensis(root);
   const config = createConfig(root, portable);
   const paths = { ...resolveWinPaths(config), nsisLogPath: BUILD_HOST_NSIS_LOG_PATH };
+  const iconPath = join(config.roots.output.namespaceRoot, "resources", "win", "icon.ico");
+  await mkdir(dirname(iconPath), { recursive: true });
+  await copyFile(new URL("../resources/win/icon.ico", import.meta.url), iconPath);
+  await mkdir(dirname(paths.installerBasePayloadPath), { recursive: true });
+  await writeFile(paths.installerBasePayloadPath, "base payload fixture");
+  await writeFile(paths.installerOverlayPayloadPath, "overlay payload fixture");
   const platformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
   if (platformDescriptor == null) throw new Error("process.platform descriptor is unavailable");
 

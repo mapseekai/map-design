@@ -31,7 +31,7 @@ import { canonicalJson } from '../storage/canonical-json.js';
 import type { MapDesignBlobStore, MapDesignProjectRepository } from '../storage/types.js';
 import { MapDesignSqliteProjectRepository } from '../storage/project-repository.js';
 import type { LoadedMapDesignSystem } from '../validation/design-system-loader.js';
-import { validateMapDesign } from '../validation/map-validator.js';
+import { validateMapSnapshot } from './map-validation-cache.js';
 import {
   createMapRevisionAttestation,
   parseMapRevisionProvenance,
@@ -177,7 +177,7 @@ export class MapRevisionService {
         blobStore: this.deps.blobStore,
         loadDesignSystem: this.deps.loadDesignSystem,
       });
-      const validation = validateMapDesign({
+      const validation = validateMapSnapshot(parsedProjectId, {
         style: evidence.style,
         semantics: evidence.semantics,
         sourceManifest: evidence.sourceManifest,
@@ -230,7 +230,7 @@ export class MapRevisionService {
     this.assertReady(project);
     this.assertDraftRevision(project, parsed.expectedDraftRevision);
     const designSystem = await this.designSystemForRestore(project, evidence);
-    const validation = validateMapDesign({
+    const validation = validateMapSnapshot(trustedContext.projectId, {
       style: evidence.style,
       semantics: evidence.semantics,
       sourceManifest: evidence.sourceManifest,
@@ -396,7 +396,7 @@ export class MapRevisionService {
       loadDesignSystem: this.deps.loadDesignSystem,
     });
     const designSystem = await this.designSystemForRestore(project, committed);
-    assertValidRevision(validateMapDesign({
+    assertValidRevision(validateMapSnapshot(project.projectId, {
       style: committed.style,
       semantics: committed.semantics,
       sourceManifest: committed.sourceManifest,
@@ -485,7 +485,7 @@ export class MapRevisionService {
       if (!revision || canonicalJson(revision) !== canonicalJson(args.evidence.revision)) {
         throw historicalEvidenceChanged();
       }
-      const validation = validateMapDesign({
+      const validation = validateMapSnapshot(current.projectId, {
         style: args.evidence.style,
         semantics: args.evidence.semantics,
         sourceManifest: args.evidence.sourceManifest,
@@ -658,7 +658,7 @@ export class MapRevisionService {
       if (!committed || canonicalJson(committed) !== canonicalJson(args.committed.revision)) {
         throw historicalEvidenceChanged();
       }
-      assertValidRevision(validateMapDesign({
+      assertValidRevision(validateMapSnapshot(current.projectId, {
         style: args.committed.style,
         semantics: args.committed.semantics,
         sourceManifest: args.committed.sourceManifest,
@@ -783,9 +783,9 @@ export class MapRevisionService {
       throw previewEvidenceFailed();
     }
 
-    let validation: ReturnType<typeof validateMapDesign>;
+    let validation: ReturnType<typeof validateMapSnapshot>;
     try {
-      validation = validateMapDesign({ style, semantics, sourceManifest, designSystem });
+      validation = validateMapSnapshot(project.projectId, { style, semantics, sourceManifest, designSystem });
     } catch {
       throw new MapDraftError('INTERNAL', 'The canonical map validation evidence is invalid.');
     }

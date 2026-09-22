@@ -30,6 +30,6 @@ describe('resolveMapDesignMcpCliPath', () => {
   });
 
   it('uses the built workspace daemon entry only when no explicit path is provided', async () => {
-    await expect(resolveMapDesignMcpCliPath(undefined)).resolves.toMatch(/\/apps\/daemon\/dist\/map-design-mcp-cli\.js$/u);
+    await expect(resolveMapDesignMcpCliPath(undefined)).resolves.toMatch(/[\\/]apps[\\/]daemon[\\/]dist[\\/]map-design-mcp-cli\.js$/u);
   });
 });

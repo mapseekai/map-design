@@ -1,0 +1,262 @@
+{
+  "schema": "map-tool-efficiency-qa/v1",
+  "generatedAt": "2026-09-22T11:00:07.408Z",
+  "projectId": "efficiency-qa-project",
+  "dataRoot": "C:\\Users\\w\\AppData\\Local\\Temp\\mapdesign-efficiency-qa-ZshCLQ\\data",
+  "designSystem": {
+    "id": "quiet-atlas",
+    "digest": "c31c60521a1242e87834f3289742a6f125324f79c93784dde9ce00432d699fcd",
+    "sourcePath": "D:/code/map-design/apps/daemon/tests/fixtures/map-design/design-systems/quiet-atlas/CARTOGRAPHY.md"
+  },
+  "scenarios": [
+    {
+      "id": "S1",
+      "criterion": "Injected query context and validation cache",
+      "surface": "daemon native tool registry",
+      "invocation": [
+        "nativeToolRegistry.call(\"map_get_context\", {})",
+        "nativeToolRegistry.call(\"map_get_context\", {})"
+      ],
+      "verdict": "PASS",
+      "artifactRefs": [
+        "A1"
+      ],
+      "observations": {
+        "blobReads": 6,
+        "readKinds": [
+          "styles",
+          "semantics",
+          "sources",
+          "styles",
+          "semantics",
+          "sources"
+        ],
+        "cacheBefore": {
+          "hits": 0,
+          "misses": 0,
+          "entries": 0,
+          "bytes": 0
+        },
+        "cacheAfterContext": {
+          "hits": 1,
+          "misses": 1,
+          "entries": 1,
+          "bytes": 233
+        },
+        "modelBytes": [
+          659,
+          659
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "criterion": "Projected search returns only requested paint property",
+      "surface": "daemon native tool registry",
+      "invocation": "nativeToolRegistry.call(\"map_search_layers\", {\"query\":\"roads\",\"types\":[\"line\"],\"limit\":3,\"properties\":{\"paint\":[\"line-color\"]}})",
+      "verdict": "PASS",
+      "artifactRefs": [
+        "A1"
+      ],
+      "observations": {
+        "projectedBytes": 389,
+        "projectedModelContent": "{\"layers\":[{\"id\":\"roads-primary\",\"type\":\"line\",\"sourceId\":\"base\",\"sourceLayer\":\"roads\",\"paint\":{\"line-color\":\"#111111\"}},{\"id\":\"roads-secondary\",\"type\":\"line\",\"sourceId\":\"base\",\"sourceLayer\":\"roads\",\"paint\":{\"line-color\":\"#222222\"}},{\"id\":\"roads-label-guide\",\"type\":\"line\",\"sourceId\":\"base\",\"sourceLayer\":\"roads\",\"paint\":{\"line-color\":\"#333333\"}}],\"returned\":3,\"truncated\":false,\"total\":3}"
+      }
+    },
+    {
+      "id": "S3",
+      "criterion": "Compact setLayersProperties expands atomically and reports changed IDs",
+      "surface": "daemon native tool registry",
+      "invocation": "nativeToolRegistry.call(\"map_apply_transaction\", {\"expectedRevision\":3,\"idempotencyKey\":\"efficiency-compact-apply\",\"transaction\":{\"operations\":[{\"op\":\"setLayersProperties\",\"layerIds\":[\"roads-primary\",\"roads-secondary\",\"roads-label-guide\"],\"paint\":{\"line-color\":\"#335577\"}}]},\"intentSummary\":\"Apply one road color to the roads group\"})",
+      "verdict": "PASS",
+      "artifactRefs": [
+        "A1"
+      ],
+      "observations": {
+        "summary": {
+          "operationCount": 1,
+          "expandedOperationCount": 3,
+          "changedLayerCount": 3,
+          "changedSourceCount": 0,
+          "warningCount": 0,
+          "revision": 4
+        },
+        "draftRevision": 4,
+        "changedIds": [
+          "roads-primary",
+          "roads-secondary",
+          "roads-label-guide"
+        ],
+        "modelOutput": "{\"draftRevision\":4,\"styleHash\":\"774d874d6ecd0682fd1423d92c094275bc2af1ea46e00f2abcfde8c7731ebd23\",\"changedLayers\":[\"roads-label-guide\",\"roads-primary\",\"roads-secondary\"],\"changedSources\":[],\"omittedChangedLayers\":0,\"omittedChangedSources\":0,\"validationSummary\":{\"status\":\"valid\",\"errors\":0,\"warnings\":0,\"infos\":0,\"totalFindings\":0,\"returnedFindings\":0,\"omittedFindings\":0},\"warnings\":[],\"omittedWarnings\":0}"
+      }
+    },
+    {
+      "id": "S4",
+      "criterion": "Preview request is fulfilled through native registry with protocol-valid synthetic renderer evidence",
+      "surface": "daemon native tool registry plus preview fulfillment service",
+      "invocation": [
+        "nativeToolRegistry.call(\"map_render_preview\", ...)",
+        "previewFulfillmentService.fulfill(\"9b60d407-587f-4c8c-ab93-9ec3560ff5d6\", succeeded, 320x240 PNG)"
+      ],
+      "verdict": "PASS",
+      "artifactRefs": [
+        "A1"
+      ],
+      "observations": {
+        "syntheticRenderer": true,
+        "previewId": "9b60d407-587f-4c8c-ab93-9ec3560ff5d6",
+        "fulfilled": {
+          "previewId": "9b60d407-587f-4c8c-ab93-9ec3560ff5d6",
+          "draftRevision": 4,
+          "styleHash": "774d874d6ecd0682fd1423d92c094275bc2af1ea46e00f2abcfde8c7731ebd23",
+          "report": {
+            "digest": "563c538659d1a320e3f12ea8cfe751bfa0f68d8500568db5a9f81fc79c3e8f80",
+            "mediaType": "application/json",
+            "byteLength": 138
+          },
+          "validationSummary": {
+            "status": "valid",
+            "errors": 0,
+            "warnings": 0,
+            "infos": 0,
+            "totalFindings": 0,
+            "returnedFindings": 0,
+            "omittedFindings": 0
+          },
+          "status": "succeeded",
+          "png": {
+            "digest": "75343d1b03afa53e55df01799038f8cf9f0fe6d17f5a8e623009676f2bc5def9",
+            "mediaType": "image/png",
+            "byteLength": 779,
+            "width": 320,
+            "height": 240
+          }
+        },
+        "previewResult": {
+          "ok": true,
+          "toolUseId": "preview-1",
+          "summary": {
+            "previewId": "9b60d407-587f-4c8c-ab93-9ec3560ff5d6",
+            "status": "succeeded",
+            "revision": 4,
+            "validationStatus": "valid"
+          }
+        },
+        "validationDigest": "466bc407a810ebe2c4a337ca472ba0f40984f74fad363370afbdc42dfe94d693",
+        "pngBytes": 779
+      }
+    },
+    {
+      "id": "S5",
+      "criterion": "Commit persists one revision and idempotent replay does not add another",
+      "surface": "daemon native tool registry",
+      "invocation": [
+        "nativeToolRegistry.call(\"map_commit_revision\", {\"expectedRevision\":4,\"idempotencyKey\":\"efficiency-commit-1\",\"previewId\":\"9b60d407-587f-4c8c-ab93-9ec3560ff5d6\",\"intentSummary\":\"Commit the reviewed road color preview\"})",
+        "nativeToolRegistry.call(\"map_commit_revision\", {\"expectedRevision\":4,\"idempotencyKey\":\"efficiency-commit-1\",\"previewId\":\"9b60d407-587f-4c8c-ab93-9ec3560ff5d6\",\"intentSummary\":\"Commit the reviewed road color preview\"})"
+      ],
+      "verdict": "PASS",
+      "artifactRefs": [
+        "A1"
+      ],
+      "observations": {
+        "commit": {
+          "ok": true,
+          "toolUseId": "commit-1",
+          "summary": {
+            "revision": 1,
+            "draftRevision": 4
+          }
+        },
+        "replay": {
+          "ok": true,
+          "toolUseId": "commit-2",
+          "summary": {
+            "revision": 1,
+            "draftRevision": 4
+          }
+        },
+        "revisionCountAfterCommit": 1,
+        "revisionCountAfterReplay": 1,
+        "committedRevision": 1
+      }
+    }
+  ],
+  "adversarialCases": [
+    {
+      "id": "A1",
+      "criterion": "Stale draft revision rejected before commit",
+      "adversarialClass": "stale_revision",
+      "expectedBehavior": "REVISION_CONFLICT and no additional committed revision",
+      "verdict": "PASS",
+      "artifactRefs": [
+        "A1"
+      ],
+      "observations": {
+        "invocation": "nativeToolRegistry.call(\"map_commit_revision\", {\"expectedRevision\":3,\"idempotencyKey\":\"efficiency-stale-commit\",\"previewId\":\"9b60d407-587f-4c8c-ab93-9ec3560ff5d6\",\"intentSummary\":\"Commit the reviewed road color preview\"})",
+        "result": {
+          "ok": false,
+          "toolUseId": "stale-1",
+          "error": {
+            "code": "REVISION_CONFLICT",
+            "message": "The map draft revision has changed.",
+            "retryable": true
+          }
+        }
+      }
+    }
+  ],
+  "measurements": {
+    "payloadBytes": {
+      "fullPaint": 39,
+      "selectedLineColor": 24,
+      "expandedTransaction": 283,
+      "compactTransaction": 145
+    },
+    "reductions": {
+      "paintBytes": 0.3846153846153846,
+      "transactionBytes": 0.4876325088339223
+    },
+    "cache": {
+      "before": {
+        "hits": 0,
+        "misses": 0,
+        "entries": 0,
+        "bytes": 0
+      },
+      "afterContext": {
+        "hits": 1,
+        "misses": 1,
+        "entries": 1,
+        "bytes": 233
+      },
+      "afterAll": {
+        "hits": 4,
+        "misses": 2,
+        "entries": 2,
+        "bytes": 466
+      }
+    },
+    "revisionCounts": {
+      "afterCommit": 1,
+      "afterReplay": 1
+    }
+  },
+  "artifacts": [
+    {
+      "id": "A1",
+      "kind": "json",
+      "description": "Native registry manual QA results and measurements",
+      "path": "docs/map-tool-efficiency-qa.json"
+    }
+  ],
+  "runtime": {
+    "node": "v24.21.0",
+    "command": "C:\\Users\\w\\AppData\\Local\\Temp\\mapdesign-node-v24.21.0\\node.exe C:/Users/w/AppData/Local/Temp/mapdesign-efficiency-qa-ZshCLQ/map-tool-efficiency-qa.mjs",
+    "scriptSha256": "32107d058ff0c6f58af472432447cf93b7b2ad3f67e713788d3802c4b1edcf34"
+  },
+  "limitations": [
+    "Preview uses an explicitly synthetic PNG/report to exercise daemon protocol binding; no visual quality claim.",
+    "Payload bytes are measured on the small three-road-layer fixture, not billed model tokens.",
+    "No external model provider request was made."
+  ]
+}

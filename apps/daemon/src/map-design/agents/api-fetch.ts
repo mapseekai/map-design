@@ -13,7 +13,7 @@ export const apiFetch: typeof fetch = (input, init) => {
       noProxy: environment.NO_PROXY ?? '',
     });
   }
-  // Node and the installed undici package carry different Dispatcher typings,
-  // but share the runtime dispatch contract used by Node's built-in fetch.
-  return fetch(input, { ...init, dispatcher: dispatcher as unknown as NonNullable<RequestInit['dispatcher']> });
+  const requestInit: RequestInit = { ...init };
+  Object.assign(requestInit, { dispatcher });
+  return fetch(input, requestInit);
 };

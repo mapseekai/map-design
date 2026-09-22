@@ -1,7 +1,24 @@
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
+
+import { createCommandInvocation } from '../../../packages/platform/src/command.js';
+
+export function spawnFakeMapProcess(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): ChildProcessWithoutNullStreams {
+  const invocation = createCommandInvocation({ command, args, env });
+  return spawn(invocation.command, invocation.args, {
+    env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true,
+    windowsVerbatimArguments: invocation.windowsVerbatimArguments,
+  });
+}
 
 export type FakeMapAgentId = 'codex' | 'oh-my-pi' | 'pi' | 'opencode' | 'deepseek-harness';
 
@@ -360,7 +377,7 @@ async function runTurn(prompt) {
     await emitPrivateAndPublic('activity-success', 'Road hierarchy needs more contrast.');
     const context = await callTool('activity-success', 'context-call', 'map_get_context', {});
     const semantics = await callTool('activity-success', 'semantics-call', 'map_update_semantics', semanticsInput(Number(context.draftRevision), 'activity'));
-    await callTool('activity-success', 'apply-call', 'map_apply_transaction', applyInput(Number(semantics.revision), 'activity'));
+    await callTool('activity-success', 'apply-call', 'map_apply_transaction', applyInput(Number(semantics.draftRevision), 'activity'));
     record({ type: 'fixture-ready', branch: 'activity-success', skillObserved });
     await waitForRelease('activity-success');
     record({ type: 'fixture-event', branch: 'activity-success', phase: 'final-answer' });
@@ -461,12 +478,12 @@ async function runTurn(prompt) {
     await emitPrivateAndPublic('native-transaction', 'Applying a validated map transaction.');
     const context = await callTool('native-transaction', 'transaction-context-call', 'map_get_context', {});
     const semantics = await callTool('native-transaction', 'transaction-semantics-call', 'map_update_semantics', semanticsInput(Number(context.draftRevision), 'transaction'));
-    const apply = await callTool('native-transaction', 'transaction-apply-call', 'map_apply_transaction', applyInput(Number(semantics.revision), 'transaction'));
+    const apply = await callTool('native-transaction', 'transaction-apply-call', 'map_apply_transaction', applyInput(Number(semantics.draftRevision), 'transaction'));
     await callTool('native-transaction', 'transaction-validate-call', 'map_validate', {
-      expectedRevision: Number(apply.revision),
+      expectedRevision: Number(apply.draftRevision),
     });
     await callTool('native-transaction', 'transaction-preview-call', 'map_render_preview', {
-      expectedRevision: Number(apply.revision),
+      expectedRevision: Number(apply.draftRevision),
       idempotencyKey: 'e2e-native-preview',
     });
     agentText('MapDesign acceptance workflow completed.');
@@ -745,7 +762,7 @@ function runOmpRuntime() {
     recordSession('oh-my-pi', sessionId, resumed, String(frame.message || ''));
     setImmediate(async () => {
       try {
-        await runSdkWorkflow('oh-my-pi', async (tool, args, callId) => {
+        const reply = await runSdkWorkflow('oh-my-pi', String(frame.message || ''), async (tool, args, callId) => {
           const hostId = 'host-' + callId;
           const result = await new Promise((resolve) => {
             hostResults.set(hostId, resolve);
@@ -757,7 +774,7 @@ function runOmpRuntime() {
         });
         write({ type: 'session_info_update', sessionFile: sessionPath });
         write({ type: 'message_update', assistantMessageEvent: { type: 'thinking_delta', delta: 'Applying a deterministic native map workflow.' } });
-        write({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: 'Deterministic revision committed.' } });
+        write({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: reply } });
         write({ type: 'agent_end', isTerminal: true, willContinue: false, messages: [] });
       } catch (error) {
         record({ type: 'fixture-failure', agentId: 'oh-my-pi', phase: String(error && error.message || error) });
@@ -799,7 +816,7 @@ function runPiRuntime() {
     recordSession('pi', sessionId, resumed, String(frame.message || ''));
     setImmediate(async () => {
       try {
-        await runSdkWorkflow('pi', async (tool, args, callId) => {
+        const reply = await runSdkWorkflow('pi', String(frame.message || ''), async (tool, args, callId) => {
           write({ type: 'tool_execution_start', toolCallId: callId, toolName: tool, args });
           const result = await callbackTool(manifest.context, 'pi', tool, callId, args);
           write({
@@ -815,7 +832,7 @@ function runPiRuntime() {
           return result.value;
         });
         write({ type: 'message_update', assistantMessageEvent: { type: 'thinking_delta', delta: 'PRIVATE_PI_REASONING_MUST_NOT_RENDER' } });
-        write({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: 'Deterministic revision committed.' } });
+        write({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: reply } });
         write({ type: 'agent_end', messages: [], willRetry: false });
         write({ type: 'agent_settled' });
       } catch (error) {
@@ -843,8 +860,9 @@ function runOpenCodeRuntime() {
         recordSession('opencode', sessionId, resumed, prompt);
         write({ type: 'step_start', sessionID: sessionId, part: {} });
         const callbackUrl = process.env.MAP_DESIGN_TOOL_CALLBACK_URL;
+        let reply = 'Map request reviewed.';
         if (callbackUrl) {
-          await runSdkWorkflow('opencode', async (tool, args, callId) => {
+          reply = await runSdkWorkflow('opencode', prompt, async (tool, args, callId) => {
             const output = await loaded.tools[tool].execute(args, { abort: new AbortController().signal });
             if (typeof output !== 'string') throw new Error('OpenCode MapDesign tool output invalid');
             let value;
@@ -859,7 +877,7 @@ function runOpenCodeRuntime() {
             return value;
           });
         }
-        write({ type: 'text', sessionID: sessionId, part: { text: 'Deterministic revision committed.' } });
+        write({ type: 'text', sessionID: sessionId, part: { text: reply } });
         process.stdout.end();
       } catch (error) {
         record({ type: 'fixture-failure', agentId: 'opencode', phase: String(error && error.message || error) });
@@ -903,13 +921,13 @@ function runDeepSeekRuntime() {
         ...callbackContextFromEnvironment(command.callback.url, process.env.MAP_DESIGN_TOOL_TOKEN),
         runId: command.request_id,
       };
-      await runSdkWorkflow('deepseek-harness', async (tool, args, callId) => {
+      const reply = await runSdkWorkflow('deepseek-harness', String(command.prompt || ''), async (tool, args, callId) => {
         write({ v: 1, type: 'tool_call', request_id: command.request_id, call_id: callId, name: tool, arguments: JSON.stringify(args) });
         const result = await callbackTool(context, 'deepseek-harness', tool, callId, args);
         write({ v: 1, type: 'tool_result', request_id: command.request_id, call_id: callId, name: tool, status: 'succeeded', summary: result.summary });
         return result.value;
       });
-      write({ v: 1, type: 'text', request_id: command.request_id, content: 'Deterministic revision committed.' });
+      write({ v: 1, type: 'text', request_id: command.request_id, content: reply });
       write({ v: 1, type: 'result', request_id: command.request_id, status: 'completed', session_id: sessionId, resume_rejected: false });
     } catch (error) {
       record({ type: 'fixture-failure', agentId: 'deepseek-harness', phase: String(error && error.message || error) });
@@ -958,7 +976,8 @@ async function callbackTool(context, agentId, tool, callId, args) {
   return { modelContent, summary, value };
 }
 
-async function runSdkWorkflow(agentId, invoke) {
+async function runSdkWorkflow(agentId, prompt, invoke) {
+  if (activeUserPrompt(prompt) === 'Keep the map deterministic and legible.') return 'Map request reviewed.';
   let callIndex = 0;
   const call = async (tool, args) => {
     callIndex += 1;
@@ -969,7 +988,7 @@ async function runSdkWorkflow(agentId, invoke) {
   const context = await call('map_get_context', {});
   const draftRevision = Number(context.draftRevision);
   const semantics = await call('map_update_semantics', semanticsInput(draftRevision, sessionPrefix(agentId)));
-  const semanticRevision = Number(semantics.revision);
+  const semanticRevision = Number(semantics.draftRevision);
   const changedRevision = semanticRevision + 1;
   const colors = {
     'oh-my-pi': { background: '#EEF4F8', fill: '#C9DCE8', line: '#315B72', symbol: '#173445' },
@@ -983,7 +1002,7 @@ async function runSdkWorkflow(agentId, invoke) {
     colors,
     agentId === 'opencode',
   ));
-  const appliedRevision = Number(apply.revision);
+  const appliedRevision = Number(apply.draftRevision);
   await call('map_validate', { expectedRevision: appliedRevision });
   const preview = await call('map_render_preview', {
     expectedRevision: appliedRevision,
@@ -995,6 +1014,7 @@ async function runSdkWorkflow(agentId, invoke) {
     previewId: preview.previewId,
     intentSummary: 'Commit deterministic ' + agentId + ' revision.',
   });
+  return 'Deterministic revision committed.';
 }
 
 function activeUserPrompt(prompt) {
@@ -1011,7 +1031,7 @@ async function commitDeterministicRevision(branch, colors, skillObserved) {
     expectedRevision,
     branch,
   ));
-  const semanticRevision = Number(semantics.revision);
+  const semanticRevision = Number(semantics.draftRevision);
   if (semanticRevision !== expectedRevision && semanticRevision !== expectedRevision + 1) {
     throw new Error('deterministic revision semantics failed');
   }
@@ -1022,11 +1042,11 @@ async function commitDeterministicRevision(branch, colors, skillObserved) {
     colors,
     branch === 'revision-two',
   ));
-  if (Number(apply.revision) !== changedRevision) throw new Error('deterministic revision transaction failed');
+  if (Number(apply.draftRevision) !== changedRevision) throw new Error('deterministic revision transaction failed');
   const validation = await callTool(branch, branch + '-validate', 'map_validate', {
     expectedRevision: changedRevision,
   });
-  if (validation.validationStatus !== 'valid') throw new Error('deterministic revision validation failed');
+  if (validation.summary?.status !== 'valid') throw new Error('deterministic revision validation failed');
   const preview = await callTool(branch, branch + '-preview', 'map_render_preview', {
     expectedRevision: changedRevision,
     idempotencyKey: 'revision-' + changedRevision + '-preview',

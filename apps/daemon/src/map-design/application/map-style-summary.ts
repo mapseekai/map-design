@@ -1,10 +1,12 @@
 import {
   LayerTypeSchema,
-  MAP_INSPECT_MAX_BYTES,
+  MAP_LAYER_READ_DEFAULT_BYTES,
+  MAP_LAYER_READ_MAX,
   MapInspectOutputSchema,
   MapStyleSourceTypeSchema,
   mapJsonByteLength,
   type MapInspectOutput,
+  type MapInspectInput,
   type MapLayerSummary,
   type MapStyleSourceSummary,
   type MapStyleSummary,
@@ -36,39 +38,65 @@ export function summarizeMapStyle(style: StyleDocument): MapStyleSummary {
 }
 
 export function summarizeMapSources(style: StyleDocument): MapStyleSourceSummary[] {
+  const counts = new Map<string, { layerCount: number; sourceLayers: Set<string> }>();
+  for (const layer of style.layers) {
+    if (typeof layer.source !== 'string') continue;
+    const count = counts.get(layer.source) ?? { layerCount: 0, sourceLayers: new Set<string>() };
+    count.layerCount += 1;
+    if (typeof layer['source-layer'] === 'string') count.sourceLayers.add(layer['source-layer']);
+    counts.set(layer.source, count);
+  }
   return Object.entries(style.sources).map(([id, source]) => {
-    const layers = style.layers.filter((layer) => layer.source === id);
+    const count = counts.get(id);
     return {
       id,
       kind: MapStyleSourceTypeSchema.parse(source.type),
-      sourceLayerCount: new Set(layers.flatMap((layer) => (
-        typeof layer['source-layer'] === 'string' ? [layer['source-layer']] : []
-      ))).size,
-      layerCount: layers.length,
+      sourceLayerCount: count?.sourceLayers.size ?? 0,
+      layerCount: count?.layerCount ?? 0,
     };
   });
 }
 
-export function inspectMapStyleRoot(style: StyleDocument): MapInspectOutput {
-  const allLayers = style.layers.map(summarizeMapLayer);
+export function inspectMapStyleRoot(style: StyleDocument, input: Pick<MapInspectInput, 'maxBytes' | 'offset' | 'sourceOffset'> = {}): MapInspectOutput {
   const allSources = summarizeMapSources(style);
-  const output: MapInspectOutput = {
+  const offset = input.offset ?? 0;
+  const sourceOffset = input.sourceOffset ?? 0;
+  const maxBytes = input.maxBytes ?? MAP_LAYER_READ_DEFAULT_BYTES;
+  const layers: MapLayerSummary[] = [];
+  const sources: MapStyleSourceSummary[] = [];
+  const output = {
     target: { kind: 'root' },
     view: {
       kind: 'root',
       style: summarizeMapStyle(style),
-      layers: allLayers.slice(0, 100),
-      sources: allSources.slice(0, 100),
+      layers,
+      sources,
     },
-    truncated: allLayers.length > 100 || allSources.length > 100,
+    truncated: false,
   };
-  while (mapJsonByteLength(output) > MAP_INSPECT_MAX_BYTES && output.view.kind === 'root') {
-    if (output.view.layers.length > 0) output.view.layers.pop();
-    else if (output.view.sources.length > 0) output.view.sources.pop();
-    else break;
-    output.truncated = true;
+  let bytes = mapJsonByteLength(output) + 128;
+  const firstLayer = style.layers[offset];
+  const sourceBudget = maxBytes - (firstLayer ? mapJsonByteLength(summarizeMapLayer(firstLayer)) + 1 : 0);
+  for (const source of allSources.slice(sourceOffset, sourceOffset + 100)) {
+    const size = mapJsonByteLength(source) + 1;
+    if (bytes + size > sourceBudget) break;
+    sources.push(source);
+    bytes += size;
   }
-  return MapInspectOutputSchema.parse(output);
+  for (const layer of style.layers.slice(offset, offset + MAP_LAYER_READ_MAX)) {
+    const summary = summarizeMapLayer(layer);
+    const size = mapJsonByteLength(summary) + 1;
+    if (bytes + size > maxBytes) break;
+    layers.push(summary);
+    bytes += size;
+  }
+  const nextOffset = offset + layers.length;
+  const nextSourceOffset = sourceOffset + sources.length;
+  return MapInspectOutputSchema.parse({ ...output,
+    truncated: nextOffset < style.layers.length || nextSourceOffset < allSources.length,
+    ...(nextOffset < style.layers.length ? { nextOffset } : {}),
+    ...(nextSourceOffset < allSources.length ? { nextSourceOffset } : {}),
+  });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

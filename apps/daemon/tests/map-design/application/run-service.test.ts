@@ -177,9 +177,10 @@ function createFixtureNativeAdapter(
         canceling = true;
         cancellation = (async () => {
           if (child) {
+            // Fixture PIDs are synthetic; default cancellation must stay inside the fake child.
             const stop = deps.stopProcessTree
               ?? ((target: SpawnedLocalAgent) => stopMapDesignProcessTree(
-                target,
+                { once: target.once.bind(target), kill: target.kill.bind(target) },
                 deps.processStopTimeoutMs ?? 250,
               ));
             await stop(child);
@@ -1126,7 +1127,8 @@ describe('MapDesignRunService', () => {
     });
     const run = await service.start({ projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Cancel.', agentId: 'opencode', clientRequestId: 'request-1', userMessageId: 'user-1', assistantMessageId: 'assistant-1' });
     const events: string[] = []; service.subscribe(run.runId, (event) => events.push(event.type));
-    await expect(service.cancel(run.runId)).resolves.toEqual({ runId: run.runId, status: 'canceled' });
+    await expect(Promise.all([service.cancel(run.runId), service.cancel(run.runId)]))
+      .resolves.toEqual([{ runId: run.runId, status: 'canceled' }, { runId: run.runId, status: 'canceled' }]);
     child.emit('close', null, 'SIGTERM');
     await new Promise((resolve) => setImmediate(resolve));
     expect(signals).toEqual(['SIGTERM']);
@@ -1435,14 +1437,105 @@ describe('MapDesignRunService', () => {
     await expect(Promise.all([first, second])).resolves.toEqual([{ runId: run.runId, status: 'canceled' }, { runId: run.runId, status: 'canceled' }]);
   });
   it('bounds each hung Windows taskkill invocation before escalating descendants', async () => {
-    const child = new EventEmitter() as EventEmitter & { kill: () => boolean; pid: number };
-    child.pid = 4321; child.kill = () => true;
-    const invocations: string[][] = [];
-    await stopMapDesignProcessTree(child, 0, 'win32', (args) => {
-      invocations.push(args);
-      return new EventEmitter() as never;
+    vi.useFakeTimers();
+    try {
+      const child = Object.assign(new EventEmitter(), { pid: 4321, kill: vi.fn(() => true) });
+      const invocations: string[][] = [];
+      const helpers: Array<ReturnType<typeof vi.fn>> = [];
+      const stopping = stopMapDesignProcessTree(child, 0, 'win32', (args) => {
+        invocations.push(args);
+        const kill = vi.fn(() => true);
+        helpers.push(kill);
+        return Object.assign(new EventEmitter(), { kill });
+      });
+      const rejected = expect(stopping).rejects.toThrow('process tree could not be stopped');
+      await vi.runAllTimersAsync();
+      await rejected;
+      expect(invocations).toEqual([['/pid', '4321', '/T'], ['/pid', '4321', '/T', '/F']]);
+      expect(helpers.every((kill) => kill.mock.calls.length === 1)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('awaits a successful forced taskkill beyond the graceful-stop interval', async () => {
+    vi.useFakeTimers();
+    try {
+      const child = Object.assign(new EventEmitter(), { pid: 4321, kill: vi.fn(() => true) });
+      const forced = Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      let settled = false;
+      const stopping = stopMapDesignProcessTree(child, 250, 'win32', (args) => {
+        if (args.includes('/F')) return forced;
+        return Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      }).then(() => { settled = true; });
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(settled).toBe(false);
+      forced.emit('close', 0);
+      await stopping;
+      expect(forced.kill).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rejects when forced taskkill reports failure', async () => {
+    const child = Object.assign(new EventEmitter(), { pid: 4321, kill: vi.fn(() => true) });
+    await expect(stopMapDesignProcessTree(child, 250, 'win32', () => {
+      const helper = Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      queueMicrotask(() => helper.emit('close', 1));
+      return helper;
+    })).rejects.toThrow('process tree could not be stopped');
+  });
+
+  it('does not taskkill an already exited Windows child whose PID may be reused', async () => {
+    const child = Object.assign(new EventEmitter(), { pid: 4321, exitCode: 0, kill: vi.fn(() => true) });
+    const spawn = vi.fn(() => Object.assign(new EventEmitter(), { kill: vi.fn(() => true) }));
+    await expect(stopMapDesignProcessTree(child, 250, 'win32', spawn)).resolves.toBeUndefined();
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it('accepts an absent Windows process that exits during taskkill', async () => {
+    const child = Object.assign(new EventEmitter(), {
+      pid: 4321, exitCode: null, kill: vi.fn(() => true),
     });
-    expect(invocations).toEqual([['/pid', '4321', '/T'], ['/pid', '4321', '/T', '/F']]);
+    await expect(stopMapDesignProcessTree(child, 250, 'win32', () => {
+      const helper = Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      queueMicrotask(() => { child.emit('close', 0); helper.emit('close', 128); });
+      return helper;
+    })).resolves.toBeUndefined();
+  });
+
+  it('awaits taskkill even when its command parent closes first', async () => {
+    vi.useFakeTimers();
+    try {
+      const child = Object.assign(new EventEmitter(), { pid: 4321, kill: vi.fn(() => true) });
+      const forced = Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      let settled = false;
+      const stopping = stopMapDesignProcessTree(child, 250, 'win32', (args) => {
+        if (args.includes('/F')) return forced;
+        return Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      }).then(() => { settled = true; });
+      child.emit('close', 0);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(settled).toBe(false);
+      forced.emit('close', 0);
+      await stopping;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stops a Windows tree once when taskkill closes the child', async () => {
+    const child = Object.assign(new EventEmitter(), { pid: 4321, kill: vi.fn(() => true) });
+    const invocations: string[][] = [];
+    await stopMapDesignProcessTree(child, 100, 'win32', (args) => {
+      invocations.push(args);
+      const taskkill = Object.assign(new EventEmitter(), { kill: vi.fn(() => true) });
+      queueMicrotask(() => { child.emit('close', 0); taskkill.emit('close', 0); });
+      return taskkill;
+    });
+    expect(invocations).toEqual([['/pid', '4321', '/T']]);
+    expect(child.kill).not.toHaveBeenCalled();
   });
 });
 

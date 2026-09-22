@@ -9,13 +9,16 @@ const DESKTOP_VIEWPORT = { width: 1440, height: 960 } as const;
 const TABLET_VIEWPORT = { width: 1024, height: 768 } as const;
 const MOBILE_VIEWPORT = { width: 390, height: 844 } as const;
 
-test.describe.configure({ mode: 'serial', timeout: T.xlong });
+test.describe.configure({ mode: 'default', timeout: T.xlong });
 
 test('[P0] keeps long localized conversation metadata separated inside a 390 px chat pane', async ({ page, toolsDev }) => {
   await page.setViewportSize(DESKTOP_VIEWPORT);
   const consoleErrors = recordConsoleErrors(page);
   await selectFakeLocalAgent(toolsDev.daemonUrl!);
   const projectId = await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
+  const creationConversationId = new URL(page.url()).searchParams.get('conversation');
+  await page.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('conversation')).not.toBe(creationConversationId);
   const conversationId = new URL(page.url()).searchParams.get('conversation');
   if (!conversationId) throw new Error('Map Studio did not select a conversation.');
   await resizeChatPane(page, 390);
@@ -67,7 +70,9 @@ test('[P0] keeps long localized conversation metadata separated inside a 390 px 
   await expect(count).toHaveText('2 messages');
   await expect(run).toHaveText('Running');
   await expect(run.locator('[data-conversation-run-dot]')).toHaveCount(1);
-  expect(await option.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe('none');
+  await expect(option).toHaveAttribute('aria-selected', 'true');
+  const conversationPopup = page.locator('[data-slot="popover-content"]').filter({ has: option });
+  expect(await conversationPopup.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe('none');
   const dateTime = await time.getAttribute('datetime');
   expect(dateTime).toBeTruthy();
   expect(await time.innerText()).not.toBe(dateTime);
@@ -104,13 +109,14 @@ test('[P1] Map Studio preserves its mounted map across desktop workbench transit
   await zoomIn.press('Enter');
   await expect(zoomIn).toBeFocused();
   await expect.poll(async () => await mapScaleText(page)).not.toBe(scaleBeforeZoom);
-  await assertNavigationStaysInsideMap(page, map, navigation);
+  await assertNavigationStaysInsideMap(map, navigation);
   await expectMapFitsViewport(page, map);
   await captureWorkbenchScreenshot(page, testInfo, 'desktop-expanded', [map]);
 
   const conversationResize = page.getByRole('separator', { name: 'Resize design conversation', exact: true });
   await conversationResize.press('End');
-  await expect(conversationResize).toHaveAttribute('aria-valuenow', '520');
+  await expect.poll(async () => Math.round((await page.locator('#map-design-chat-surface').boundingBox())?.width ?? 0)).toBe(520);
+  await expectResizableValue(conversationResize, 'maximum');
   await page.getByRole('button', { name: 'Collapse chat', exact: true }).click();
   const expandConversation = page.getByRole('button', { name: 'Expand design conversation', exact: true });
   await expect(expandConversation).toBeFocused();
@@ -119,7 +125,7 @@ test('[P1] Map Studio preserves its mounted map across desktop workbench transit
   await expect(page.getByRole('button', { name: 'Collapse chat', exact: true })).toBeVisible();
   await expectMapIdentity(map, mapIdentity);
 
-  await page.getByRole('button', { name: 'Open inspector', exact: true }).click();
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
   const inspector = page.getByRole('complementary', { name: 'Map inspector', exact: true });
   await expect(inspector).toHaveAttribute('data-placement', 'floating');
   await waitForStableWorkbench(page, [map, inspector]);
@@ -146,50 +152,74 @@ test('[P1] Map Studio preserves its mounted map across desktop workbench transit
   expect(consoleErrors).toEqual([]);
 });
 
-test('[P1] Map Studio resizers follow logical tracks after an RTL direction change', async ({ page, toolsDev }) => {
+test('[P1] Map Studio resizers follow logical tracks after selecting an RTL language', async ({ page, toolsDev }) => {
   await page.setViewportSize(DESKTOP_VIEWPORT);
   const consoleErrors = recordConsoleErrors(page);
   await selectFakeLocalAgent(toolsDev.daemonUrl!);
   await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
 
-  await page.evaluate(() => { document.documentElement.dir = 'rtl'; });
-  const conversationResize = page.getByRole('separator', { name: 'Resize design conversation', exact: true });
+  const projectUrl = page.url();
+  await page.goto('/settings/appearance');
+  await page.getByRole('combobox', { name: 'Language', exact: true }).click();
+  await page.getByRole('option', { name: 'العربية', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await page.goto(projectUrl);
+  const conversationResize = page.getByRole('separator', { name: 'تغيير حجم محادثة التصميم', exact: true });
   const chat = page.locator('#map-design-chat-surface');
   const map = mapLocator(page);
   await expect.poll(async () => {
     const [chatBox, mapBox] = await Promise.all([chat.boundingBox(), map.boundingBox()]);
     return chatBox !== null && mapBox !== null && chatBox.x > mapBox.x;
   }).toBe(true);
-  await conversationResize.press('Home');
+  const conversationControlsChat = await conversationResize.getAttribute('aria-controls') === 'chat';
+  const mapIdentity = await map.elementHandle();
+  await conversationResize.press(conversationControlsChat ? 'Home' : 'End');
+  await expect.poll(async () => Math.round((await chat.boundingBox())?.width ?? 0)).toBe(320);
+  await expectResizableValue(conversationResize, conversationControlsChat ? 'minimum' : 'maximum');
   await conversationResize.press('ArrowLeft');
-  await expect(conversationResize).toHaveAttribute('aria-valuenow', '336');
-  const chatHandle = await conversationResize.boundingBox();
-  if (!chatHandle) throw new Error('RTL conversation resize handle is unavailable');
+  await expect.poll(async () => (await chat.boundingBox())?.width ?? 0).toBeGreaterThan(320);
+  await expectResizableValue(conversationResize);
+  const [chatHandle, chatBeforeDrag] = await Promise.all([conversationResize.boundingBox(), chat.boundingBox()]);
+  if (!chatHandle || !chatBeforeDrag) throw new Error('RTL conversation resize geometry is unavailable');
   await conversationResize.hover();
   await page.mouse.down();
-  await page.mouse.move(chatHandle.x - 24, chatHandle.y + chatHandle.height / 2, { steps: 4 });
+  await page.mouse.move(chatHandle.x + chatHandle.width / 2 - 24, chatHandle.y + chatHandle.height / 2, { steps: 4 });
   await page.mouse.up();
-  await expect.poll(async () => Number(await conversationResize.getAttribute('aria-valuenow'))).toBeGreaterThan(336);
+  await expect.poll(async () => Math.round((await chat.boundingBox())?.width ?? 0)).toBe(Math.round(chatBeforeDrag.width + 24));
+  await expectResizableValue(conversationResize);
 
-  await page.getByRole('button', { name: 'Open inspector', exact: true }).click();
-  await page.getByRole('button', { name: 'Dock inspector', exact: true }).click();
-  const inspector = page.getByRole('complementary', { name: 'Map inspector', exact: true });
-  const inspectorResize = page.getByRole('separator', { name: 'Resize map inspector', exact: true });
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
+  await page.getByRole('button', { name: 'إرساء الفاحص', exact: true }).click();
+  const inspector = page.getByRole('complementary', { name: 'فاحص الخريطة', exact: true });
+  const inspectorResize = page.getByRole('separator', { name: 'تغيير حجم فاحص الخريطة', exact: true });
   await expect.poll(async () => {
     const [inspectorBox, handleBox, mapBox] = await Promise.all([inspector.boundingBox(), inspectorResize.boundingBox(), map.boundingBox()]);
     return inspectorBox !== null && handleBox !== null && mapBox !== null
       && inspectorBox.x < handleBox.x && handleBox.x < mapBox.x;
   }).toBe(true);
-  await inspectorResize.press('Home');
+  const inspectorControlsInspector = await inspectorResize.getAttribute('aria-controls') === 'inspector';
+  await inspectorResize.press(inspectorControlsInspector ? 'Home' : 'End');
+  await expect.poll(async () => Math.round((await inspector.boundingBox())?.width ?? 0)).toBe(280);
+  await expectResizableValue(inspectorResize, inspectorControlsInspector ? 'minimum' : 'maximum');
   await inspectorResize.press('ArrowRight');
-  await expect(inspectorResize).toHaveAttribute('aria-valuenow', '296');
-  const inspectorHandle = await inspectorResize.boundingBox();
-  if (!inspectorHandle) throw new Error('RTL inspector resize handle is unavailable');
+  await expect.poll(async () => (await inspector.boundingBox())?.width ?? 0).toBeGreaterThan(280);
+  await expectResizableValue(inspectorResize);
+  const [inspectorHandle, inspectorBeforeDrag] = await Promise.all([inspectorResize.boundingBox(), inspector.boundingBox()]);
+  if (!inspectorHandle || !inspectorBeforeDrag) throw new Error('RTL inspector resize geometry is unavailable');
   await page.mouse.move(inspectorHandle.x + inspectorHandle.width / 2, inspectorHandle.y + inspectorHandle.height / 2);
   await page.mouse.down();
   await page.mouse.move(inspectorHandle.x + inspectorHandle.width / 2 + 24, inspectorHandle.y + inspectorHandle.height / 2);
   await page.mouse.up();
-  await expect.poll(async () => Number(await inspectorResize.getAttribute('aria-valuenow'))).toBeGreaterThan(296);
+  await expect.poll(async () => Math.round((await inspector.boundingBox())?.width ?? 0)).toBe(Math.round(inspectorBeforeDrag.width + 24));
+  await expectResizableValue(inspectorResize);
+  await expectMapIdentity(map, mapIdentity);
+  const savedChatWidth = Math.round((await chat.boundingBox())?.width ?? 0);
+  const savedInspectorWidth = Math.round((await inspector.boundingBox())?.width ?? 0);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => Math.round((await chat.boundingBox())?.width ?? 0)).toBe(savedChatWidth);
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
+  await expect(inspector).toHaveAttribute('data-placement', 'docked');
+  await expect.poll(async () => Math.round((await inspector.boundingBox())?.width ?? 0)).toBe(savedInspectorWidth);
   expect(consoleErrors).toEqual([]);
 });
 
@@ -202,29 +232,37 @@ test('[P1] Map Studio presents a modal tablet inspector without losing map or fo
   const map = mapLocator(page);
   await expect(map).toBeVisible();
   const mapIdentity = await map.elementHandle();
-  await assertStatusStaysWithinViewport(page);
-  await page.getByRole('button', { name: 'Open inspector', exact: true }).click();
+  await assertAccessibleMapStatus(page);
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Map inspector', exact: true });
   const closeInspector = dialog.getByRole('button', { name: 'Close inspector', exact: true });
   await expect(dialog).toBeVisible();
   await expect(closeInspector).toBeFocused();
   await expect(page.locator('#map-design-chat-surface')).toHaveAttribute('aria-hidden', 'true');
-  await expect(page.locator('[role="separator"][aria-label="Resize design conversation"]')).toHaveAttribute('inert', '');
+  await expect(page.locator('[role="separator"][aria-label="Resize design conversation"]')).toHaveCount(0);
   const mapColumn = page.locator('#map-design-map-surface section[aria-label="Map canvas"]');
   await expect(mapColumn).toHaveAttribute('aria-hidden', 'true');
   await expect(mapColumn).toHaveAttribute('inert', '');
   await captureWorkbenchScreenshot(page, testInfo, 'tablet-drawer-inspector', [dialog]);
 
-  const validationTab = dialog.getByRole('tab', { name: 'Validation', exact: true });
-  const validationPanel = dialog.getByRole('tabpanel', { name: 'Validation', exact: true });
-  await validationTab.focus();
+  const commentsTab = dialog.getByRole('tab', { name: 'Comment (0)', exact: true });
+  const commentsPanel = dialog.getByRole('tabpanel', { name: 'Comment (0)', exact: true });
+  await commentsTab.click();
+  await expect(commentsPanel).toBeVisible();
+  await commentsTab.focus();
   await page.keyboard.press('Shift+Tab');
-  await expect(validationPanel).toBeFocused();
+  await expect(closeInspector).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(validationTab).toBeFocused();
+  await expect(commentsTab).toBeFocused();
+  const newComment = commentsPanel.getByRole('button', { name: 'New comment', exact: true });
+  await newComment.focus();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Dock inspector', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(newComment).toBeFocused();
   await closeInspector.click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Open inspector', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Comment (0)', exact: true })).toBeFocused();
   await expectMapIdentity(map, mapIdentity);
   expect(consoleErrors).toEqual([]);
 });
@@ -234,7 +272,7 @@ test('[P1] narrow tablet inspector keeps header spacing and background layer met
   const consoleErrors = recordConsoleErrors(page);
   await selectFakeLocalAgent(toolsDev.daemonUrl!);
   await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
-  await page.getByRole('button', { name: 'Open inspector', exact: true }).click();
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
   const inspector = page.getByRole('dialog', { name: 'Map inspector', exact: true });
   const tabs = inspector.getByRole('tablist', { name: 'Map inspector', exact: true });
   const title = inspector.locator('[data-slot="tabs"]').getByText('Map inspector', { exact: true });
@@ -296,14 +334,14 @@ test('[P1] Map Studio switches mobile Chat and Map panels with retained map iden
   await expect(page.locator('#map-design-chat-surface')).toHaveAttribute('aria-hidden', 'true');
   await expect(map).toBeVisible();
   await expectMapFitsViewport(page, map, 0.8);
-  await assertStatusStaysWithinViewport(page);
+  await assertAccessibleMapStatus(page);
   const navigation = page.getByRole('group', { name: 'Map navigation', exact: true });
   await expect(navigation).toBeVisible();
   const zoomOut = navigation.getByRole('button', { name: 'Zoom out', exact: true });
   const scaleBeforeZoom = await mapScaleText(page);
   await zoomOut.click();
   await expect.poll(async () => await mapScaleText(page)).not.toBe(scaleBeforeZoom);
-  await assertNavigationStaysInsideMap(page, map, navigation);
+  await assertNavigationStaysInsideMap(map, navigation);
   await captureWorkbenchScreenshot(page, testInfo, 'mobile-map', [mapPanel, map]);
   await expectMapIdentity(map, mapIdentity);
   expect(consoleErrors).toEqual([]);
@@ -349,10 +387,37 @@ async function resizeChatPane(page: Page, width: number): Promise<void> {
   if (!workspaceBox || !handleBox) throw new Error('Chat resize geometry is unavailable');
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
-  await page.mouse.move(workspaceBox.x + width, handleBox.y + handleBox.height / 2);
+  await page.mouse.move(workspaceBox.x + width + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.up();
-  await expect(handle).toHaveAttribute('aria-valuenow', String(width));
   await expect.poll(async () => Math.round((await chat.boundingBox())?.width ?? 0)).toBe(width);
+  await expectResizableValue(handle);
+}
+
+async function expectResizableValue(handle: Locator, boundary?: 'minimum' | 'maximum'): Promise<void> {
+  for (const attribute of ['aria-valuenow', 'aria-valuemin', 'aria-valuemax']) {
+    await expect(handle).toHaveAttribute(attribute, /^\d+(?:\.\d+)?$/);
+  }
+  const values = await handle.evaluate((element) => {
+    const controlledId = element.getAttribute('aria-controls');
+    const panel = controlledId ? document.getElementById(controlledId) : null;
+    const group = element.parentElement;
+    if (!panel || !group) throw new Error('Resizable panel geometry is unavailable');
+    const availableWidth = Array.from(group.children)
+      .filter((child) => child.getAttribute('data-slot') === 'resizable-panel')
+      .reduce((total, child) => total + child.getBoundingClientRect().width, 0);
+    return {
+      current: Number(element.getAttribute('aria-valuenow')),
+      minimum: Number(element.getAttribute('aria-valuemin')),
+      maximum: Number(element.getAttribute('aria-valuemax')),
+      percentage: panel.getBoundingClientRect().width / availableWidth * 100,
+    };
+  });
+  expect(values.current).toBeCloseTo(values.percentage, 2);
+  expect(values.minimum).toBeGreaterThanOrEqual(0);
+  expect(values.maximum).toBeLessThanOrEqual(100);
+  expect(values.current).toBeGreaterThanOrEqual(values.minimum);
+  expect(values.current).toBeLessThanOrEqual(values.maximum);
+  if (boundary) expect(values.current).toBe(values[boundary]);
 }
 
 async function assertContainedAndNonIntersecting(option: Locator, metadata: readonly Locator[]): Promise<void> {
@@ -397,36 +462,31 @@ async function assertContainedWithin(container: Locator, descendants: readonly L
   expect(await container.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
 }
 
-async function assertStatusStaysWithinViewport(page: Page): Promise<void> {
+async function assertAccessibleMapStatus(page: Page): Promise<void> {
   const status = page.getByRole('status').filter({ hasText: 'EPSG:3857' });
-  await expect(status).toBeVisible();
-  const box = await status.boundingBox();
-  const viewport = page.viewportSize();
-  expect(box?.x ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual(0);
-  expect(box?.y ?? Number.NEGATIVE_INFINITY).toBeGreaterThanOrEqual(0);
-  expect((box?.x ?? Number.POSITIVE_INFINITY) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport?.width ?? 0);
-  expect((box?.y ?? Number.POSITIVE_INFINITY) + (box?.height ?? 0)).toBeLessThanOrEqual(viewport?.height ?? 0);
+  await expect(status).toHaveClass(/\bsr-only\b/);
+  await expect(status).toHaveAttribute('aria-live', 'off');
+  await expect(status).not.toHaveAttribute('aria-hidden', 'true');
+  await expect(status.locator('span').nth(1)).toHaveText(/^1:[\d,]+$/);
 }
 
 async function mapScaleText(page: Page): Promise<string> {
   return await page.getByRole('status').filter({ hasText: 'EPSG:3857' }).locator('span').nth(1).innerText();
 }
 
-async function assertNavigationStaysInsideMap(page: Page, map: Locator, navigation: Locator): Promise<void> {
-  const status = page.getByRole('status').filter({ hasText: 'EPSG:3857' });
-  const [mapBox, navigationBox, statusBox] = await Promise.all([
+async function assertNavigationStaysInsideMap(map: Locator, navigation: Locator): Promise<void> {
+  const [mapBox, navigationBox] = await Promise.all([
     map.boundingBox(),
     navigation.boundingBox(),
-    status.boundingBox(),
   ]);
-  if (!mapBox || !navigationBox || !statusBox) {
-    throw new Error(`Map navigation boxes unavailable: ${JSON.stringify({ mapBox, navigationBox, statusBox })}`);
+  if (!mapBox || !navigationBox) {
+    throw new Error(`Map navigation boxes unavailable: ${JSON.stringify({ mapBox, navigationBox })}`);
   }
   const tolerance = 1;
   expect(navigationBox.x).toBeGreaterThanOrEqual(mapBox.x - tolerance);
   expect(navigationBox.x + navigationBox.width).toBeLessThanOrEqual(mapBox.x + mapBox.width + tolerance);
   expect(navigationBox.y).toBeGreaterThanOrEqual(mapBox.y - tolerance);
-  expect(navigationBox.y + navigationBox.height).toBeLessThanOrEqual(statusBox.y - 8);
+  expect(navigationBox.y + navigationBox.height).toBeLessThanOrEqual(mapBox.y + mapBox.height - 8);
 }
 
 async function expectWidthWithin(panel: Locator, minimum: number, maximum: number): Promise<void> {
@@ -446,29 +506,29 @@ async function waitForDescendantAnimations(target: Locator): Promise<void> {
 }
 
 async function assertDockedInspectorLayout(page: Page, targets: { inspector: Locator; inspectorResize: Locator; map: Locator }): Promise<void> {
-  const validationPanel = targets.inspector.getByRole('tabpanel', { name: 'Validation', exact: true });
-  await expect(validationPanel).toBeVisible();
-  const [inspector, inspectorResize, map, validationPanelBox] = await Promise.all([
+  const layersPanel = targets.inspector.getByRole('tabpanel', { name: 'Layers', exact: true });
+  await expect(layersPanel).toBeVisible();
+  const [inspector, inspectorResize, map, layersPanelBox] = await Promise.all([
     targets.inspector.boundingBox(),
     targets.inspectorResize.boundingBox(),
     targets.map.boundingBox(),
-    validationPanel.boundingBox(),
+    layersPanel.boundingBox(),
   ]);
   const viewport = page.viewportSize();
-  if (!inspector || !inspectorResize || !map || !validationPanelBox || !viewport) {
-    throw new Error(`Docked layout boxes unavailable: ${JSON.stringify({ inspector, inspectorResize, map, validationPanel: validationPanelBox, viewport })}`);
+  if (!inspector || !inspectorResize || !map || !layersPanelBox || !viewport) {
+    throw new Error(`Docked layout boxes unavailable: ${JSON.stringify({ inspector, inspectorResize, map, layersPanel: layersPanelBox, viewport })}`);
   }
   const tolerance = 1;
-  const panelInsideInspector = validationPanelBox.x >= inspector.x - tolerance
-    && validationPanelBox.y >= inspector.y - tolerance
-    && validationPanelBox.x + validationPanelBox.width <= inspector.x + inspector.width + tolerance
-    && validationPanelBox.y + validationPanelBox.height <= inspector.y + inspector.height + tolerance;
-  const panelMeaningful = validationPanelBox.width > 200 && validationPanelBox.height > 200;
+  const panelInsideInspector = layersPanelBox.x >= inspector.x - tolerance
+    && layersPanelBox.y >= inspector.y - tolerance
+    && layersPanelBox.x + layersPanelBox.width <= inspector.x + inspector.width + tolerance
+    && layersPanelBox.y + layersPanelBox.height <= inspector.y + inspector.height + tolerance;
+  const panelMeaningful = layersPanelBox.width > 200 && layersPanelBox.height > 200;
   const mapBeforeHandle = map.x + map.width <= inspectorResize.x + tolerance;
   const handleBeforeInspector = inspectorResize.x + inspectorResize.width <= inspector.x + tolerance;
   const inspectorInViewport = inspector.x + inspector.width <= viewport.width + tolerance;
   if (!panelInsideInspector || !panelMeaningful || !mapBeforeHandle || !handleBeforeInspector || !inspectorInViewport) {
-    throw new Error(`Docked layout geometry mismatch: ${JSON.stringify({ inspector, inspectorResize, map, validationPanel: validationPanelBox, viewport, tolerance })}`);
+    throw new Error(`Docked layout geometry mismatch: ${JSON.stringify({ inspector, inspectorResize, map, layersPanel: layersPanelBox, viewport, tolerance })}`);
   }
 }
 

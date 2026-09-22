@@ -60,7 +60,6 @@ export interface Dict {
   'mapDesign.runtime.fallbackCatalog': string;
   'mapDesign.runtime.rememberedCatalog': string;
   'mapDesign.runtime.saving': string;
-  'mapDesign.runtime.saved': string;
   'mapDesign.runtime.conflict': string;
   'mapDesign.runtime.normalized': string;
   'mapDesign.runtime.loadError': string;

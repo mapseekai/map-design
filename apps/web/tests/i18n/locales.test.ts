@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, extname, resolve } from 'node:path';
+import { dirname, extname, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { resolveSystemLocale } from '../../src/i18n';
@@ -8,7 +9,7 @@ import { LOCALES, LOCALE_LABEL, type Dict, type Locale } from '../../src/i18n/ty
 
 const EXPECTED_LOCALES = ['en', 'id', 'de', 'zh-CN', 'zh-TW', 'pt-BR', 'es-ES', 'ru', 'fa', 'ar', 'ja', 'ko', 'pl', 'hu', 'fr', 'uk', 'tr', 'th', 'it'];
 const RETAINED_NAMESPACES = ['common.', 'mapDesign.', 'chat.', 'settings.', 'agents.', 'errors.', 'questionForm.', 'todos.'] as const;
-const SOURCE_ROOT = resolve(dirname(new URL(import.meta.url).pathname), '../../src');
+const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../src');
 const ACTIVITY_KEYS = [
   'mapDesign.activity.working', 'mapDesign.activity.completed',
   'mapDesign.activity.failed', 'mapDesign.activity.canceled',
@@ -48,12 +49,13 @@ function resolveImport(from: string, specifier: string): string | null {
 }
 
 function retainedSourceKeys(): string[] {
-  const pending = [resolve(SOURCE_ROOT, 'App.tsx')];
+  // The independently tested source preview remains supported outside the App import graph.
+  const pending = [resolve(SOURCE_ROOT, 'App.tsx'), resolve(SOURCE_ROOT, 'map-design/components/MapSourcePreflight.tsx')];
   const seen = new Set<string>();
   const keys = new Set<string>();
   while (pending.length) {
     const path = pending.pop();
-    if (!path || seen.has(path) || path.includes('/i18n/')) continue;
+    if (!path || seen.has(path) || path.includes(`${sep}i18n${sep}`)) continue;
     seen.add(path);
     const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true);
     const visit = (node: ts.Node): void => {

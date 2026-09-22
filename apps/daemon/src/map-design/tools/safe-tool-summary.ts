@@ -74,7 +74,7 @@ export function summarizeNativeMapTool(
       const request = MapApplyTransactionInputSchema.parse(input);
       const value = MapApplyTransactionOutputSchema.parse(output);
       return toSafeToolSummary({
-        operationCount: transactionOperationCount(request.transaction),
+        ...transactionOperationCounts(request.transaction),
         changedLayerCount: value.changedLayers.length,
         changedSourceCount: value.changedSources.length,
         warningCount: value.warnings.length,
@@ -133,10 +133,17 @@ function safeString(value: string): boolean {
     && !containsSensitivePublicText(value);
 }
 
-function transactionOperationCount(value: unknown): number {
-  if (!value || typeof value !== 'object' || !Object.hasOwn(value, 'operations')) return 0;
-  const operations = (value as { operations?: unknown }).operations;
-  return Array.isArray(operations) ? operations.length : 0;
+function transactionOperationCounts(value: unknown): { readonly operationCount: number; readonly expandedOperationCount: number } {
+  if (!value || typeof value !== 'object' || !('operations' in value) || !Array.isArray(value.operations)) {
+    return { operationCount: 0, expandedOperationCount: 0 };
+  }
+  const operations: unknown[] = value.operations;
+  const expandedOperationCount = operations.reduce<number>((count, operation) => count + (
+    operation !== null && typeof operation === 'object' && 'op' in operation
+      && operation.op === 'setLayersProperties' && 'layerIds' in operation && Array.isArray(operation.layerIds)
+      ? operation.layerIds.length : 1
+  ), 0);
+  return { operationCount: operations.length, expandedOperationCount };
 }
 
 function inspectedItemCount(value: ReturnType<typeof MapInspectOutputSchema.parse>): number {
@@ -146,6 +153,8 @@ function inspectedItemCount(value: ReturnType<typeof MapInspectOutputSchema.pars
     case 'layer':
     case 'source':
       return 1;
+    case 'layers':
+      return value.view.returned;
     case 'source-layer':
       return value.view.layerIds.length;
   }

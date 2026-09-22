@@ -300,6 +300,10 @@ components:
 
 ## Overview
 
+### Studio pending messages
+
+Pending prompts appear in a compact ordered list directly above the chat composer, using the existing muted surface, border, small text, and Button/Textarea primitives. The composer stays editable during a map run and exposes separate queue and stop actions. Pending rows support visible edit/delete actions, inline save/cancel, attachment summaries, keyboard focus, and natural CJK wrapping. The list owns a bounded scroll area so the composer stays reachable. Dispatch locks only the row being submitted. Editing suspends dispatch; failure or stop pauses the queue with a continue action. Conversation switches retain pending drafts. No decorative motion or new color tokens are introduced.
+
 Claude.com is the warmest, most editorial interface in the AI-product category. The base atmosphere is a **tinted cream canvas** (`{colors.canvas}` — #faf9f5) — distinctly warm, deliberately not the cool gray-white that every other AI brand uses. Headlines run a **slab-serif display** ("Copernicus" / Tiempos Headline) at weight 400 with negative letter-spacing, paired with **StyreneB / Inter** body sans. The combination feels like a literary publication, not a SaaS marketing page.
 
 Brand voltage comes from the **cream + coral pairing** — coral (`{colors.primary}` — #cc785c) is the signature Anthropic accent, used on every primary CTA, on the brand wordmark, and on full-bleed callout cards. The coral is warm, slightly muted, never cyan/blue — a deliberate counter-positioning against OpenAI's cool slate, Google's saturated blue, and Microsoft's corporate cyan.

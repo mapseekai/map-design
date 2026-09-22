@@ -18,7 +18,7 @@ import { CARTOGRAPHY_MAX_BYTES, CARTOGRAPHY_STYLE_MAX_BYTES, type CartographyDra
 import { navigate } from '../router';
 import { useI18n } from '../i18n';
 import { cartographyCopy, cartographyManagerCopy } from '../i18n/locales/cartography';
-import { deleteCartography, generateCartography, getCartography, importCartography, importCartographyUrl, initializeCartography, initializeCartographyUrl, listCartographies } from './client';
+import { deleteCartography, getCartography, importCartography, importCartographyUrl, initializeCartography, initializeCartographyUrl, listCartographies } from './client';
 
 type Mode = 'upload' | 'online' | 'style' | 'ai';
 
@@ -146,8 +146,8 @@ export function CartographyManager() {
         const result = await initializeCartographyUrl({ name: name.trim(), url: styleUrl.trim(), ...(styleFileName.trim() ? { fileName: styleFileName.trim() } : {}) }, signal);
         if (!signal.aborted) setDraft(result);
       } else if (mode === 'ai') {
-        const result = await generateCartography({ name: name.trim(), requirements: brief.trim(), runtime: { agentId: generationAgent, ...(selectedModel ? { model: selectedModel.id } : {}) } }, signal);
-        if (!signal.aborted) setDraft(result);
+        const session = await createCartographyEdit({ name: name.trim(), requirements: brief.trim(), description: description.trim(), runtime: { agentId: generationAgent, ...(selectedModel ? { model: selectedModel.id } : {}) } }, signal);
+        if (!signal.aborted) navigate({ kind: 'cartography-editor', sessionId: session.id });
       } else {
         if (!file || file.size > (mode === 'style' ? CARTOGRAPHY_STYLE_MAX_BYTES : CARTOGRAPHY_MAX_BYTES)) throw new Error('Invalid file size');
         const bytes = new Uint8Array(await file.arrayBuffer());

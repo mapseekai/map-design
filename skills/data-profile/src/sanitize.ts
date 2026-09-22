@@ -6,7 +6,8 @@ export interface SanitizedReference {
 }
 
 function explicitLocalTemplate(value: string): boolean {
-  return !/[?#]/.test(value) && /^(?:\.(?:\.|\/)|\/(?!\/)|file:\/\/)/.test(value);
+  return !/[?#]/.test(value) &&
+    /^(?:\.(?:\.|\/)|\/(?!\/)|[A-Za-z]:[\\/](?![\\/])|file:\/\/)/.test(value);
 }
 
 function removeOpaqueUrlParts(value: string): {value: string; credentialRedacted: boolean} {

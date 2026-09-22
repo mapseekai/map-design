@@ -15,7 +15,8 @@ const source = '---\nversion: "0.4.0"\nname: Atlas\n---\n\n## Overview\nOriginal
 const catalog: MapDesignRuntimeCatalog = {
   validate: (runtime) => runtime, normalizeSaved: (runtime) => ({ runtime }),
   refresh: async () => undefined, list: () => [],
-  resolveChoice: (agentId, input) => ({ agentId, model: input.model ?? 'default', modelOrigin: input.modelOrigin ?? 'catalog', adapter: agentId, ...(input.reasoning ? { reasoning: input.reasoning } : {}) }),
+  resolveChoice: (agentId, input) => ({ agentId, model: input.model ?? 'default', modelOrigin: input.modelOrigin ?? 'catalog', adapter: agentId,
+    ...(input.reasoning ? { reasoning: input.reasoning } : {}), ...(input.serviceTier ? { serviceTier: input.serviceTier } : {}) }),
 };
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0)) await cleanup(); });
@@ -32,6 +33,29 @@ async function setup() {
   cleanups.push(async () => { await edits.shutdown(); closeMapDesignDatabase(db); await rm(root, { recursive: true, force: true }); });
   return { db, store, deps, edits, conversations, runtimes, generate };
 }
+it('starts a new specification conversation before generation completes and preserves the selected model', async () => {
+  // Given a selected custom model and a generation that has not completed.
+  const { edits, conversations, store, generate } = await setup();
+  const runtime = { agentId: 'pi', model: 'provider/custom', modelOrigin: 'custom', reasoning: 'high', serviceTier: 'fast' } as const;
+  const reply: { resolve?: (value: { source: string; message: string }) => void } = {};
+  generate.mockReturnValue(new Promise((resolve) => { reply.resolve = resolve; }));
+  try {
+    // When the author starts AI creation from a brief.
+    const session = await edits.create({ name: 'Atlas', requirements: 'Design a transit map', description: 'Transit', runtime });
+    // Then the running conversation is immediately usable with the chosen runtime.
+    expect(session).toMatchObject({ name: 'Atlas', description: 'Transit', status: 'running', revision: 0, initialAnalysisStarted: true, activeConversationId: session.id });
+    expect(store.getConversationRuntime(session.id)).toMatchObject(runtime);
+    expect(generate.mock.calls[0]?.[0]).toMatchObject({ runtime, conversationId: session.id, history: [] });
+    expect(conversations.get(session.id, session.id).messages.map(({ role, runStatus }) => ({ role, runStatus }))).toEqual([
+      { role: 'user', runStatus: 'succeeded' }, { role: 'assistant', runStatus: 'running' },
+    ]);
+    reply.resolve?.({ source, message: 'Created the specification.' });
+    await vi.waitFor(async () => expect((await edits.get(session.id)).revision).toBe(1));
+    expect(conversations.get(session.id, session.id).messages.at(-1)?.runStatus).toBe('succeeded');
+  } finally {
+    reply.resolve?.({ source, message: 'Created the specification.' });
+  }
+});
 it('migrates file history once and does not recreate a deliberately deleted conversation', async () => {
   const { deps, edits, conversations, generate, db } = await setup();
   const legacy = new CartographyEditService({ dataRoot: deps.dataRoot, projectRoot: deps.projectRoot, generate, saveDocument: deps.saveDocument });

@@ -18,10 +18,11 @@ describe("tools-dev sidecar environments", () => {
   });
 
   it("passes requested ports to the web sidecar while preserving its internal PORT", () => {
-    const env = createWebSidecarEnv({ daemonPort: "4101", webPort: 4201 });
+    const env = createWebSidecarEnv({ daemonPort: "4101", daemonUrl: "http://localhost:4101", webPort: 4201 });
 
     assert.deepEqual(env, {
       MAP_DESIGN_PORT: "4101",
+      MAP_DESIGN_DAEMON_URL: "http://localhost:4101",
       MAP_DESIGN_WEB_PORT: "4201",
       PORT: "4201",
     });
@@ -55,10 +56,20 @@ describe("tools-dev sidecar environments", () => {
       { ...canonicalStampEnv, MAP_DESIGN_PORT: "4101", MAP_DESIGN_WEB_PORT: "4201" },
     );
     assert.deepEqual(
-      createAppRuntimeEnv(inheritedEnv, { ...canonicalStampEnv, ...createWebSidecarEnv({ daemonPort: 4101, webPort: 4201 }) }),
-      { ...canonicalStampEnv, MAP_DESIGN_PORT: "4101", MAP_DESIGN_WEB_PORT: "4201", PORT: "4201" },
+      createAppRuntimeEnv(inheritedEnv, { ...canonicalStampEnv, ...createWebSidecarEnv({ daemonPort: 4101, daemonUrl: "http://127.0.0.1:4101", webPort: 4201 }) }),
+      { ...canonicalStampEnv, MAP_DESIGN_PORT: "4101", MAP_DESIGN_DAEMON_URL: "http://127.0.0.1:4101", MAP_DESIGN_WEB_PORT: "4201", PORT: "4201" },
     );
     assert.deepEqual(createAppRuntimeEnv(inheritedEnv, canonicalStampEnv), canonicalStampEnv);
+  });
+
+  it("routes production web API requests to the discovered daemon instead of an inherited URL", () => {
+    const env = createAppRuntimeEnv(
+      { MAP_DESIGN_WEB_PROD: "1", MAP_DESIGN_DAEMON_URL: "http://127.0.0.1:9999" },
+      createWebSidecarEnv({ daemonPort: 4101, daemonUrl: "http://localhost:4101", webPort: 4201 }),
+    );
+
+    assert.equal(env.MAP_DESIGN_DAEMON_URL, "http://localhost:4101");
+    assert.equal(env.MAP_DESIGN_WEB_PROD, "1");
   });
 
   it("builds the stamp environment without inheriting process environment values", () => {

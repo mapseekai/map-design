@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { spawn as spawnChild } from 'node:child_process';
+import { spawnAgentProcess } from '../../runtimes/spawn.js';
 import { mkdtemp, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -802,7 +802,4 @@ function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-const defaultSpawn: PiSdkSpawn = (command, args, options) => spawnChild(command, args, {
-  ...options,
-  stdio: ['pipe', 'pipe', 'pipe'],
-});
+const defaultSpawn: PiSdkSpawn = spawnAgentProcess;

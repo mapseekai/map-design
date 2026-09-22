@@ -1,9 +1,14 @@
-import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, chmod, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os, { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const { withPosixPermissions } = await import("./posix-permissions.js");
+  return withPosixPermissions(await importOriginal<typeof import("node:fs/promises")>());
+});
 
 import type { ToolPackConfig } from "../src/config.js";
 import {
@@ -279,6 +284,9 @@ describe("runElectronBuilder", () => {
       "prebuilds",
       `darwin-${process.arch}`,
     );
+    await mkdir(nodePtyPrebuildRoot, { recursive: true });
+    await writeFile(join(nodePtyPrebuildRoot, "spawn-helper"), "#!/bin/sh\nexit 0\n", "utf8");
+    await chmod(join(nodePtyPrebuildRoot, "spawn-helper"), 0o755);
     await writeFile(
       cliPath,
       [

@@ -194,6 +194,10 @@ interface ProviderProps {
 
 const RTL_LOCALES: Locale[] = ['ar', 'fa'];
 
+export function getLocaleDirection(locale: Locale): 'rtl' | 'ltr' {
+  return RTL_LOCALES.includes(locale) ? 'rtl' : 'ltr';
+}
+
 export function I18nProvider({ initial, children }: ProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(() => initial ?? detectInitialLocale());
 
@@ -202,7 +206,7 @@ export function I18nProvider({ initial, children }: ProviderProps) {
   // having to set it itself.
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      const dir = RTL_LOCALES.includes(locale) ? 'rtl' : 'ltr';
+      const dir = getLocaleDirection(locale);
       document.documentElement.setAttribute('lang', locale);
       document.documentElement.setAttribute('dir', dir);
     }

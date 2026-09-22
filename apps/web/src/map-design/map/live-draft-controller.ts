@@ -69,7 +69,7 @@ export class LiveDraftController {
     this.#hashStyle = options.hashStyle ?? hashStyle;
     this.#mapHashStyle = options.hashStyle ?? ((style) => hashMapDesignStyle(style, this.#projectId, resourceOptions()));
     this.#applyCanonicalStyle = options.applyCanonicalStyle ?? ((map, style, applyOptions) =>
-      applyStyleDocumentOrUrlToMap(map as Parameters<typeof applyStyleDocumentOrUrlToMap>[0], style, applyOptions));
+      applyStyleDocumentOrUrlToMap(map as Parameters<typeof applyStyleDocumentOrUrlToMap>[0], style, { ...applyOptions, diff: false }));
     this.#timeoutMs = options.transactionTimeoutMs ?? 5_000;
     this.#state = { ...options.initialContext };
   }

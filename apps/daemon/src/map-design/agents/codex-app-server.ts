@@ -1,4 +1,4 @@
-import { spawn as spawnChild } from 'node:child_process';
+import { spawnAgentProcess } from '../../runtimes/spawn.js';
 
 import type { SafeToolSummary } from '@mapseekai/contracts';
 import type { MapToolName } from '@mapseekai/map-design-contracts';
@@ -865,10 +865,7 @@ function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-const defaultSpawn: CodexAppServerSpawn = (command, args, options) => spawnChild(command, args, {
-  ...options,
-  stdio: ['pipe', 'pipe', 'pipe'],
-});
+const defaultSpawn: CodexAppServerSpawn = spawnAgentProcess;
 
 // Never log provider messages, URLs, stderr or arbitrary object keys.
 function safeCodexError(value: unknown): SafeToolSummary {

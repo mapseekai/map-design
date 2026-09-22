@@ -485,7 +485,7 @@ describe('strict tool inputs', () => {
     expect(MapSearchLayersInputSchema.parse({ query: '' })).toEqual({ query: '', limit: 25 });
     expect(MapSearchLayersInputSchema.parse({ query: '   ' })).toEqual({ query: '', limit: 25 });
     expect(() => MapSearchLayersInputSchema.parse({ limit: 0 })).toThrow();
-    expect(() => MapSearchLayersInputSchema.parse({ limit: 101 })).toThrow();
+    expect(() => MapSearchLayersInputSchema.parse({ limit: 201 })).toThrow();
     expect(() => MapSearchLayersInputSchema.parse({ query: 'x'.repeat(257) })).toThrow();
     expect(() => MapSearchLayersInputSchema.parse({ types: ['fill', 'fill'] })).toThrow();
 

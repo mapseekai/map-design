@@ -1,4 +1,4 @@
-import { spawn as spawnChild } from 'node:child_process';
+import { spawnAgentProcess } from '../../runtimes/spawn.js';
 
 import type { SafeToolSummary } from '@mapseekai/contracts';
 import type { MapToolName } from '@mapseekai/map-design-contracts';
@@ -595,4 +595,4 @@ function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-const defaultSpawn: OhMyPiRpcSpawn = (command, args, options) => spawnChild(command, args, { ...options, stdio: ['pipe', 'pipe', 'pipe'] });
+const defaultSpawn: OhMyPiRpcSpawn = spawnAgentProcess;

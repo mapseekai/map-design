@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createFakeMapAcpRuntime } from '../lib/playwright/fake-map-acp-runtime.js';
+import { createFakeMapAcpRuntime, spawnFakeMapProcess } from '../lib/playwright/fake-map-acp-runtime.js';
 import { STANDARD_AGENTS } from '../lib/playwright/mock-factory.js';
 
 const EXPECTED_MAP_TOOLS = [
@@ -28,8 +28,45 @@ afterEach(async () => {
 });
 
 describe('deterministic multi-Agent acceptance fixture', () => {
+  it('reviews initialization without starting an unsolicited SDK edit workflow', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'map-design-fake-sdk-initialization-'));
+    roots.push(root);
+    const fake = await createFakeMapAcpRuntime({ root });
+    const child = spawnFakeMapProcess(fake.executables['oh-my-pi'], ['--mode', 'rpc']);
+    let output = '';
+    let buffer = '';
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Fake initialization timed out.')), 5_000);
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (chunk: string) => {
+          output += chunk;
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+          for (const line of lines.filter(Boolean)) {
+            const frame: unknown = JSON.parse(line);
+            if (!frame || typeof frame !== 'object' || !('type' in frame)) continue;
+            if (frame.type === 'host_tool_call' || frame.type === 'agent_end') {
+              clearTimeout(timer);
+              if (frame.type === 'host_tool_call') reject(new Error('Initialization unexpectedly edited the map.'));
+              else resolve();
+            }
+          }
+        });
+        child.once('error', reject);
+        child.stdin.write(`${JSON.stringify({ type: 'prompt', message: composedPrompt([], 'Keep the map deterministic and legible.') })}\n`);
+      });
+      expect(output).toContain('Map request reviewed.');
+    } finally {
+      const closed = once(child, 'close');
+      child.stdin.end();
+      await closed;
+    }
+  });
+
   it('exposes distinct native runtimes and keeps Codex and OpenCode sessions isolated', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'map-design-fake-agents-'));
+    const root = await mkdtemp(join(tmpdir(), 'map design fake agents '));
     roots.push(root);
     const fake = await createFakeMapAcpRuntime({ root });
 
@@ -96,14 +133,16 @@ describe('deterministic multi-Agent acceptance fixture', () => {
   });
 
   it('records observable violations when the map CLI or MapDesign MCP tripwire is launched', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'map-design-fake-tripwires-'));
+    const root = await mkdtemp(join(tmpdir(), 'map design fake tripwires '));
     roots.push(root);
     const fake = await createFakeMapAcpRuntime({ root });
 
     expect(fake.env.MAP_DESIGN_MCP_CLI_PATH).toBe(fake.interceptors.mapMcpServer);
     expect(fake.env.PATH.split(delimiter)).toContain(root);
-    await spawnAndWait('md', ['tool', 'map_get_context'], { ...process.env, PATH: fake.env.PATH });
-    await spawnAndWait(process.execPath, [fake.env.MAP_DESIGN_MCP_CLI_PATH], process.env);
+    expect(await spawnAndWait(fake.interceptors.mapCli, ['tool', 'map_get_context'], {
+      ...process.env, PATH: fake.env.PATH,
+    })).toBe(97);
+    expect(await spawnAndWait(process.execPath, [fake.env.MAP_DESIGN_MCP_CLI_PATH], process.env)).toBe(97);
 
     const events = (await readFile(fake.capturePath, 'utf8')).split('\n').filter(Boolean)
       .map((line) => JSON.parse(line) as { argv?: string[]; type: string });
@@ -178,9 +217,9 @@ describe('fake Codex app-server dynamic tool contract', () => {
   ) => {
     const calls = await runTurn(prompt, (tool) => {
       if (tool === 'map_get_context') return { draftRevision: initialDraftRevision };
-      if (tool === 'map_update_semantics') return { revision: semanticDraftRevision, validationStatus: 'valid' };
-      if (tool === 'map_apply_transaction') return { revision: paintDraftRevision };
-      if (tool === 'map_validate') return { revision: paintDraftRevision, validationStatus: 'valid' };
+      if (tool === 'map_update_semantics') return { draftRevision: semanticDraftRevision, validationSummary: { status: 'valid' } };
+      if (tool === 'map_apply_transaction') return { draftRevision: paintDraftRevision };
+      if (tool === 'map_validate') return { draftRevision: paintDraftRevision, summary: { status: 'valid' } };
       if (tool === 'map_render_preview') {
         return { draftRevision: paintDraftRevision, previewId: `preview-${paintDraftRevision}`, status: 'succeeded' };
       }
@@ -246,9 +285,9 @@ describe('fake Codex app-server dynamic tool contract', () => {
       'Create and commit deterministic revision two.',
     ], 'Add the deterministic acceptance metadata.'), (tool) => {
       if (tool === 'map_get_context') return { draftRevision: 4 };
-      if (tool === 'map_update_semantics') return { revision: 5, validationStatus: 'valid' };
-      if (tool === 'map_apply_transaction') return { revision: 6 };
-      if (tool === 'map_validate') return { revision: 6, validationStatus: 'valid' };
+      if (tool === 'map_update_semantics') return { draftRevision: 5, validationSummary: { status: 'valid' } };
+      if (tool === 'map_apply_transaction') return { draftRevision: 6 };
+      if (tool === 'map_validate') return { draftRevision: 6, summary: { status: 'valid' } };
       if (tool === 'map_render_preview') return { previewId: 'preview-6', status: 'succeeded' };
       throw new Error(`Unexpected fake Map tool: ${tool}`);
     });
@@ -289,9 +328,9 @@ describe('fake Codex app-server dynamic tool contract', () => {
       'assistant: Deterministic revision committed.',
     ], currentPrompt), (tool) => {
       if (tool === 'map_get_context') return { draftRevision: 0 };
-      if (tool === 'map_update_semantics') return { revision: 1, validationStatus: 'valid' };
-      if (tool === 'map_apply_transaction') return { revision: 2 };
-      if (tool === 'map_validate') return { revision: 2, validationStatus: 'valid' };
+      if (tool === 'map_update_semantics') return { draftRevision: 1, validationSummary: { status: 'valid' } };
+      if (tool === 'map_apply_transaction') return { draftRevision: 2 };
+      if (tool === 'map_validate') return { draftRevision: 2, summary: { status: 'valid' } };
       if (tool === 'map_render_preview') return { previewId: 'preview-2', status: 'succeeded' };
       if (tool === 'map_commit_revision') return { draftRevision: 2, revision: 1 };
       throw new Error(`Unexpected fake Map tool: ${tool}`);
@@ -324,7 +363,7 @@ async function runTurn(
   const root = await mkdtemp(join(tmpdir(), 'map-design-fake-turn-'));
   roots.push(root);
   const runtime = await createFakeMapAcpRuntime({ root });
-  const child = spawn(runtime.bin, ['app-server', '--stdio'], { stdio: ['pipe', 'pipe', 'pipe'] });
+  const child = spawnFakeMapProcess(runtime.bin, ['app-server', '--stdio']);
   const calls: FakeToolCall[] = [];
   let buffer = '';
   let settled = false;
@@ -387,8 +426,9 @@ async function runTurn(
     send({ id: 3, method: 'turn/start', params: { input: [{ type: 'text', text: prompt }] } });
     return await completion;
   } finally {
+    const closed = once(child, 'close');
     child.stdin.end();
-    child.kill('SIGTERM');
+    await closed;
   }
 }
 
@@ -396,7 +436,7 @@ async function startThread(toolNames: readonly string[]): Promise<Record<string,
   const root = await mkdtemp(join(tmpdir(), 'map-design-fake-app-server-'));
   roots.push(root);
   const runtime = await createFakeMapAcpRuntime({ root });
-  const child = spawn(runtime.bin, ['app-server', '--stdio'], { stdio: ['pipe', 'pipe', 'pipe'] });
+  const child = spawnFakeMapProcess(runtime.bin, ['app-server', '--stdio']);
   const frames: Array<Record<string, unknown>> = [];
   const waiters: Array<(frame: Record<string, unknown>) => void> = [];
   let buffer = '';
@@ -435,15 +475,15 @@ async function startThread(toolNames: readonly string[]): Promise<Record<string,
     });
     return await nextFrame();
   } finally {
+    const closed = once(child, 'close');
     child.stdin.end();
-    child.kill('SIGTERM');
+    await closed;
   }
 }
 
 async function createFakeCodexSession(bin: string, conversationId: string): Promise<void> {
-  const child = spawn(bin, ['app-server', '--stdio'], {
-    env: { ...process.env, MAP_DESIGN_FAKE_CONVERSATION_ID: conversationId },
-    stdio: ['pipe', 'pipe', 'pipe'],
+  const child = spawnFakeMapProcess(bin, ['app-server', '--stdio'], {
+    ...process.env, MAP_DESIGN_FAKE_CONVERSATION_ID: conversationId,
   });
   let buffer = '';
   await new Promise<void>((resolve, reject) => {
@@ -483,9 +523,10 @@ async function createFakeCodexSession(bin: string, conversationId: string): Prom
       if (code !== 0) reject(new Error(`Fake Codex session exited with ${code}.`));
     });
     send({ id: 1, method: 'initialize', params: {} });
-  }).finally(() => {
+  }).finally(async () => {
+    const closed = once(child, 'close');
     child.stdin.end();
-    child.kill('SIGTERM');
+    await closed;
   });
 }
 
@@ -497,21 +538,18 @@ export async function MapDesignOpenCodePlugin() {
   return { tool: Object.fromEntries(names.map((name) => [name, tool({ execute: async () => '{}' })])) };
 }
 `, 'utf8');
-  const child = spawn(bin, ['run', '--format', 'json'], {
-    env: {
-      ...process.env,
-      MAP_DESIGN_AGENT_ID: 'opencode',
-      MAP_DESIGN_CONVERSATION_ID: conversationId,
-      MAP_DESIGN_FAKE_CONVERSATION_ID: conversationId,
-      OPENCODE_CONFIG_CONTENT: JSON.stringify({ plugin: [pathToFileURL(pluginPath).href] }),
-    },
-    stdio: ['pipe', 'pipe', 'pipe'],
+  const child = spawnFakeMapProcess(bin, ['run', '--format', 'json'], {
+    ...process.env,
+    MAP_DESIGN_AGENT_ID: 'opencode',
+    MAP_DESIGN_CONVERSATION_ID: conversationId,
+    MAP_DESIGN_FAKE_CONVERSATION_ID: conversationId,
+    OPENCODE_CONFIG_CONTENT: JSON.stringify({ plugin: [pathToFileURL(pluginPath).href] }),
   });
   child.stdin.end('Review the map.');
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Fake OpenCode session timed out.')), 5_000);
     child.once('error', reject);
-    child.once('exit', (code) => {
+    child.once('close', (code) => {
       clearTimeout(timer);
       if (code === 0) resolve();
       else reject(new Error(`Fake OpenCode session exited with ${code}.`));
@@ -524,9 +562,12 @@ async function spawnAndWait(
   args: string[],
   env: NodeJS.ProcessEnv,
 ): Promise<number | null> {
-  const child = spawn(command, args, { env, stdio: ['ignore', 'ignore', 'ignore'] });
+  const child = spawnFakeMapProcess(command, args, env);
+  child.stdin.end();
+  child.stdout.resume();
+  child.stderr.resume();
   return await new Promise((resolve, reject) => {
     child.once('error', reject);
-    child.once('exit', resolve);
+    child.once('close', resolve);
   });
 }

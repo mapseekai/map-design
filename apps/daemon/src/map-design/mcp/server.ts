@@ -1,6 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
-  MAP_TOOL_NAMES,
   MapToolEnvelopeSchema,
   MapToolInputSchemas,
   MapToolOutputSchemas,
@@ -13,18 +12,7 @@ import {
   MapToolClientError,
   type MapToolHttpClientOptions,
 } from './map-tool-client.js';
-
-const TOOL_DESCRIPTIONS: Record<MapToolName, string> = {
-  map_get_context: 'Read the current canonical MapDesign project context.',
-  map_inspect: 'Inspect a map root, layer, source, or source-layer.',
-  map_search_layers: 'Search the current map layers by query and source filters.',
-  map_apply_transaction: 'Apply an idempotent transaction to the current map draft.',
-  map_update_semantics: 'Replace the semantic document for the current map draft.',
-  map_validate: 'Validate the current map draft revision.',
-  map_render_preview: 'Render and wait for a preview of the current map draft.',
-  map_commit_revision: 'Commit a validated preview as a durable map revision.',
-  map_discard_draft: 'Discard draft changes and restore the committed map revision.',
-};
+import { nativeMapToolDefinitions } from '../tools/model-tool-definitions.js';
 
 const READ_ONLY = new Set<MapToolName>([
   'map_get_context',
@@ -37,7 +25,8 @@ const DESTRUCTIVE = new Set<MapToolName>(['map_discard_draft']);
 export function createMapDesignMcpServer(options: MapToolHttpClientOptions): McpServer {
   const client = createMapToolHttpClient(options);
   const server = new McpServer({ name: 'mapdesign-mcp-server', version: '1.0.0' });
-  for (const name of MAP_TOOL_NAMES) {
+  for (const definition of nativeMapToolDefinitions()) {
+    const name = definition.name;
     const envelopeSchema = MapToolEnvelopeSchema(MapToolOutputSchemas[name]);
     const successShape = envelopeSchema.options[0].shape;
     const errorShape = envelopeSchema.options[1].shape;
@@ -45,7 +34,7 @@ export function createMapDesignMcpServer(options: MapToolHttpClientOptions): Mcp
       name,
       {
         title: name,
-        description: TOOL_DESCRIPTIONS[name],
+        description: definition.description,
         inputSchema: MapToolInputSchemas[name],
         // MCP v1.29 normalizes tool output declarations as object schemas.
         // The HTTP client performs the authoritative discriminated-union

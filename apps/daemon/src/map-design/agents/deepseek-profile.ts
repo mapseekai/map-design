@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { spawn as spawnChild } from 'node:child_process';
+import { spawnAgentProcess } from '../../runtimes/spawn.js';
 
 import type { SafeToolSummary } from '@mapseekai/contracts';
 import type { MapToolName } from '@mapseekai/map-design-contracts';
@@ -656,8 +656,4 @@ function stopDeepSeekProfileProcess(
   ).catch(() => undefined);
 }
 
-const defaultSpawn: DeepSeekProfileSpawn = (command, args, options) => spawnChild(command, args, {
-  ...options,
-  stdio: ['pipe', 'pipe', 'pipe'],
-  windowsHide: true,
-});
+const defaultSpawn: DeepSeekProfileSpawn = spawnAgentProcess;

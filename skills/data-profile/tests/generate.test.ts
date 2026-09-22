@@ -125,8 +125,8 @@ function manyCategoryTile(): Uint8Array {
 function runCli(args: string[], cwd: string): Promise<{code: number | null; stdout: string; stderr: string}> {
   return new Promise((resolve, reject) => {
     const child = spawn(
-      join(packageDirectory, 'node_modules/.bin/tsx'),
-      [join(packageDirectory, 'scripts/generate-profile.ts'), ...args],
+      process.execPath,
+      [fileURLToPath(import.meta.resolve('tsx/cli')), join(packageDirectory, 'scripts/generate-profile.ts'), ...args],
       {cwd, env: {...process.env, INIT_CWD: cwd}, stdio: ['ignore', 'pipe', 'pipe']},
     );
     let stdout = '';
@@ -147,7 +147,7 @@ function runPnpmCli(
   cwd: string,
 ): Promise<{code: number | null; stdout: string; stderr: string}> {
   return new Promise((resolveProcess, reject) => {
-    const child = spawn('pnpm', args, {cwd, stdio: ['ignore', 'pipe', 'pipe']});
+    const child = spawn(process.execPath, [required(process.env.npm_execpath), ...args], {cwd, stdio: ['ignore', 'pipe', 'pipe']});
     let stdout = '';
     let stderr = '';
     child.stdout.setEncoding('utf8').on('data', (chunk: string) => {

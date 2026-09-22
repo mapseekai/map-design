@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 import { expect, test } from '@/playwright/suite';
-import { createAndOpenReadyMapProject, waitForRenderedMap } from '@/playwright/map-design-project';
+import { createAndOpenReadyMapProject as createAndOpenInitializedMapProject, waitForRenderedMap } from '@/playwright/map-design-project';
 import { resetPlaywrightMapDesignConversations } from '@/playwright/reset-development-conversations';
 import { T } from '@/timeouts';
 import type { Page, Request as PlaywrightRequest, Response as PlaywrightResponse } from '@playwright/test';
@@ -58,7 +58,7 @@ const COMPLETED_ACTIVITY_SIGNATURE = [
   { kind: 'run_finished', status: 'succeeded' },
 ] as const;
 
-test.describe.configure({ mode: 'serial', timeout: T.xlong });
+test.describe.configure({ mode: 'default', timeout: T.xlong });
 
 test('[P0] switches Codex to OpenCode and back with isolated sessions, provenance, and read-only controls', async ({ page, toolsDev }) => {
   const consoleErrors = recordConsoleErrors(page);
@@ -177,7 +177,7 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
 
   await openRevisionInspector(page);
   await page.getByRole('button', { name: 'View revision 1', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
+  await expect(page.getByRole('alert', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
   await expect(runtimeChip).toBeVisible();
   await expect(runtimeChip).toBeDisabled();
 
@@ -264,9 +264,12 @@ test('[P0] persists completed public activity across reload and conversation swi
   await runningReasoning.click();
   await expect(runningActivity.getByText('Road hierarchy needs more contrast.', { exact: true })).toBeVisible();
   await expect(page.getByText('Road hierarchy updated.', { exact: true })).toHaveCount(0);
+  const eventPath = new URL((await eventRequest).url()).pathname;
+  const liveResponse = await fetch(`${toolsDev.daemonUrl}${eventPath}`);
+  expect(liveResponse.ok).toBe(true);
+  const liveEvents = liveResponse.text();
   await writeFakeRelease(toolsDev.fakeMapAcp.capturePath, 'activity-success');
   await waitForAssistantStatus(toolsDev.daemonUrl!, projectId, conversationId, 'succeeded');
-  const eventPath = new URL((await eventRequest).url()).pathname;
   const replayResponse = await fetch(`${toolsDev.daemonUrl}${eventPath}`);
   expect(replayResponse.ok).toBe(true);
   const sseText = await replayResponse.text();
@@ -274,7 +277,7 @@ test('[P0] persists completed public activity across reload and conversation swi
   const terminalAssistant = terminalConversation.messages.find((message) => message.role === 'assistant');
   expect(eventSignatures(terminalAssistant?.events ?? [])).toEqual(COMPLETED_ACTIVITY_SIGNATURE);
   const replayEvents = parseSseData(sseText);
-  const terminalSnapshot = replayEvents.filter((event) => event.type === 'event_snapshot').at(-1);
+  const terminalSnapshot = parseSseData(await liveEvents).filter((event) => event.type === 'event_snapshot').at(-1);
   const completedMessage = replayEvents.find((event) => event.type === 'message_completed');
   expect(eventSignatures(eventsFromReplay(terminalSnapshot))).toEqual(COMPLETED_ACTIVITY_SIGNATURE);
   expect(eventSignatures(eventsFromReplay(completedMessage, 'message'))).toEqual(COMPLETED_ACTIVITY_SIGNATURE);
@@ -334,7 +337,7 @@ test('[P0] persists completed public activity across reload and conversation swi
   expect(consoleErrors).toEqual([]);
 });
 
-test('[P0] keeps stop beside disabled send and records one canceled activity after rapid activation', async ({ page, toolsDev }) => {
+test('[P0] keeps stop beside disabled queue action and records one canceled activity after rapid activation', async ({ page, toolsDev }) => {
   const consoleErrors = recordConsoleErrors(page);
   const cancelRequests: string[] = [];
   let markStartAccepted = () => {};
@@ -365,10 +368,10 @@ test('[P0] keeps stop beside disabled send and records one canceled activity aft
   await startAccepted;
   const actions = page.getByRole('group', { name: 'Run actions', exact: true });
   const cancel = actions.getByRole('button', { name: 'Cancel run', exact: true });
-  const send = actions.getByRole('button', { name: 'Send', exact: true });
+  const enqueue = actions.getByRole('button', { name: 'Add to queue', exact: true });
   await expect(cancel).toBeVisible();
-  await expect(send).toBeDisabled();
-  await expectButtonsToBeAdjacent(cancel, send);
+  await expect(enqueue).toBeDisabled();
+  await expectButtonsToBeAdjacent(enqueue, cancel);
 
   await cancel.evaluate((button) => {
     (button as HTMLButtonElement).click();
@@ -466,8 +469,7 @@ test('[P1] Studio drives the retained local agent tool run, previews, validates,
   await expect(page.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
   expect(consoleErrors.filter((message) => message.includes('Cannot update a component'))).toEqual([]);
 
-  await page.getByRole('button', { name: 'Open inspector' }).click();
-  await page.getByRole('tab', { name: 'Revisions' }).click();
+  await openRevisionInspector(page);
   const commitResponsePromise = page.waitForResponse((response) => (
     response.request().method() === 'POST'
     && new URL(response.url()).pathname === `/api/map-design/projects/${projectId}/revisions/commit-from-preview`
@@ -479,8 +481,7 @@ test('[P1] Studio drives the retained local agent tool run, previews, validates,
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('region', { name: 'Map design agent chat' })).toBeVisible();
-  await page.getByRole('button', { name: 'Open inspector' }).click();
-  await page.getByRole('tab', { name: 'Revisions' }).click();
+  await openRevisionInspector(page);
   const afterCommit = await getJson<{ revisions: Array<{ previewId: string | null }> }>(
     toolsDev.daemonUrl!,
     `/api/map-design/projects/${projectId}/revisions`,
@@ -600,15 +601,15 @@ test('[P0] switches and restores committed revisions through historical read-onl
   expect(browserFirstSnapshot.revision.revision).toBe(1);
   expect(representativePaint(browserFirstSnapshot.style)).toEqual(REVISION_PAINTS[1]);
   await expect(page).toHaveURL(/(?:\?|&)revision=1(?:&|$)/u);
-  await expect(page.getByRole('region', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
+  await expect(page.getByRole('alert', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
-  await expect(page.locator('[data-status="valid"]')).toBeVisible();
+  expect(browserFirstSnapshot.validation.summary.status).toBe('valid');
   await page.getByRole('tab', { name: 'Layers', exact: true }).click();
   const firstLayers = page.getByRole('tabpanel', { name: 'Layers' });
   await expect(firstLayers.getByText(`${browserFirstSnapshot.inspect.view.style.layerCount} Layers`, { exact: true })).toBeVisible();
   await expect(firstLayers.getByText(REVISION_TWO_MARKER_LAYER_ID, { exact: true })).toHaveCount(0);
 
-  await page.getByRole('tab', { name: 'Revisions', exact: true }).click();
+  await page.getByRole('tab', { name: 'Versions', exact: true }).click();
   const revisionOneRow = page.getByRole('listitem').filter({ hasText: /^Revision 1/u });
   await expect(revisionOneRow.getByText('Viewing', { exact: true })).toBeVisible();
   const secondViewSnapshotResponse = waitForRevisionSnapshotResponse(page, projectPrefix, 2);
@@ -623,14 +624,14 @@ test('[P0] switches and restores committed revisions through historical read-onl
     type: 'circle',
   }));
   await expect(page).toHaveURL(/(?:\?|&)revision=2(?:&|$)/u);
-  await expect(page.getByRole('region', { name: 'Viewing revision 2 · Read only' })).toBeVisible();
+  await expect(page.getByRole('alert', { name: 'Viewing revision 2 · Read only' })).toBeVisible();
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
   await page.getByRole('tab', { name: 'Layers', exact: true }).click();
   const secondLayers = page.getByRole('tabpanel', { name: 'Layers' });
   await expect(secondLayers.getByText(`${browserSecondSnapshot.inspect.view.style.layerCount} Layers`, { exact: true })).toBeVisible();
   await expect(secondLayers.getByText(REVISION_TWO_MARKER_LAYER_ID, { exact: true })).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Revisions', exact: true }).click();
+  await page.getByRole('tab', { name: 'Versions', exact: true }).click();
   const revisitFirstSnapshotResponse = waitForRevisionSnapshotResponse(page, projectPrefix, 1);
   await page.getByRole('button', { name: 'View revision 1', exact: true }).click();
   const browserRevisitedFirstSnapshot = await readHistoricalSnapshotResponse(await revisitFirstSnapshotResponse);
@@ -646,14 +647,14 @@ test('[P0] switches and restores committed revisions through historical read-onl
   expect(browserReloadedFirstSnapshot.inspect.view.style.layerCount)
     .toBe(browserFirstSnapshot.inspect.view.style.layerCount);
   await expect(page).toHaveURL(/(?:\?|&)revision=1(?:&|$)/u);
-  await expect(page.getByRole('region', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
+  await expect(page.getByRole('alert', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
   await openRevisionInspector(page);
   await page.getByRole('tab', { name: 'Layers', exact: true }).click();
   const reloadedFirstLayers = page.getByRole('tabpanel', { name: 'Layers' });
   await expect(reloadedFirstLayers.getByText(`${browserReloadedFirstSnapshot.inspect.view.style.layerCount} Layers`, { exact: true })).toBeVisible();
   await expect(reloadedFirstLayers.getByText(REVISION_TWO_MARKER_LAYER_ID, { exact: true })).toHaveCount(0);
-  await page.getByRole('tab', { name: 'Revisions', exact: true }).click();
+  await page.getByRole('tab', { name: 'Versions', exact: true }).click();
   await expect(page.getByRole('listitem').filter({ hasText: /^Revision 1/u })
     .getByText('Viewing', { exact: true })).toBeVisible();
   await expect(page.getByRole('listitem').filter({ hasText: /^Revision 2/u })
@@ -664,7 +665,7 @@ test('[P0] switches and restores committed revisions through historical read-onl
   const send = chat.getByRole('button', { name: 'Send', exact: true });
   const createConversation = chat.getByRole('button', { name: 'New conversation', exact: true });
   const selectConversation = chat.getByRole('button', { name: 'Project conversations' });
-  const collapseChat = chat.getByRole('button', { name: 'Collapse chat', exact: true });
+  const collapseChat = page.getByRole('button', { name: 'Collapse chat', exact: true });
   const commit = page.getByRole('button', { name: 'Commit revision', exact: true });
   await expect(composer).toBeDisabled();
   await expect(send).toBeDisabled();
@@ -672,7 +673,7 @@ test('[P0] switches and restores committed revisions through historical read-onl
   await expect(selectConversation).toBeDisabled();
   await expect(collapseChat).toBeDisabled();
   await expect(commit).toBeDisabled();
-  await expect(page.getByText('A passed current preview is required.', { exact: true })).toBeVisible();
+  await expect(chat.getByRole('status').filter({ hasText: 'Return to current version to edit this historical revision.' })).toBeVisible();
   const mapCanvas = page.getByRole('region', { name: 'Map canvas' });
   for (const mutation of ['Apply map changes', 'Render preview', 'Discard draft']) {
     await expect(mapCanvas.getByRole('button', { name: mutation, exact: true })).toHaveCount(0);
@@ -699,7 +700,7 @@ test('[P0] switches and restores committed revisions through historical read-onl
   expect(browserRestoreSnapshot.revision.revision).toBe(1);
   expect(browserRestoreSnapshot.inspect.view.style.layerCount)
     .toBe(browserFirstSnapshot.inspect.view.style.layerCount);
-  await expect(page.getByRole('region', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
+  await expect(page.getByRole('alert', { name: 'Viewing revision 1 · Read only' })).toBeVisible();
   await page.getByRole('button', { name: 'Close inspector', exact: true }).click();
   await page.getByRole('button', { name: 'Restore as new draft', exact: true }).click();
   const dialog = page.getByRole('alertdialog');
@@ -724,7 +725,7 @@ test('[P0] switches and restores committed revisions through historical read-onl
     validationSummary: { status: 'valid' },
   });
   await expect(page).not.toHaveURL(/(?:\?|&)revision=/u);
-  await expect(page.getByRole('region', { name: /Viewing revision/u })).toHaveCount(0);
+  await expect(page.getByRole('alert', { name: /Viewing revision/u })).toHaveCount(0);
   await expect(page.getByText(
     `Restored revision 1 as new draft revision ${restore.draftRevision}.`,
     { exact: true },
@@ -924,7 +925,7 @@ test('[P0] recovers from a resource gateway 502 without an unhandled console err
 test('[P0] recovers a hard-reset project with a new selected conversation and Run', async ({ page, toolsDev }) => {
   const consoleErrors = recordConsoleErrors(page);
   await selectFakeLocalAgent(toolsDev.daemonUrl!);
-  const projectId = await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
+  const projectId = await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!, { sourceUrl: 'https://tiles.openfreemap.org/styles/bright' });
 
   await resetPlaywrightMapDesignConversations(toolsDev.dataDir);
   const reloadedProject = await getJson<{ conversationId: string | null }>(
@@ -992,11 +993,26 @@ async function selectFakeLocalAgent(daemonUrl: string, agentId: FakeAgentId | 'k
   await readJson(response);
 }
 
+async function createAndOpenReadyMapProject(page: Page, daemonUrl: string, options: Parameters<typeof createAndOpenInitializedMapProject>[2] = {}): Promise<string> {
+  const projectId = await createAndOpenInitializedMapProject(page, daemonUrl, options);
+  await openFreshConversation(page, daemonUrl, projectId);
+  return projectId;
+}
+
+async function openFreshConversation(page: Page, daemonUrl: string, projectId: string): Promise<void> {
+  const initialConversationId = selectedConversationId(page);
+  await waitForAssistantTurnStatus(daemonUrl, projectId, initialConversationId, 0, 'succeeded');
+  await page.getByRole('region', { name: 'Map design agent chat' }).getByRole('button', { name: 'New conversation', exact: true }).last().click();
+  await expect.poll(() => selectedConversationId(page)).not.toBe(initialConversationId);
+  await expect(page.getByRole('article', { name: 'Assistant message' })).toHaveCount(0);
+}
+
 async function switchConversationRuntime(page: Page, agentLabel: 'Codex' | 'OpenCode'): Promise<void> {
   const trigger = page.getByRole('button', { name: /Change runtime/u });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Runtime settings', exact: true });
   await dialog.getByRole('option', { name: new RegExp(`^${agentLabel}(?:\\s|$)`, 'u') }).click();
+  await dialog.getByRole('button', { name: 'Confirm', exact: true }).click();
   await expect(trigger).toContainText(agentLabel);
   await expect(dialog).toBeHidden();
 }
@@ -1022,6 +1038,7 @@ async function createAndOpenReadyMapProjectForAgent(page: Page, daemonUrl: strin
   await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('region', { name: 'Map canvas' })).toBeVisible();
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
+  await openFreshConversation(page, daemonUrl, projectId);
   return projectId;
 }
 
@@ -1246,9 +1263,9 @@ async function waitForRevisionHistory(
 }
 
 async function openRevisionInspector(page: Page): Promise<void> {
-  const trigger = page.getByRole('button', { name: 'Open inspector', exact: true });
+  const trigger = page.getByRole('button', { name: 'Versions', exact: true });
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
-  await page.getByRole('tab', { name: 'Revisions', exact: true }).click();
+  await page.getByRole('tab', { name: 'Versions', exact: true }).click();
 }
 
 function waitForRevisionSnapshotResponse(

@@ -1,8 +1,8 @@
 import { EventEmitter } from 'node:events';
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
@@ -23,11 +23,17 @@ import { createLocalAgentRegistry } from '../../../src/map-design/application/lo
 import type { MapAgentAdapter, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
 import type { NativeMapToolDefinition } from '../../../src/map-design/tools/tool-context.js';
 import { defineMapAgentAdapterConformance } from './adapter-conformance.js';
+
 import {
   createMemoryMapAgentSessionBroker,
   mapAgentSessionScope,
   type MapAgentSessionBroker,
 } from '../../../src/map-design/agents/session-broker.js';
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs/promises')>();
+  return { ...fs, chmod: vi.fn(fs.chmod) };
+});
 
 const TOOLS: NativeMapToolDefinition[] = [
   {
@@ -1061,10 +1067,11 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
 
   it('stages a private daemon-owned profile without replacing its session state', async () => {
     const root = await mkdtemp(join(tmpdir(), 'map-design-dsh-profile-test-'));
+    vi.mocked(chmod).mockClear();
     try {
       const first = await stageDeepSeekProfileBundle(root);
       expect(first.home).toBe(resolveDeepSeekProfileHome(root));
-      expect(first.profileDirectory.startsWith(`${root}/`)).toBe(true);
+      expect(first.profileDirectory.startsWith(`${root}${sep}`)).toBe(true);
       expect(first.profileDirectory).toBe(join(first.home, 'profiles', 'map-design'));
       const profile = JSON.parse(await readFile(join(first.profileDirectory, 'package.json'), 'utf8')) as {
         dsh: { profile: { bundles: string[] } };
@@ -1073,7 +1080,9 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
         '@deepseek-ai/dsh-base',
         '@mapseekai/dsh-map-design-runtime',
       ]);
-      expect((await stat(first.profileDirectory)).mode & 0o777).toBe(0o700);
+      expect(chmod).toHaveBeenCalledWith(first.profileDirectory, 0o700);
+      // Windows stat mode exposes read/write flags, not directory ACL permissions.
+      expect((await stat(first.profileDirectory)).mode & 0o777).toBe(process.platform === 'win32' ? 0o666 : 0o700);
       await Promise.all([
         execFileAsync(process.execPath, ['--check', first.bridgePath]),
         execFileAsync(process.execPath, ['--check', first.runtimePath]),

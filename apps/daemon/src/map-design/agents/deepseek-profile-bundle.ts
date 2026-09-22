@@ -10,6 +10,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const PROFILE_NAME = 'map-design';
 const PROFILE_PACKAGE_NAME = '@mapseekai/dsh-map-design-runtime';
@@ -931,11 +932,21 @@ async function stageDeepSeekProfileBundleOnce(home: string): Promise<DeepSeekPro
       writePrivateFile(join(temporaryRuntime, 'runtime.mjs'), RUNTIME_SOURCE),
       writePrivateFile(join(temporaryRuntime, 'startup.mjs'), STARTUP_SOURCE),
     ]);
-    try {
-      await rename(temporaryProfile, profileDirectory);
-    } catch (error) {
-      if (!isAlreadyExists(error)) throw error;
-      await rm(temporaryProfile, { recursive: true, force: true });
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await rename(temporaryProfile, profileDirectory);
+        break;
+      } catch (error) {
+        if (process.platform === 'win32' && attempt < 4
+          && error instanceof Error && 'code' in error
+          && ['EPERM', 'EBUSY', 'EACCES'].includes(String(error.code))) {
+          await delay(50 * (attempt + 1));
+          continue;
+        }
+        if (!isAlreadyExists(error)) throw error;
+        await rm(temporaryProfile, { recursive: true, force: true });
+        break;
+      }
     }
     await chmod(profileDirectory, 0o700);
   } catch (error) {

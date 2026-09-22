@@ -48,7 +48,7 @@ export function MapDesignHome({ onOpenProject }: MapDesignHomeProps) {
   }
 
   return <section style={{ marginBlock: 'auto' }} className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-6 md:px-10 md:py-8" aria-label="Map design home">
-    <header className="flex items-end justify-between gap-5 border-b border-border pb-4 [&_h1]:font-serif [&_h1]:text-4xl [&_h1]:tracking-tight md:[&_h1]:text-4xl"><div className="flex items-center gap-3"><img src="/map-design.svg" alt="" className="size-9 shrink-0" /><h1>{t('mapDesign.home.title')}</h1></div></header>
+    <header className="flex items-end justify-between gap-3 border-b border-border pb-4 [&_h1]:font-serif [&_h1]:text-3xl [&_h1]:tracking-tight max-[359px]:[&_h1]:text-2xl sm:[&_h1]:text-4xl"><div className="flex items-center gap-3"><img src="/map-design.svg" alt="" className="size-9 shrink-0" /><h1>{t('mapDesign.home.title')}</h1></div></header>
     {agentsLoading ? <MapLoading variant="inline" label={t('common.loading')} /> : null}
     {agentsError ? <Alert variant="destructive"><AlertDescription>{agentsError}</AlertDescription></Alert> : null}
     <MapSourceForm agents={agents} onCreate={create} />

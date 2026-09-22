@@ -45,7 +45,13 @@ describe('model map tool definitions', () => {
     expect(apply.description).toMatch(/exact current Run.*expected revision.*batch/iu);
     expect(apply.description).toContain('shape only');
     expect(apply.description).not.toContain('dark-theme-001');
-    expect(transaction).toEqual(sdkTransaction);
+    const sdkOperations = sdkTransaction.properties as { operations: { items: { oneOf: unknown[] } } };
+    const advertised = transaction.properties as { operations: { items: { oneOf: unknown[] } } };
+    expect(advertised.operations.items.oneOf.slice(0, -1)).toEqual(sdkOperations.operations.items.oneOf);
+    expect(advertised.operations.items.oneOf.at(-1)).toMatchObject({
+      type: 'object', additionalProperties: false,
+      properties: { op: { const: 'setLayersProperties' }, layerIds: { minItems: 1, maxItems: 100 } },
+    });
     expect(Object.isFrozen(apply)).toBe(true);
     expect(Object.isFrozen(transaction)).toBe(true);
   });

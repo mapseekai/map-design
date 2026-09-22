@@ -320,6 +320,7 @@ export const scopeRules: readonly ScopeRule[] = [
   {
     id: "tools-pack-sources",
     match: {
+      exact: ["e2e/lib/playwright/packaged-protocol.ts", "e2e/ui/packaged-protocol.test.ts"],
       prefixes: [
         "tools/pack/",
         "apps/packaged/",

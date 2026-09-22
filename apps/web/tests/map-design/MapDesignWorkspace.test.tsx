@@ -296,7 +296,9 @@ describe('MapDesignWorkspace', () => {
     const resize = screen.getByRole('separator', { name: 'Resize design conversation' });
     fireEvent.keyDown(resize, { key: 'ArrowLeft' });
     fireEvent.keyUp(resize, { key: 'ArrowLeft' });
-    expect(window.localStorage.getItem('map-design:workspace:v1:chat-width')).toBe('380');
+    const expectedWidth = 520 - (1400 - 8) * 0.05;
+    expect(Number(window.localStorage.getItem('map-design:workspace:v1:chat-width'))).toBeCloseTo(expectedWidth, 1);
+    expect(Number.parseFloat(workspace.style.getPropertyValue('--map-chat-preferred-width'))).toBeCloseTo(expectedWidth, 1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
     expect(workspace).toHaveAttribute('data-fullscreen', 'true');

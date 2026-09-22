@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { spawn as spawnChild } from 'node:child_process';
+import { spawnAgentProcess } from '../../runtimes/spawn.js';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -831,17 +831,7 @@ function stopOpenCodeProcess(
     : stopMapDesignProcessTree(child, options.processStopTimeoutMs ?? DEFAULT_PROCESS_STOP_TIMEOUT_MS);
 }
 
-function defaultSpawn(
-  command: string,
-  args: string[],
-  options: { cwd: string; env: NodeJS.ProcessEnv; detached: boolean },
-): OpenCodePluginProcess {
-  return spawnChild(command, args, {
-    ...options,
-    stdio: ['pipe', 'pipe', 'pipe'],
-    windowsHide: true,
-  });
-}
+const defaultSpawn: OpenCodePluginSpawn = spawnAgentProcess;
 
 function javascriptLiteral(value: unknown): string {
   return JSON.stringify(value)

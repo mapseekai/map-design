@@ -158,6 +158,29 @@ describe('MapDesign native tool registry', () => {
     ))).toBe(true);
   });
 
+  it('shares one authoritative snapshot between native context preflight and validation', async () => {
+    const reads = vi.spyOn(services.blobStore, 'getJson');
+    const result = await services.nativeToolRegistry.call(contextAtRevision(3), 'map_get_context', {});
+    expect(result.ok).toBe(true);
+    expect(reads).toHaveBeenCalledTimes(3);
+    if (!result.ok) throw new TypeError('Expected context');
+    expect(JSON.parse(result.modelContent ?? 'null')).toMatchObject({ draftRevision: 3,
+      styleSummary: { layerCount: 2 }, validationStatus: 'valid' });
+  });
+
+  it('returns repairable validation findings for an invalid stored style', async () => {
+    const invalid = await services.blobStore.putJson(PROJECT_ID, 'styles', { ...STYLE, version: 7 });
+    database.prepare('UPDATE map_design_projects SET draft_style_digest = ? WHERE project_id = ?')
+      .run(invalid.digest, PROJECT_ID);
+    const result = await services.nativeToolRegistry.call(contextAtRevision(3), 'map_validate', { expectedRevision: 3 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new TypeError('Expected validation report');
+    const report = JSON.parse(result.modelContent ?? 'null');
+    expect(report.summary.status).toBe('invalid');
+    expect(report.findings.length).toBeGreaterThan(0);
+    expect(report.findings[0]).toMatchObject({ severity: 'error', code: 'STYLE_INVALID' });
+  });
+
   it('inspects a real SDK style fixture through the native registry', async () => {
     const result = await services.nativeToolRegistry.call(
       contextAtRevision(3),
@@ -207,6 +230,7 @@ describe('MapDesign native tool registry', () => {
         ],
         returned: 2,
         truncated: false,
+        total: 2,
       }),
     });
   });
@@ -221,13 +245,20 @@ describe('MapDesign native tool registry', () => {
     expect(result).toEqual({
       ok: true,
       toolUseId: 'call-1',
+      modelContent: expect.any(String),
       summary: {
         operationCount: 1,
+        expandedOperationCount: 1,
         changedLayerCount: 1,
         changedSourceCount: 0,
         warningCount: 0,
         revision: 4,
       },
+    });
+    if (!result.ok) throw new TypeError('Expected an applied transaction');
+    expect(JSON.parse(result.modelContent ?? 'null')).toMatchObject({
+      draftRevision: 4, changedLayers: ['roads'], changedSources: [],
+      validationSummary: { status: 'valid' }, warnings: [],
     });
     expect(services.repository.get(PROJECT_ID)?.draftRevision).toBe(4);
   });

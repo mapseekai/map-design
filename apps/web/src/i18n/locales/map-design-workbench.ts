@@ -13,7 +13,6 @@ type WorkbenchDict = Pick<Dict,
   | 'mapDesign.runtime.catalogUnavailable' | 'mapDesign.runtime.modelUnavailable'
   | 'mapDesign.runtime.liveCatalog' | 'mapDesign.runtime.fallbackCatalog'
   | 'mapDesign.runtime.rememberedCatalog' | 'mapDesign.runtime.saving'
-  | 'mapDesign.runtime.saved'
   | 'mapDesign.runtime.conflict' | 'mapDesign.runtime.normalized'
   | 'mapDesign.runtime.loadError' | 'mapDesign.runtime.saveError'
   | 'mapDesign.runtime.runActiveDisabled'
@@ -200,28 +199,6 @@ const runtimeCustomModelCopy = {
   th: ['โมเดลกำหนดเอง', 'รหัสผู้ให้บริการ/โมเดล', 'ใช้โมเดลกำหนดเอง'],
   it: ['Modello personalizzato', 'Identificatore provider/modello', 'Usa modello personalizzato'],
 } satisfies Record<Locale, readonly [string, string, string]>;
-
-const runtimeSavedCopy = {
-  en: 'Runtime saved to this conversation.',
-  id: 'Runtime disimpan ke percakapan ini.',
-  de: 'Laufzeit in dieser Unterhaltung gespeichert.',
-  'zh-CN': '运行时已保存到此对话。',
-  'zh-TW': '執行環境已儲存到此對話。',
-  'pt-BR': 'Runtime salvo nesta conversa.',
-  'es-ES': 'Entorno guardado en esta conversación.',
-  ru: 'Среда выполнения сохранена в этом диалоге.',
-  fa: 'محیط اجرا در این گفتگو ذخیره شد.',
-  ar: 'تم حفظ بيئة التشغيل في هذه المحادثة.',
-  ja: 'ランタイムをこの会話に保存しました。',
-  ko: '런타임을 이 대화에 저장했습니다.',
-  pl: 'Środowisko uruchomieniowe zapisano w tej rozmowie.',
-  hu: 'A futási környezet mentve ebbe a beszélgetésbe.',
-  fr: 'Environnement enregistré dans cette conversation.',
-  uk: 'Середовище виконання збережено в цій розмові.',
-  tr: 'Çalışma ortamı bu konuşmaya kaydedildi.',
-  th: 'บันทึกสภาพแวดล้อมการทำงานในการสนทนานี้แล้ว',
-  it: 'Runtime salvato in questa conversazione.',
-} satisfies Record<Locale, string>;
 
 const runStartError = {
   en: 'The map run could not be started.',
@@ -494,7 +471,6 @@ function workbench(locale: Locale, { agent, composer, activity, conversation, wo
     'mapDesign.runtime.fallbackCatalog': runtime[15],
     'mapDesign.runtime.rememberedCatalog': runtime[16],
     'mapDesign.runtime.saving': runtime[17],
-    'mapDesign.runtime.saved': runtimeSavedCopy[locale],
     'mapDesign.runtime.conflict': runtime[18],
     'mapDesign.runtime.normalized': runtime[19],
     'mapDesign.runtime.loadError': runtime[20],

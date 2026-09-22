@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { runCartographyAgent } from '../../../src/map-design/agents/cartography-runner.js';
 vi.mock('../../../src/map-design/agents/cartography-runner.js', () => ({ runCartographyAgent: vi.fn() }));
 import { describe, expect, it, vi } from 'vitest';
@@ -29,7 +30,7 @@ it('creates a lint-valid CARTOGRAPHY.md through the configured API without a CLI
   vi.stubGlobal('fetch', request);
   try {
     const output = await generateCartographyDraft({ jobId: '12345678-1234-4234-8234-123456789abc', runtime: 'api', name: 'API Atlas', requirements: 'Warm paper' }, {
-      dataRoot: '/unused-api-draft', projectRoot: new URL('../../../../../', import.meta.url).pathname,
+      dataRoot: '/unused-api-draft', projectRoot: fileURLToPath(new URL('../../../../../', import.meta.url)),
       config: { read: () => ({ byokProviders: { default: { protocol: 'openai', apiKey: 'not-for-client', model: 'test' } } }) },
     }, new AbortController().signal);
     expect(output.source).toBe(source);
@@ -45,7 +46,7 @@ it('edits the supplied document through the shared Agent runner and validates it
   const reply = { message: 'Clarified hierarchy.', source: source + '\n\n## Typography & Labels\nKeep labels readable.' };
   vi.mocked(runCartographyAgent).mockResolvedValue(JSON.stringify(reply));
   const result = await generateCartographyEdit({ source, prompt: 'Improve labels', history: [], reportMarkdown: 'Keep extracted colors.', runtime: 'api' }, {
-    dataRoot: '/unused', projectRoot: new URL('../../../../../', import.meta.url).pathname,
+    dataRoot: '/unused', projectRoot: fileURLToPath(new URL('../../../../../', import.meta.url)),
     agents: {} as Parameters<typeof runCartographyAgent>[0]['agents'],
   }, new AbortController().signal);
   expect(result).toEqual(reply);
@@ -60,7 +61,7 @@ it.each(['api', 'codex', 'omp'])('generates with the selected %s agent and model
   const result = await generateCartographyDraft({
     jobId: '12345678-1234-4234-8234-123456789abc', name: 'Atlas', requirements: 'Warm paper', runtime,
   }, {
-    dataRoot: '/unused', projectRoot: new URL('../../../../../', import.meta.url).pathname,
+    dataRoot: '/unused', projectRoot: fileURLToPath(new URL('../../../../../', import.meta.url)),
     agents: {} as Parameters<typeof runCartographyAgent>[0]['agents'],
   }, new AbortController().signal);
   expect(result.source).toBe(source);

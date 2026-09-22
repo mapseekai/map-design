@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@/playwright/suite';
-import { createAndOpenReadyMapProject } from '@/playwright/map-design-project';
+import { createAndOpenReadyMapProject, waitForMapResources } from '@/playwright/map-design-project';
 import type { Page } from '@playwright/test';
 
 test('[P1] map comments persist, keep geographic markers aligned and submit one scoped batch', async ({ page, toolsDev }, testInfo) => {
@@ -77,6 +77,7 @@ test('[P1] map comments persist, keep geographic markers aligned and submit one 
 });
 
 async function pickVisibleFeature(page: Page): Promise<{ x: number; y: number }> {
+  await waitForMapResources(page);
   const canvas = page.locator('#map-design-map-surface canvas.maplibregl-canvas');
   const bounds = await canvas.boundingBox();
   if (!bounds) throw new Error('Map canvas missing');

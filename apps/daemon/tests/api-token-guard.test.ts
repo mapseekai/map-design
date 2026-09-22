@@ -45,7 +45,6 @@ function createCodexOnlySpawn() {
     const stdout = new PassThrough();
     const stderr = new PassThrough();
     const child = Object.assign(new EventEmitter(), {
-      pid: 43_210,
       stdin,
       stdout,
       stderr,

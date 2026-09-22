@@ -46,6 +46,7 @@ test('[P1] saves settings and preserves language across reload and mobile naviga
   await expect(page.getByRole('status').filter({ hasText: 'Settings saved' })).toBeVisible();
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(instructions).toHaveValue('Keep labels legible — settings acceptance.');
+  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Language & appearance', exact: true }).click();
   await page.getByRole('combobox', { name: 'Language', exact: true }).click();
   await page.getByRole('option', { name: '简体中文', exact: true }).click();
   await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
@@ -53,7 +54,7 @@ test('[P1] saves settings and preserves language across reload and mobile naviga
   await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: '打开导航', exact: true }).click();
-  await page.getByRole('navigation').getByRole('button', { name: '主页', exact: true }).click();
+  await page.getByRole('navigation').getByRole('button', { name: '返回主界面', exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });

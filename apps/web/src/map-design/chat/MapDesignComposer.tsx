@@ -10,6 +10,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 import { useI18n } from '../../i18n';
 import { mapScreenshotUrl, mapTextAttachmentUrl, type MapScreenshot, type MapTextAttachment } from '@mapseekai/contracts';
 import { attachmentsCopy } from '../../i18n/locales/attachments';
+import { messageQueueCopy } from '../../i18n/locales/message-queue';
 import { uploadTextAttachment, validateTextAttachmentSelection, type TextAttachmentSelectionError } from './text-attachments-client';
 import { screenshotCopy } from '../../i18n/locales/screenshots';
 import { MapDesignRuntimeSwitcher } from './MapDesignRuntimeSwitcher';
@@ -27,6 +28,7 @@ export function MapDesignComposer({
   runtimeDisabledReason,
   onRuntimeChange,
   sending,
+  queueEnabled = false,
   disabled = false,
   disabledReason = null,
   draft,
@@ -50,6 +52,7 @@ export function MapDesignComposer({
   runtimeDisabledReason?: string | null;
   onRuntimeChange?(next: MapDesignRuntimeSelectionInput): Promise<void>;
   sending: boolean;
+  queueEnabled?: boolean;
   disabled?: boolean;
   disabledReason?: string | null;
   draft: string;
@@ -67,6 +70,7 @@ export function MapDesignComposer({
   const { locale, t } = useI18n();
   const copy = screenshotCopy[locale];
   const filesCopy = attachmentsCopy[locale];
+  const queueCopy = messageQueueCopy[locale];
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadController = useRef<AbortController | null>(null);
@@ -80,8 +84,9 @@ export function MapDesignComposer({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const editGeneration = useRef(0);
   const cancelPendingRef = useRef(false);
+  const submitPendingRef = useRef(false);
   const [cancelPending, setCancelPending] = useState(false);
-  const blocked = sending || disabled || runtimeSaving || uploading;
+  const blocked = (sending && !queueEnabled) || disabled || runtimeSaving || uploading;
   const [restoreInputFocus, setRestoreInputFocus] = useState(false);
   useLayoutEffect(() => {
     if (!restoreInputFocus || blocked) return;
@@ -93,7 +98,8 @@ export function MapDesignComposer({
     ? t('mapDesign.composer.limit', { limit: new Intl.NumberFormat(locale).format(maxPromptLength) })
     : null;
   const submit = async () => {
-    if (blocked || uploadController.current || error || !hasContent) return;
+    if (blocked || submitPendingRef.current || uploadController.current || error || !hasContent) return;
+    submitPendingRef.current = true;
     const submitted = draft.trim() ? draft : filesCopy.defaultPrompt;
     const submittedAttachments = attachments;
     const submittedScreenshots = screenshots;
@@ -111,6 +117,8 @@ export function MapDesignComposer({
       } else setRestoreInputFocus(true);
     } catch {
       setRestoreInputFocus(true);
+    } finally {
+      submitPendingRef.current = false;
     }
   };
   const upload = async (files: File[]) => {
@@ -134,7 +142,7 @@ export function MapDesignComposer({
     }
   };
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== 'Enter' || event.shiftKey) return;
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return;
     event.preventDefault();
     void submit();
   };
@@ -160,7 +168,7 @@ export function MapDesignComposer({
         <InputGroupTextarea aria-invalid={Boolean(error)} className="min-h-20 resize-y" ref={inputRef}
           aria-label={placeholder ?? t('mapDesign.composer.label')} value={draft} disabled={blocked}
           onChange={(event) => { editGeneration.current += 1; onDraftChange(event.target.value); }} onKeyDown={keyDown}
-          placeholder={placeholder ?? t('mapDesign.composer.placeholder')} />
+          placeholder={placeholder ?? (sending && queueEnabled ? queueCopy.placeholder : t('mapDesign.composer.placeholder'))} />
         {screenshots.length || attachments.length ? <InputGroupAddon align="block-start"><div className="flex flex-wrap items-start gap-2">
           {screenshots.map((screenshot) => <div key={screenshot.id} className="relative overflow-hidden rounded-md border">
             <a href={mapScreenshotUrl(screenshot)} target="_blank" rel="noreferrer"><img src={mapScreenshotUrl(screenshot)} alt={copy.image} className="h-20 w-28 object-cover" /></a>
@@ -207,6 +215,10 @@ export function MapDesignComposer({
                   saving={runtimeSaving} notice={runtimeNotice} onChange={onRuntimeChange} />
               : <span className="text-xs text-muted-foreground" aria-live="polite">{runtime ? runtime.label ?? runtime.agentId : t('common.loading')}</span>}
             <div className="flex items-center gap-2" role="group" aria-label={t('mapDesign.composer.runActions')}>
+              {sending && queueEnabled ? <Button type="submit" shape="circle" size="icon-sm"
+                aria-label={queueCopy.enqueue} title={queueCopy.enqueue} disabled={blocked || !hasContent || Boolean(error)}>
+                <ArrowUp aria-hidden="true" />
+              </Button> : null}
               <Button shape="circle" size="icon-sm" variant={sending ? 'destructive' : 'default'}
                 type={sending ? 'button' : 'submit'}
                 aria-label={sending ? t('mapDesign.conversation.cancelRun') : t('mapDesign.composer.send')}

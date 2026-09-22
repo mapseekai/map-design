@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
-import { cp, lstat, mkdir, readFile, readdir, readlink, rename, rm, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, readlink, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative } from "node:path";
 
 import { withDirectoryLock } from "./lock.js";
+import { publishCacheEntry } from "./cache-filesystem.js";
 
 export const CACHE_SCHEMA_VERSION = 1;
 
@@ -312,7 +313,7 @@ export class ToolPackCache {
           };
           await writeManifest(join(stagingPath, "manifest.json"), builtManifest);
           await rm(entryPath, { force: true, recursive: true });
-          await rename(stagingPath, entryPath);
+          await publishCacheEntry(stagingPath, entryPath);
           for (const aliasKey of aliases) {
             const aliasPath = aliasPathForKey(aliasKey);
             await mkdir(dirname(aliasPath), { recursive: true });

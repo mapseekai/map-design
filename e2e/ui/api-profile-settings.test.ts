@@ -101,7 +101,8 @@ test('[P1] [external] conversation switches real API streams and recovers after 
       const dialog = page.getByRole('dialog', { name: 'Runtime settings' });
       await dialog.getByRole('option', { name: new RegExp(name) }).click();
       await expect(dialog.getByRole('option', { name: new RegExp(name) })).toHaveAttribute('aria-selected', 'true');
-      await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect(dialog).not.toBeVisible();
       await expect(picker).toContainText(name);
     };
     const send = async (prompt: string, count: number, path: string) => {

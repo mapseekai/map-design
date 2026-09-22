@@ -1,5 +1,5 @@
 import type { NextConfig } from 'next';
-import { copyFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { networkInterfaces } from 'node:os';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
@@ -26,17 +26,17 @@ const shouldStaticExport = isProd && !isServerOutput;
 
 const WEB_ROOT = dirname(fileURLToPath(import.meta.url));
 
-function prepareMapLibrePublicAssets(): void {
+function preparePublicAssets(): void {
   const require = createRequire(import.meta.url);
+  const { prepareMapLibrePublicAssets }: typeof import('./src/server/maplibre-public-assets') = require(
+    resolve(WEB_ROOT, 'src/server/maplibre-public-assets.ts'),
+  );
   const dist = resolve(dirname(require.resolve('maplibre-gl/package.json')), 'dist');
   const destination = resolve(WEB_ROOT, 'public/maplibre');
-  mkdirSync(destination, { recursive: true });
-  for (const file of ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs']) {
-    copyFileSync(resolve(dist, file), resolve(destination, file));
-  }
+  prepareMapLibrePublicAssets(dist, destination);
 }
 
-prepareMapLibrePublicAssets();
+preparePublicAssets();
 
 function resolveWorkspaceRoot(): string {
   const computed = dirname(dirname(WEB_ROOT));

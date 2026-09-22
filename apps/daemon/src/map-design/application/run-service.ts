@@ -25,6 +25,7 @@ import { createRunToolCallback, type RunToolCallback } from '../agents/tool-call
 import { createSdkMapToolRuntime, type SdkMapToolRuntime } from '../agents/sdk-tool-runtime.js';
 import type { MapDesignLocalStore } from '../storage/local-store.js';
 import type { MapDesignNativeToolRegistry } from '../tools/tool-context.js';
+import { mapPromptContext } from '../tools/model-tool-content.js';
 import { requestDigest } from './request-digest.js';
 import { CartographyService, cartographyPrompt } from './cartography-service.js';
 import { mapCommentPrompt, type MapDesignCommentService } from './comment-service.js';
@@ -36,6 +37,8 @@ import type { MapDesignRuntimeCatalog, ResolvedRuntimeChoice } from './runtime-c
 
 export interface SpawnedLocalAgent {
   pid?: number | undefined;
+  exitCode?: number | null;
+  signalCode?: NodeJS.Signals | null;
   stdout?: NodeJS.ReadableStream | null;
   stdin?: NodeJS.WritableStream | null;
   once(event: 'close', listener: (code: number | null) => void): this;
@@ -630,7 +633,7 @@ const MAX_HISTORY_BYTES = 65_536;
 function composeMapPrompt(prompt: string, messages: readonly MapDesignMessage[], mapContext: unknown, projectId: string, runId: string, locale?: string, customInstructions?: string | null, cartography = ''): string {
   const history = recentHistory(messages);
   let context = '{"unavailable":true}';
-  try { context = JSON.stringify(mapContext).slice(0, 8_192); } catch { /* bounded fallback */ }
+  try { context = mapPromptContext(mapContext); } catch { /* bounded fallback */ }
   const tools = MAP_TOOL_NAMES.map((name) => `\`${name}\``).join(', ');
   return [
     'You are the MapDesign agent.',
@@ -641,7 +644,7 @@ function composeMapPrompt(prompt: string, messages: readonly MapDesignMessage[],
     `Run: ${runId}`,
     ...(locale ? [`Locale: ${locale}`] : []),
     ...(customInstructions ? [`Custom instructions: ${customInstructions}`] : []),
-    'Current canonical map context (bounded): ' + context,
+    'Current canonical map context at Run start (reuse its revision; refresh only if missing or stale): ' + context,
     ...(cartography ? [cartography] : []),
     'Conversation:',
     history,
@@ -680,13 +683,21 @@ export async function stopMapDesignProcessTree(
   platform: NodeJS.Platform = process.platform,
   spawnTaskkill: (args: string[]) => SpawnedLocalAgent = (args) => spawnChild('taskkill', args, { windowsHide: true }),
 ): Promise<void> {
-  const closed = waitForClose(child, timeoutMs);
   if (platform === 'win32' && child.pid) {
-    await stopWindowsProcessTree(child.pid, false, timeoutMs, spawnTaskkill);
-    if (await closed) return;
-    await stopWindowsProcessTree(child.pid, true, timeoutMs, spawnTaskkill);
+    if (child.exitCode != null || child.signalCode != null) return;
+    let childClosed = false;
+    child.once('close', () => { childClosed = true; });
+    if (await stopWindowsProcessTree(child.pid, false, timeoutMs, spawnTaskkill) === 0) return;
+    // taskkill must enumerate the tree before it can terminate it; this can
+    // outlast the agent's graceful-stop interval even on an idle machine.
+    const forcedExitCode = await stopWindowsProcessTree(child.pid, true, Math.max(timeoutMs, 5_000), spawnTaskkill);
+    if (forcedExitCode !== 0 && !(forcedExitCode === 128 && childClosed)) {
+      console.warn(JSON.stringify({ event: 'map_agent_process_stop_failed', pid: child.pid, exitCode: forcedExitCode }));
+      throw new Error('The Windows local agent process tree could not be stopped.');
+    }
     return;
   }
+  const closed = waitForClose(child, timeoutMs);
   signalProcessTree(child, 'SIGTERM', platform);
   if (await closed) return;
   signalProcessTree(child, 'SIGKILL', platform);
@@ -706,11 +717,11 @@ function waitForClose(child: SpawnedLocalAgent, timeoutMs: number): Promise<bool
   });
 }
 
-function stopWindowsProcessTree(pid: number, force: boolean, timeoutMs: number, spawnTaskkill: (args: string[]) => SpawnedLocalAgent): Promise<void> {
+function stopWindowsProcessTree(pid: number, force: boolean, timeoutMs: number, spawnTaskkill: (args: string[]) => SpawnedLocalAgent): Promise<number | null> {
   return new Promise((resolve) => {
     const taskkill = spawnTaskkill(['/pid', String(pid), '/T', ...(force ? ['/F'] : [])]);
-    const timer = setTimeout(resolve, timeoutMs);
-    taskkill.once('close', () => { clearTimeout(timer); resolve(); });
-    taskkill.once('error', () => { clearTimeout(timer); resolve(); });
+    const timer = setTimeout(() => { taskkill.kill(); resolve(null); }, timeoutMs);
+    taskkill.once('close', (code) => { clearTimeout(timer); resolve(code); });
+    taskkill.once('error', () => { clearTimeout(timer); resolve(null); });
   });
 }

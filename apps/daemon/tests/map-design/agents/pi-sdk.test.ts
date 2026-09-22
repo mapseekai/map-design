@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PassThrough } from 'node:stream';
 
@@ -47,7 +47,6 @@ class FakePiRpc {
     return true;
   });
   readonly child = Object.assign(new EventEmitter(), {
-    pid: 5432,
     stdin: this.stdin,
     stdout: this.stdout,
     stderr: this.stderr,
@@ -119,7 +118,9 @@ const roots: string[] = [];
 afterEach(async () => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  await Promise.all(roots.splice(0).map((root) => rm(root, {
+    recursive: true, force: true, maxRetries: 5, retryDelay: 20,
+  })));
 });
 
 async function extensionRoot(): Promise<string> {
@@ -245,9 +246,9 @@ async function start(options: {
   expect(spawnOptions).toMatchObject({ cwd: '/safe/project', detached: expect.any(Boolean) });
   const extensionPath = args[5]!;
   if (!options.adapter || options.root !== undefined) {
-    expect(extensionPath.startsWith(`${root}/`)).toBe(true);
+    expect(extensionPath.startsWith(`${root}${sep}`)).toBe(true);
   }
-  expect(extensionPath).not.toContain('/.pi/extensions/');
+  expect(extensionPath).not.toContain(`${sep}.pi${sep}extensions${sep}`);
 
   let activeServer = server;
   if (options.resumePath) {
@@ -685,8 +686,8 @@ describe('Pi run-scoped extension Map Agent adapter', () => {
       stopProcess: async () => undefined,
     })).resolves.toBe(true);
 
-    expect(extensionPath.startsWith(`${root}/`)).toBe(true);
-    expect(extensionPath).not.toContain('/.pi/extensions/');
+    expect(extensionPath.startsWith(`${root}${sep}`)).toBe(true);
+    expect(extensionPath).not.toContain(`${sep}.pi${sep}extensions${sep}`);
     expect(await exists(extensionPath)).toBe(false);
   });
 

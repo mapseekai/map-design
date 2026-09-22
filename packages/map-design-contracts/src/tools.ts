@@ -1,19 +1,19 @@
 import { z } from 'zod';
 
 import { MapToolEnvelopeSchema } from './errors.js';
+import { MapInspectInputSchema, MapInspectOutputSchema, MapSearchLayersInputSchema, MapSearchLayersOutputSchema } from './layer-read.js';
+export * from './layer-read.js';
+export * from './compact-transaction.js';
 
 import {
-  LayerTypeSchema,
   MapDesignSystemSummarySchema,
   MapDigestSchema,
   MapIdentifierSchema,
   MapJsonValueSchema,
-  MapLayerSummarySchema,
   MapProjectLifecycleSchema,
   MapProjectSourceSummarySchema,
   MapSafeRevisionSchema,
   MapSemanticSummarySchema,
-  MapStyleSourceSummarySchema,
   MapStyleSummarySchema,
   MapTimestampSchema,
   MapValidationFindingSchema,
@@ -31,7 +31,6 @@ import {
   MapPreviewViewportSchema,
 } from './preview.js';
 
-export const MAP_INSPECT_MAX_BYTES = 256 * 1024;
 export const MAP_VALIDATION_FINDINGS_MAX = 500;
 export const MAP_DIFF_MAX_BYTES = 1024 * 1024;
 
@@ -61,35 +60,6 @@ export type MapToolName = z.infer<typeof MapToolNameSchema>;
 
 export const MapGetContextInputSchema = z.strictObject({});
 export type MapGetContextInput = z.infer<typeof MapGetContextInputSchema>;
-
-export const MapInspectTargetSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('root') }),
-  z.strictObject({ kind: z.literal('layer'), layerId: MapIdentifierSchema }),
-  z.strictObject({ kind: z.literal('source'), sourceId: MapIdentifierSchema }),
-  z.strictObject({
-    kind: z.literal('source-layer'),
-    sourceId: MapIdentifierSchema,
-    sourceLayer: MapIdentifierSchema,
-  }),
-]);
-export type MapInspectTarget = z.infer<typeof MapInspectTargetSchema>;
-
-export const MapInspectInputSchema = z.strictObject({
-  target: MapInspectTargetSchema,
-});
-export type MapInspectInput = z.infer<typeof MapInspectInputSchema>;
-
-export const MapSearchLayersInputSchema = z.strictObject({
-  query: z.string().trim().max(256).optional(),
-  types: z.array(LayerTypeSchema)
-    .max(LayerTypeSchema.options.length)
-    .refine((values) => new Set(values).size === values.length, { message: 'Layer types must be unique' })
-    .optional(),
-  sourceId: MapIdentifierSchema.optional(),
-  sourceLayer: MapIdentifierSchema.optional(),
-  limit: z.int().min(1).max(100).default(25),
-});
-export type MapSearchLayersInput = z.infer<typeof MapSearchLayersInputSchema>;
 
 export const MapApplyTransactionInputSchema = z.strictObject({
   expectedRevision: MapSafeRevisionSchema,
@@ -194,73 +164,6 @@ export const MapGetContextOutputSchema = z.strictObject({
   cartographicGuidance: z.array(z.string().trim().min(1).max(500)).max(256),
 });
 export type MapGetContextOutput = z.infer<typeof MapGetContextOutputSchema>;
-
-export const MapInspectViewSchema = z.discriminatedUnion('kind', [
-  z.strictObject({
-    kind: z.literal('root'),
-    style: MapStyleSummarySchema,
-    layers: z.array(MapLayerSummarySchema).max(100),
-    sources: z.array(MapStyleSourceSummarySchema).max(100),
-  }),
-  z.strictObject({
-    kind: z.literal('layer'),
-    layer: MapLayerSummarySchema.extend({
-      filter: MapJsonValueSchema.optional(),
-      paint: z.record(z.string(), MapJsonValueSchema).optional(),
-      layout: z.record(z.string(), MapJsonValueSchema).optional(),
-    }),
-    semanticGroupIds: uniqueIdentifiers,
-  }),
-  z.strictObject({
-    kind: z.literal('source'),
-    source: MapStyleSourceSummarySchema.extend({
-      generateId: z.boolean().optional(),
-      promoteId: z.union([z.string(), z.record(z.string(), z.string())]).nullable().optional(),
-    }),
-  }),
-  z.strictObject({
-    kind: z.literal('source-layer'),
-    sourceId: MapIdentifierSchema,
-    sourceLayer: MapIdentifierSchema,
-    layerIds: uniqueIdentifiers,
-  }),
-]);
-export type MapInspectView = z.infer<typeof MapInspectViewSchema>;
-
-export const MapInspectOutputSchema = z.strictObject({
-  target: MapInspectTargetSchema,
-  view: MapInspectViewSchema,
-  truncated: z.boolean(),
-}).refine(
-  (value) => {
-    switch (value.target.kind) {
-      case 'root':
-        return value.view.kind === 'root';
-      case 'layer':
-        return value.view.kind === 'layer' && value.view.layer.id === value.target.layerId;
-      case 'source':
-        return value.view.kind === 'source' && value.view.source.id === value.target.sourceId;
-      case 'source-layer':
-        return value.view.kind === 'source-layer'
-          && value.view.sourceId === value.target.sourceId
-          && value.view.sourceLayer === value.target.sourceLayer;
-    }
-  },
-  { message: 'Inspect view must match its target' },
-).refine(
-  (value) => mapJsonByteLength(value) <= MAP_INSPECT_MAX_BYTES,
-  { message: `Inspect payload must not exceed ${MAP_INSPECT_MAX_BYTES} bytes` },
-);
-export type MapInspectOutput = z.infer<typeof MapInspectOutputSchema>;
-
-export const MapSearchLayersOutputSchema = z.strictObject({
-  layers: z.array(MapLayerSummarySchema).max(100),
-  returned: z.int().min(0).max(100),
-  truncated: z.boolean(),
-}).refine((output) => output.returned === output.layers.length, {
-  message: 'Returned count must match layers',
-});
-export type MapSearchLayersOutput = z.infer<typeof MapSearchLayersOutputSchema>;
 
 export const MapToolWarningSchema = z.strictObject({
   code: z.string().trim().min(1).max(128),

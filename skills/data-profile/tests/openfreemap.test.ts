@@ -88,6 +88,6 @@ describe('OpenFreeMap bright fixture', () => {
       new URL('../fixtures/openfreemap-bright/DATA_PROFILE.json', import.meta.url),
       'utf8',
     );
-    expect(stableJson(profile)).toBe(expected);
+    expect(stableJson(profile)).toBe(expected.replace(/\r\n/g, '\n'));
   });
 });

@@ -1,7 +1,7 @@
 import { resolveApiProfile } from './api-profile-service.js';
 import { API_AGENT_ID } from '../../runtimes/defs/api.js';
 import { createApiMapAgentAdapter } from '../agents/ai-sdk.js';
-import { spawn } from 'node:child_process';
+import { spawnAgentProcess } from '../../runtimes/spawn.js';
 import { join } from 'node:path';
 
 import type {
@@ -84,7 +84,7 @@ export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}
   ];
   const resolved = (agent: RuntimeAgentDef) => resolveAgentLaunch(agent, configuredEnv(agent.id));
   const nativeToolRegistry = options.nativeToolRegistry;
-  const spawnAgent = options.spawn ?? ((command, args, spawnOptions) => spawn(command, args, spawnOptions));
+  const spawnAgent = options.spawn ?? spawnAgentProcess;
   const nativeMapToolSupport = new Map<string, boolean>();
   const nativeMapToolProbes = new Map<string, Promise<boolean>>();
   const sessionBroker = options.sessionBroker ?? createMemoryMapAgentSessionBroker();

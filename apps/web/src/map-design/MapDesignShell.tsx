@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { BookOpen, House, Map, PanelLeftClose, PanelLeftOpen, Search, Settings, Languages, ArrowLeft } from 'lucide-react';
+import { BookOpen, House, Map, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Search, Settings, Languages, ArrowLeft } from 'lucide-react';
 import {
   Button, InputGroup, InputGroupInput, InputGroupAddon, Sidebar, SidebarContent, SidebarGroup, SidebarHeader,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, useSidebar,
 } from '@mapseekai/components';
-import { useI18n } from '../i18n';
+import { getLocaleDirection, useI18n } from '../i18n';
 import { navigationCopy } from '../i18n/locales/navigation';
 import { sidebarCopy } from '../i18n/locales/sidebar';
 import { settingsNavigationCopy } from '../i18n/locales/settings-navigation';
@@ -28,8 +28,11 @@ function ShellNavigation() {
   const searchRef = useRef<HTMLInputElement>(null);
   const copy = navigationCopy[locale];
   const labels = sidebarCopy[locale];
+  const direction = getLocaleDirection(locale);
+  const CollapseIcon = direction === 'rtl' ? PanelRightClose : PanelLeftClose;
+  const ExpandIcon = direction === 'rtl' ? PanelRightOpen : PanelLeftOpen;
   return <>
-    <Sidebar variant="floating" collapsible="icon" mobileTitle={labels.navigation} mobileDescription={labels.open}
+    <Sidebar side={direction === 'rtl' ? 'right' : 'left'} dir={direction} variant="floating" collapsible="icon" mobileTitle={labels.navigation} mobileDescription={labels.open}
       style={{ top: 'var(--app-titlebar-height, 0px)', height: 'calc(100dvh - var(--app-titlebar-height, 0px))' }}
       className="top-(--app-titlebar-height) h-[calc(100svh-var(--app-titlebar-height))]">
       <SidebarHeader className="flex-row items-center group-data-[collapsible=icon]:flex-col" style={{ paddingBottom: 4 }}>
@@ -45,15 +48,15 @@ function ShellNavigation() {
         </SidebarMenuButton>
         <TitlebarControl><Button variant="ghost" size="icon-sm" aria-label={open ? labels.collapse : labels.expand}
           aria-expanded={isMobile ? true : open} onClick={toggleSidebar}>
-          {open ? <PanelLeftClose aria-hidden="true" /> : <PanelLeftOpen aria-hidden="true" />}
+          {open ? <CollapseIcon aria-hidden="true" /> : <ExpandIcon aria-hidden="true" />}
         </Button></TitlebarControl>
       </SidebarHeader>
       <nav aria-label={labels.navigation} className="flex min-h-0 flex-1 flex-col">
       <SidebarContent>
-        <SidebarGroup className="pt-0">
-            <SidebarMenu className="gap-1">
+        <SidebarGroup>
+            <SidebarMenu>
               {route.kind === 'settings' ? <>
-                <SidebarMenuItem><SidebarMenuButton tooltip={copy.backHome} aria-label={copy.backHome} onClick={() => { navigate({ kind: 'home' }); setOpenMobile(false); setQuery(''); }}><ArrowLeft aria-hidden="true" /><span>{copy.backHome}</span></SidebarMenuButton></SidebarMenuItem>
+                <SidebarMenuItem><SidebarMenuButton tooltip={copy.backHome} aria-label={copy.backHome} onClick={() => { navigate({ kind: 'home' }); setOpenMobile(false); setQuery(''); }}><ArrowLeft aria-hidden="true" className="rtl:rotate-180" /><span>{copy.backHome}</span></SidebarMenuButton></SidebarMenuItem>
                 {(['models', 'appearance'] as const).filter(section => settingsNavigationCopy[locale][section].toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).map(section => <SidebarMenuItem key={section}>
                   <SidebarMenuButton tooltip={settingsNavigationCopy[locale][section]} aria-label={settingsNavigationCopy[locale][section]} isActive={(route.section ?? 'models') === section} aria-current={(route.section ?? 'models') === section ? 'page' : undefined} onClick={() => { navigate({ kind: 'settings', section }); setOpenMobile(false); setQuery(''); }}>
                     {section === 'models' ? <Settings aria-hidden="true" /> : <Languages aria-hidden="true" />}<span>{settingsNavigationCopy[locale][section]}</span>
@@ -73,9 +76,9 @@ function ShellNavigation() {
 
       </nav>
     </Sidebar>
-    <div className="fixed left-3 top-3 md:hidden">
+    <div className="fixed start-3 top-3 md:hidden">
       <Button variant="outline" size="icon" aria-label={labels.open} onClick={toggleSidebar}>
-        <PanelLeftOpen aria-hidden="true" />
+        <ExpandIcon aria-hidden="true" />
       </Button>
     </div>
   </>;
@@ -110,7 +113,7 @@ export function MapDesignShell({ children }: { children: ReactNode }) {
       <div ref={setTitle} className="min-w-0" />
     </div>
     {route.kind === 'project' || route.kind === 'cartography-editor' ? <main className="flex min-h-0 flex-col overflow-hidden" style={{ height: 'calc(100dvh - var(--app-titlebar-height))' }}>{children}</main>
-    : <SidebarProvider open={open} onOpenChange={(value) => {
+    : <SidebarProvider dir={getLocaleDirection(locale)} open={open} onOpenChange={(value) => {
     setOpen(value);
     try { localStorage.setItem(sidebarPreferenceKey, String(value)); } catch { /* Storage may be unavailable. */ }
   }} className="min-h-[calc(100svh-var(--app-titlebar-height))]"

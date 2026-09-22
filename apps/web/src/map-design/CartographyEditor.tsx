@@ -71,7 +71,7 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
   const agents = useLocalAgents();
   const layout = useMapDesignLayoutPreferences();
   const chatPanel = useRef<PanelImperativeHandle | null>(null);
-  const [mobileView, setMobileView] = useState<MapDesignMobileView>('map');
+  const [mobileView, setMobileView] = useState<MapDesignMobileView>(() => initial.initialAnalysisStarted && !initial.sourceDocumentId ? 'chat' : 'map');
   const sending = useRef(false);
   const alive = useRef(true);
   const log = useRef<HTMLDivElement>(null);

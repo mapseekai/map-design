@@ -61,18 +61,38 @@ export class CartographyEditService {
   async create(input: unknown): Promise<CartographyEditSession> {
     const parsed = CartographyEditCreateSchema.safeParse(input);
     if (!parsed.success) throw invalidInput();
-    const report = lintCartography(parsed.data.source);
+    const request = parsed.data;
+    let creationRuntime: MapDesignRuntimeSelectionInput | undefined;
+    if ('requirements' in request) {
+      if (!this.deps.store || !this.deps.agents) throw invalidInput();
+      if (this.jobs.size >= 2) throw busy();
+      const validated = this.deps.agents.runtimeCatalog.validate({ agentId: request.runtime.agentId,
+        ...(request.runtime.model ? { model: request.runtime.model } : {}),
+        ...(request.runtime.modelOrigin ? { modelOrigin: request.runtime.modelOrigin } : {}),
+        ...(request.runtime.reasoning ? { reasoning: request.runtime.reasoning } : {}),
+        ...(request.runtime.serviceTier ? { serviceTier: request.runtime.serviceTier } : {}),
+      });
+      const resolved = this.deps.agents.runtimeCatalog.resolveChoice(validated.agentId, validated);
+      creationRuntime = { agentId: resolved.agentId, model: resolved.model, modelOrigin: resolved.modelOrigin,
+        ...(resolved.reasoning ? { reasoning: resolved.reasoning } : {}), ...(resolved.serviceTier ? { serviceTier: resolved.serviceTier } : {}) };
+    }
+    const source = 'source' in request ? request.source : `---\nversion: "0.4.0"\nname: ${JSON.stringify(request.name)}\n---\n\n## Overview\n`;
+    const report = lintCartography(source);
     if (!report.valid || !report.cartography) throw invalidInput();
     const now = new Date().toISOString();
     const session: StoredSession = {
-      id: randomUUID(), name: report.cartography.name, source: parsed.data.source,
-      ...(parsed.data.sourceDocumentId ? { sourceDocumentId: parsed.data.sourceDocumentId } : {}),
-      description: parsed.data.description, reportMarkdown: parsed.data.reportMarkdown,
-      initialPrompt: parsed.data.initialPrompt, runtime: parsed.data.runtime,
+      id: randomUUID(), name: report.cartography.name, source,
+      ...('sourceDocumentId' in request && request.sourceDocumentId ? { sourceDocumentId: request.sourceDocumentId } : {}),
+      description: request.description, reportMarkdown: 'reportMarkdown' in request ? request.reportMarkdown : '',
+      initialPrompt: 'initialPrompt' in request ? request.initialPrompt : request.requirements,
+      runtime: typeof request.runtime === 'string' ? request.runtime : request.runtime.agentId === 'codex' ? 'codex' : 'api',
       revision: 0, status: 'idle', error: null, savedId: null, savedRevision: null,
       createdAt: now, updatedAt: now, messages: [], receipts: {}, initialAnalysisStarted: false,
     };
-    await this.write(session);
+    await this.write(session, undefined, false, creationRuntime);
+    if (creationRuntime) return this.turn(session.id, {
+      requestId: randomUUID(), expectedRevision: 0, conversationId: session.id, runtimeRevision: 0, prompt: session.initialPrompt,
+    });
     return this.publicSession(session);
   }
 
@@ -234,7 +254,7 @@ export class CartographyEditService {
       throw new MapDraftError('INTERNAL', 'Unable to read the specification editing session.');
     }
   }
-  private async write(session: StoredSession, change?: MessageChange, migrating = false): Promise<void> {
+  private async write(session: StoredSession, change?: MessageChange, migrating = false, creationRuntime?: MapDesignRuntimeSelectionInput): Promise<void> {
     const stored = storedSchema.parse(session);
     const store = this.deps.store;
     if (store) {
@@ -242,7 +262,7 @@ export class CartographyEditService {
         if (migrating && db.prepare('SELECT 1 FROM cartography_edit_sessions WHERE id = ?').get(session.id)) return;
         if (db.prepare('SELECT 1 FROM map_design_projects WHERE project_id = ?').get(session.id)) throw invalidInput();
         if (!store.getProject(session.id)) {
-          let runtime: MapDesignRuntimeSelectionInput = { agentId: session.runtime };
+          let runtime: MapDesignRuntimeSelectionInput = creationRuntime ?? { agentId: session.runtime };
           try { runtime = this.deps.agents?.runtimeCatalog.normalizeSaved(runtime).runtime ?? runtime; } catch { /* Configure a runtime in the shared selector. */ }
           db.prepare('INSERT INTO projects (id, title, runtime_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(session.id, session.name, JSON.stringify(runtime), session.createdAt, session.updatedAt);
           store.createConversation(session.id, session.id, session.name);

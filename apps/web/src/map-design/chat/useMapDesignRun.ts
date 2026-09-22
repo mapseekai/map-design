@@ -1,9 +1,5 @@
 import {
-  MapDesignRunEventSchema,
-  type MapDesignMessage,
-  type MapDesignRunEvent,
   type MapDesignRunResponse,
-  type MapDesignRunStatus,
   type StartMapDesignRunRequest,
   type MapScreenshot,
   type MapTextAttachment,
@@ -12,101 +8,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ApiClientError, cancelMapDesignRun, getMapDesignConversation, getMapDesignRun, startMapDesignRun } from '../../api/client';
 import { useI18n } from '../../i18n';
-import { runFailureCopy } from '../../i18n/locales/run-failures';
 import { imageInputErrorCopy } from '../../i18n/locales/screenshots';
+import { applyRunEventBatch, initialState, localizedRunError, presentedRunError, streamRunEvents, type RunState, type UseMapDesignRunOptions } from './map-run-events';
 
-export interface MapDesignRuntime {
-  revision: number;
-  agentId: string;
-  label?: string;
-  model?: string;
-  reasoning?: string;
-  serviceTier?: string;
-  updatedAt?: string;
-}
-
-interface UseMapDesignRunOptions {
-  projectId: string;
-  conversationId: string;
-  runtime: MapDesignRuntime | null;
-  readOnly?: boolean;
-  viewedRevision?: number;
-  readOnlyReason?: string | null;
-  onStartAccepted?(): void | Promise<void>;
-}
-
-interface RunState {
-  status: MapDesignRunStatus | 'idle';
-  messages: MapDesignMessage[];
-  error: string | null;
-  runId: string | null;
-}
-
-const initialState: RunState = { status: 'idle', messages: [], error: null, runId: null };
-
-function eventFromJson(value: unknown): MapDesignRunEvent | null {
-  const parsed = MapDesignRunEventSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
-}
-
-function applyRunEventBatch(
-  current: RunState,
-  events: readonly MapDesignRunEvent[],
-  options: {
-    conversationId: string;
-    fallbackRun: MapDesignRunResponse;
-    startedAt: number;
-    toolLoopDetectedMessage: string;
-    imageErrors: { unsupported: string; tooLarge: string };
-  },
-): RunState {
-  let messages = current.messages;
-  let status = current.status;
-  let error = current.error;
-  for (const event of events) {
-    if (event.type === 'event_snapshot') {
-      const known = messages.some((message) => message.id === event.messageId);
-      messages = known
-        ? messages.map((message) => message.id === event.messageId
-            ? { ...message, events: [...event.events] }
-            : message)
-        : [...messages, {
-            id: event.messageId,
-            conversationId: options.conversationId,
-            role: 'assistant' as const,
-            content: '',
-            events: [...event.events],
-            runStatus: current.status === 'idle' ? options.fallbackRun.status : current.status,
-            startedAt: options.startedAt,
-            endedAt: 0,
-          }];
-    } else if (event.type === 'message_completed') {
-      messages = messages.some((message) => message.id === event.message.id)
-        ? messages.map((message) => message.id === event.message.id ? event.message : message)
-        : [...messages, event.message];
-    } else if (event.type === 'error') {
-      status = 'failed';
-      error = localizedRunError(event.error, options.toolLoopDetectedMessage, options.imageErrors);
-    } else if (event.type === 'run_finished') {
-      status = event.run.status;
-      error = event.run.error
-        ? localizedRunError(event.run.error, options.toolLoopDetectedMessage, options.imageErrors)
-        : error;
-    }
-  }
-  return { ...current, messages, status, error };
-}
-
-function localizedRunError(
-  error: { code: string; message: string } | null | undefined,
-  toolLoopDetectedMessage: string,
-  imageErrors: { unsupported: string; tooLarge: string },
-): string | null {
-  if (!error) return null;
-  if (error.code === 'IMAGE_INPUT_UNSUPPORTED') return imageErrors.unsupported;
-  if (error.code === 'IMAGE_INPUT_TOO_LARGE') return imageErrors.tooLarge;
-  return error.code === 'TOOL_LOOP_DETECTED' ? toolLoopDetectedMessage : error.message;
-}
+export type { MapDesignRuntime } from './map-run-events';
 
 export function useMapDesignRun({ projectId, conversationId, runtime, readOnly = false, viewedRevision, readOnlyReason = null, onStartAccepted }: UseMapDesignRunOptions) {
   const { t, locale } = useI18n();
@@ -114,6 +19,8 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
   const toolLoopDetectedMessage = t('mapDesign.run.toolLoopDetected');
   const defaultReadOnlyReason = t('mapDesign.agent.mapEditingUnavailable');
   const [state, setState] = useState<RunState>(initialState);
+  const [ready, setReady] = useState(true);
+  const cancelingRef = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
   const activeRunRef = useRef<string | null>(null);
   const terminalRef = useRef(false);
@@ -155,6 +62,8 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
   }, [conversationId, projectId, toolLoopDetectedMessage, imageErrors]);
 
   const cancelAcceptedRun = useCallback(async (runId: string, controller: AbortController | null) => {
+    if (cancelingRef.current) return;
+    cancelingRef.current = true;
     controller?.abort();
     try {
       const canceled = await cancelMapDesignRun(runId);
@@ -175,8 +84,12 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
         setState((current) => ({ ...current, error: error instanceof Error ? error.message : 'The map run could not be canceled.' }));
       }
     } finally {
-      if (activeRunRef.current === runId) activeRunRef.current = null;
-      if (controllerRef.current === controller) controllerRef.current = null;
+      cancelingRef.current = false;
+      if (terminalRef.current && activeRunRef.current === runId && controllerRef.current === controller) {
+        activeRunRef.current = null;
+        controllerRef.current = null;
+        setReady(true);
+      }
     }
   }, [conversationId, projectId, toolLoopDetectedMessage, imageErrors]);
 
@@ -190,6 +103,7 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     if (!text || !selectedRuntime || controllerRef.current || activeRunRef.current) return false;
     const controller = new AbortController();
     controllerRef.current = controller;
+    setReady(false);
     cancelRequestedRef.current = false;
     terminalRef.current = false;
     recoveryRef.current = false;
@@ -224,12 +138,18 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
             : error instanceof Error ? error.message : 'The map run failed.',
         }));
       }
-      if (controllerRef.current === controller) controllerRef.current = null;
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        setReady(true);
+      }
       settleQueuedCancellation();
       return false;
     }
     if (controller.signal.aborted) {
-      if (controllerRef.current === controller) controllerRef.current = null;
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        setReady(true);
+      }
       settleQueuedCancellation();
       return false;
     }
@@ -272,35 +192,14 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     }
     void (async () => {
       try {
-        const response = await fetch(`/api/runs/${encodeURIComponent(run.runId)}/events`, { signal: controller.signal, headers: { accept: 'text/event-stream' } });
-        if (!response.ok || !response.body) throw new Error('The map run stream could not be opened.');
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        while (!controller.signal.aborted) {
-          const next = await reader.read();
-          if (next.done) break;
-          buffer += decoder.decode(next.value, { stream: true });
-          const frames = buffer.split('\n\n');
-          buffer = frames.pop() ?? '';
-          const accepted: MapDesignRunEvent[] = [];
-          for (const frame of frames) {
-            const line = frame.split('\n').find((candidate) => candidate.startsWith('data: '));
-            if (!line) continue;
-            try {
-              const event = eventFromJson(JSON.parse(line.slice(6)));
-              if (!event) continue;
-              const eventRunId = event.type === 'run_finished' ? event.run.runId : event.runId;
-              if (eventRunId !== run.runId) continue;
-              if (event.type === 'run_finished') {
-                if (terminalRef.current) continue;
-                terminalRef.current = true;
-              }
-              accepted.push(event);
-            } catch {
-              // Invalid or partial frames are ignored; stream recovery remains authoritative.
-            }
-          }
+        for await (const batch of streamRunEvents(run.runId, controller.signal)) {
+          if (controller.signal.aborted || controllerRef.current !== controller) break;
+          const accepted = batch.filter((event) => {
+            if (event.type !== 'run_finished') return true;
+            if (terminalRef.current) return false;
+            terminalRef.current = true;
+            return true;
+          });
           if (accepted.length > 0) {
             setState((current) => applyRunEventBatch(current, accepted, {
               conversationId,
@@ -317,9 +216,10 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
           else setState((current) => ({ ...current, status: 'failed', error: error instanceof Error ? error.message : 'The map run failed.' }));
         }
       } finally {
-        if (terminalRef.current || controller.signal.aborted) {
-          if (controllerRef.current === controller) controllerRef.current = null;
+        if (!cancelingRef.current && terminalRef.current && controllerRef.current === controller && activeRunRef.current === run.runId) {
+          controllerRef.current = null;
           activeRunRef.current = null;
+          setReady(true);
         }
       }
     })();
@@ -343,14 +243,6 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     settleQueuedCancellation();
   }, [settleQueuedCancellation]);
 
-  // Translate known generic notices at the presentation boundary, including
-  // recovered runs, without replacing specialized or unknown server details.
-  const copy = runFailureCopy[locale];
-  const error = state.error && [
-    'The Codex app-server connection ended unexpectedly.', 'The map run connection was lost.',
-    'The map run stream could not be opened.',
-  ].includes(state.error) ? copy.connection
-    : state.error && ['The Codex turn failed before completion.', 'The map run failed.'].includes(state.error)
-      ? copy.failed : state.error;
-  return { ...state, error, send, cancel, sending: state.status === 'queued' || state.status === 'running' || state.status === 'awaiting_input' };
+  const error = presentedRunError(state.error, locale);
+  return { ...state, error, send, cancel, ready, sending: state.status === 'queued' || state.status === 'running' || state.status === 'awaiting_input' };
 }

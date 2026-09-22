@@ -23,14 +23,17 @@ export function createDaemonSidecarEnv({
 
 export function createWebSidecarEnv({
   daemonPort,
+  daemonUrl,
   webPort,
 }: {
   daemonPort: number | string;
+  readonly daemonUrl: string;
   webPort: number | null;
 }): NodeJS.ProcessEnv {
   const port = String(webPort ?? 0);
   return {
     MAP_DESIGN_PORT: String(daemonPort),
+    MAP_DESIGN_DAEMON_URL: daemonUrl,
     MAP_DESIGN_WEB_PORT: port,
     PORT: port,
   };

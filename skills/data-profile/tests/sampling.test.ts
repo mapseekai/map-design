@@ -303,26 +303,34 @@ describe('sampleTiles', () => {
     expect(result.summary.stopReason).toBe('structure-stable');
   });
 
-  it('samples explicit local file templates without network access', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'cartography-sampling-'));
-    try {
-      await writeFile(join(directory, '0-0-0.pbf'), pointTile('local'));
+  it.each(['native', 'forward-slash'] as const)(
+    'samples explicit local file templates with %s separators without network access',
+    async (separators) => {
+      const directory = await mkdtemp(join(tmpdir(), 'cartography-sampling-'));
+      try {
+        await writeFile(join(directory, '0-0-0.pbf'), pointTile('local'));
 
-      const result = await sampleTiles(
-        options({
-          template: join(directory, '{z}-{x}-{y}.pbf'),
-          bounds: [0, 0, 0, 0],
-          zooms: [0],
-          retries: 0,
-        }),
-      );
+        const result = await sampleTiles(
+          options({
+            template: separators === 'native'
+              ? join(directory, '{z}-{x}-{y}.pbf')
+              : join(directory, '{z}-{x}-{y}.pbf').replaceAll('\\', '/'),
+            bounds: [0, 0, 0, 0],
+            zooms: [0],
+            retries: 0,
+          }),
+        );
 
-      expect(result.summary).toMatchObject({requested: 1, decoded: 1, failed: 0});
-      expect(required(result.observations[0]?.observation.layers.local).featureCount).toBe(1);
-    } finally {
-      await rm(directory, {recursive: true});
-    }
-  });
+        expect(result.summary).toMatchObject({requested: 1, decoded: 1, failed: 0});
+        expect(required(result.observations[0]?.observation.layers.local).featureCount).toBe(1);
+        expect(transportMocks.lookup).not.toHaveBeenCalled();
+        expect(transportMocks.httpRequest).not.toHaveBeenCalled();
+        expect(transportMocks.httpsRequest).not.toHaveBeenCalled();
+      } finally {
+        await rm(directory, {recursive: true});
+      }
+    },
+  );
 
   it('returns unsupported protocols as unresolved without retaining URL credentials', async () => {
     const result = await sampleTiles(

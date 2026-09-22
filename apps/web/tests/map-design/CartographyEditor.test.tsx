@@ -38,6 +38,12 @@ beforeEach(() => {
   vi.mocked(client.sendCartographyEdit).mockResolvedValue(running);
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it('selects the conversation tab for a newly started AI creation', async () => {
+  vi.mocked(client.getCartographyEdit).mockResolvedValue({ ...running, initialAnalysisStarted: true });
+  render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
+  expect(await screen.findByRole('tab', { name: 'Chat' })).toHaveAttribute('aria-selected', 'true');
+  expect(client.sendCartographyEdit).not.toHaveBeenCalled();
+});
 it('prefills the initial prompt and waits for the author to edit and send it', async () => {
   const view = render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
   expect(await screen.findByRole('heading', { name: 'Overview' })).toBeInTheDocument();

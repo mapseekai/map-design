@@ -151,7 +151,14 @@ it('shows style conversion reports and saves only when the draft is accepted', a
   fireEvent.click(screen.getByRole('button', { name: 'Save to library' }));
   expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
 });
-it('generates a fresh AI draft without creating a map project', async () => {
+it('opens the AI editing conversation immediately with the selected model and design brief', async () => {
+  const sessionId = '12345678-1234-4234-8234-123456789abc';
+  vi.mocked(createCartographyEdit).mockResolvedValue({
+    id: sessionId, name: document.name, source, description: 'Warm paper', runtime: 'api',
+    initialPrompt: 'Calm walking map', revision: 0, status: 'running', error: null,
+    savedId: null, savedRevision: null, createdAt: '2026-09-22T00:00:00.000Z',
+    updatedAt: '2026-09-22T00:00:00.000Z', messages: [], initialAnalysisStarted: true,
+  });
   render(<I18nProvider><CartographyManager /></I18nProvider>);
   fireEvent.click(screen.getByRole('button', { name: 'Add specification' }));
   fireEvent.click(screen.getByRole('tab', { name: 'Create with AI' }));
@@ -159,12 +166,30 @@ it('generates a fresh AI draft without creating a map project', async () => {
   await selectValue(screen.getByRole('combobox', { name: 'Saved API models' }), 'api-profile:second');
   fireEvent.change(screen.getByLabelText('Specification name'), { target: { value: 'Quiet Atlas' } });
   fireEvent.change(screen.getByLabelText('Design brief'), { target: { value: 'Calm walking map' } });
-  await act(async () => { fireEvent.submit(screen.getByLabelText('Design brief').closest('form')!); });
-  expect(await screen.findByLabelText('CARTOGRAPHY.md')).toHaveValue(source);
-  expect(client.generateCartography).toHaveBeenCalledWith(expect.objectContaining({
+  fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Warm paper' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Generate draft' }));
+  await waitFor(() => expect(window.location.pathname).toBe(`/cartographies/edit/${sessionId}`));
+  expect(createCartographyEdit).toHaveBeenCalledWith({
+    name: 'Quiet Atlas', requirements: 'Calm walking map', description: 'Warm paper',
     runtime: { agentId: 'api', model: 'api-profile:second' },
-  }), expect.any(AbortSignal));
+  }, expect.any(AbortSignal));
+  expect(client.generateCartography).not.toHaveBeenCalled();
   expect(client.importCartography).not.toHaveBeenCalled();
+});
+
+it('keeps the creation form and brief available when the AI session cannot be started', async () => {
+  vi.mocked(createCartographyEdit).mockRejectedValueOnce(new Error('unavailable'));
+  render(<I18nProvider><CartographyManager /></I18nProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'Add specification' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Create with AI' }));
+  await selectValue(screen.getByRole('combobox', { name: 'Local agent' }), 'api');
+  fireEvent.change(screen.getByLabelText('Specification name'), { target: { value: 'Quiet Atlas' } });
+  fireEvent.change(screen.getByLabelText('Design brief'), { target: { value: 'Calm walking map' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Generate draft' }));
+  expect(await screen.findByRole('alert')).toBeVisible();
+  expect(screen.getByLabelText('Design brief')).toHaveValue('Calm walking map');
+  expect(screen.getByRole('button', { name: 'Generate draft' })).toBeEnabled();
+  expect(window.location.pathname).toBe('/');
 });
 
 

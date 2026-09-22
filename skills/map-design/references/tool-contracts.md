@@ -1,142 +1,85 @@
 # MapDesign tool contracts
 
-Every tool accepts one strict JSON object and returns exactly one envelope:
+The runtime-advertised tool schema is authoritative. This reference describes workflow and examples; it deliberately does not repeat schemas already in model context.
 
-- Success: `{ "ok": true, "data": <tool output>, "meta": { "requestId", "projectId", "runId", "draftRevision"? } }`
-- Domain failure: `{ "ok": false, "error": { "code", "message", "retryable", "details"? }, "meta": { "requestId", "projectId", "runId", "draftRevision"? } }`
+Native tools return decision-oriented model content and a separate aggregate UI summary. HTTP/MCP envelopes contain the full typed output. Authorization, projectId and runId come from the trusted Run grant, never from arguments.
 
-`projectId`, `runId`, and authorization never belong in tool input. They come only from the run grant. Unknown input fields are invalid. The `json-schema` block in each section is the exact schema advertised by the current runtime; use it as the authority when constructing input. The following `json` blocks are executable examples.
+## Efficient edit flow
 
-## `map_get_context`
+Reuse the canonical context injected at Run start. Discover IDs and required properties in one search, batch the edit, render and review the current preview, then commit. Successful writes include validationSummary; a valid current result can be reused instead of calling map_validate again. Refresh context only if unavailable or stale. Read-only tasks do not create drafts or previews.
 
-Returns project lifecycle/source availability, pinned design-system identity, draft and committed revisions, style and semantic summaries, validation/preview status, and cartographic guidance.
+Revision and idempotency checks remain mandatory. Derive each new logical write key from the exact Run, expected revision and batch number. Replays reuse the same logical request and key. Examples below are shapes; replace RUN_ID and revision values.
 
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{},"additionalProperties":false}
-```
+## map_get_context
 
-```json
-{}
-```
+Input: `{}`. Returns lifecycle, source/design identity, current and committed revisions, style/semantic summaries and validation/preview status. The native model result omits verbose cartographic guidance already supplied by the pinned document.
 
-## `map_inspect`
+## map_search_layers
 
-`target` is exactly one root, layer, source, or source-layer selector. The result contains the normalized target view and a `truncated` flag.
+Combine query (substring or up to 20 alternatives), types, sourceId and sourceLayer. limit is 1–200 (default 25). Results stay in style order and are deduplicated.
 
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"target":{"oneOf":[{"type":"object","properties":{"kind":{"type":"string","const":"root"}},"required":["kind"],"additionalProperties":false},{"type":"object","properties":{"kind":{"type":"string","const":"layer"},"layerId":{"type":"string","minLength":1,"maxLength":256}},"required":["kind","layerId"],"additionalProperties":false},{"type":"object","properties":{"kind":{"type":"string","const":"source"},"sourceId":{"type":"string","minLength":1,"maxLength":256}},"required":["kind","sourceId"],"additionalProperties":false},{"type":"object","properties":{"kind":{"type":"string","const":"source-layer"},"sourceId":{"type":"string","minLength":1,"maxLength":256},"sourceLayer":{"type":"string","minLength":1,"maxLength":256}},"required":["kind","sourceId","sourceLayer"],"additionalProperties":false}]}},"required":["target"],"additionalProperties":false}
-```
+Request properties while discovering IDs:
 
 ```json
-{"target":{"kind":"root"}}
+{"query":["road","street"],"types":["line"],"limit":100,"properties":{"paint":["line-color","line-width"]}}
 ```
+
+fields selects complete paint/layout/filter sections; properties selects named paint/layout keys and implies those fields. Without projection, search returns summaries. Follow nextOffset using the same query and projection. Missing requested properties are absent; omittedFields means values could not fit and must be read more narrowly before editing.
+
+## map_inspect
+
+Use discovered IDs, never guessed IDs. Batch 1–200 IDs:
 
 ```json
-{"target":{"kind":"layer","layerId":"road-label"}}
+{"target":{"kind":"layers","layerIds":["road-primary","road-secondary"]},"properties":{"paint":["line-color"]}}
 ```
+
+Single-layer reads default to paint, layout and filter; batches default to paint and layout. fields:[] requests summaries. Missing IDs are reported separately from omitted IDs. Request omitted IDs with fewer fields or a larger budget.
+
+Root/source-layer reads use offset/nextOffset. Root source summaries have sourceOffset/nextSourceOffset. Reuse unchanged results, and re-read only values omitted or compacted out of model history.
+
+Read responses default to 16384 bytes. maxBytes can be 8192–262144. A truncated result always needs its continuation or omission metadata checked; a full 200-layer response is not guaranteed within the default budget.
+
+## map_apply_transaction
+
+1–100 operations after expansion, applied atomically. Carry returned draftRevision into the next write. Group identical properties:
 
 ```json
-{"target":{"kind":"source","sourceId":"composite"}}
+{"expectedRevision":4,"idempotencyKey":"RUN_ID:r4:batch1","transaction":{"operations":[{"op":"setLayersProperties","layerIds":["road-primary","road-secondary"],"paint":{"line-color":"#6688aa"}}]},"intentSummary":"Use one color for the selected roads"}
 ```
+
+setLayersProperties supports the common paint/layout/metadata/minzoom/maxzoom shape; each target counts as one expanded operation. Unique explicit IDs are required. Standard SDK operations remain available for other edits, including addGeoJsonLayer for source-plus-layer creation.
+
+Native results include revision, style hash, bounded changed IDs, warnings and validationSummary, without echoing the full style diff. Check omission counts. A valid validationSummary allows proceeding directly to preview.
+
+## map_validate
 
 ```json
-{"target":{"kind":"source-layer","sourceId":"composite","sourceLayer":"road"}}
+{"expectedRevision":5}
 ```
 
-## `map_search_layers`
+Use for explicit checks, stale/missing validation, or diagnosing blockers. Native results include the summary and up to 20 safe findings with severity, code, scope and available property location. omittedFindings includes findings excluded by the model budget. Repair visible blockers and validate again. Validation never substitutes for visual review.
 
-All filters are optional. `query` may contain at most 256 characters; `types` contains unique supported layer types; `limit` is an integer from 1 through 100 and defaults to 25 when omitted by the wrapper input parser. The advertised JSON schema materializes that default as a required `limit`.
-
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"query":{"type":"string","maxLength":256},"types":{"maxItems":10,"type":"array","items":{"type":"string","enum":["background","fill","line","symbol","raster","circle","fill-extrusion","heatmap","hillshade","color-relief"]}},"sourceId":{"type":"string","minLength":1,"maxLength":256},"sourceLayer":{"type":"string","minLength":1,"maxLength":256},"limit":{"default":25,"type":"integer","minimum":1,"maximum":100}},"required":["limit"],"additionalProperties":false}
-```
+## map_render_preview
 
 ```json
-{"sourceId":"composite","types":["line","symbol"],"limit":25}
+{"expectedRevision":5,"idempotencyKey":"RUN_ID:r5:preview1"}
 ```
 
-Returns matching layers plus `returned` and `truncated` counts.
+Optional viewport uses the runtime schema (center, zoom, bearing, pitch, width, height, pixelRatio). Waits for a revision-bound preview and returns its ID and terminal status. Preview processing validates authoritative current inputs and may reuse an identical validation computation. Re-render after a draft change.
 
-## `map_apply_transaction`
-
-`expectedRevision` is a non-negative safe integer. `idempotencyKey` is 8–128 characters from `A-Z`, `a-z`, `0-9`, `.`, `_`, `:`, and `-`. `transaction` contains 1–100 MapLibre SDK operations and `intentSummary` is a trimmed nonempty string of at most 500 characters. Reuse an idempotency key only for the byte-equivalent logical request. Split larger edits into revision-aware batches: use the returned draft revision as `expectedRevision` for the next batch and give each batch a new idempotency key.
-
-Every example is a shape only. Replace `RUN_ID` with the exact current Run and derive each new logical write key from that Run, the expected revision, and the batch number. Never copy an example key literally.
-
-The runtime-advertised schema is the authority for the SDK transaction union. This reference intentionally does not inline that fast-changing union; inspect the `map_apply_transaction` tool definition supplied by the current runtime before constructing an operation.
+## map_commit_revision
 
 ```json
-{"expectedRevision":0,"idempotencyKey":"RUN_ID:r0:batch1","transaction":{"operations":[{"op":"setLayerProperties","layerId":"background","paint":{"background-color":"#111318"}}]},"intentSummary":"Apply the first dark-theme batch"}
+{"expectedRevision":5,"idempotencyKey":"RUN_ID:r5:commit1","previewId":"preview-1","intentSummary":"Save the reviewed map"}
 ```
 
-Returns the new `draftRevision`, `styleHash`, changed layer/source ids, normalized diff, warnings, and validation summary.
+Commits only valid current preview evidence. Revision, expiry and integrity checks still run even when pure validation computation is cached.
 
-## `map_update_semantics`
+## map_update_semantics
 
-Updates the version-1 semantic document. Each group requires an id, label, role, at least one layer id, and a source-id array.
+Replace the version-1 semantic document with expectedRevision, idempotencyKey, semantics and intentSummary. Groups require id, label, role, layerIds and sourceIds. Keep dataset bindings outside CARTOGRAPHY.md. Successful output includes the new revision and validation summary.
 
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"expectedRevision":{"type":"integer","minimum":0,"maximum":9007199254740991},"idempotencyKey":{"type":"string","minLength":8,"maxLength":128,"pattern":"^[A-Za-z0-9._:-]+$"},"semantics":{"type":"object","properties":{"version":{"type":"number","const":1},"groups":{"maxItems":256,"type":"array","items":{"type":"object","properties":{"id":{"type":"string","minLength":1,"maxLength":128},"label":{"type":"string","minLength":1,"maxLength":128},"role":{"type":"string","minLength":1,"maxLength":128},"layerIds":{"minItems":1,"maxItems":128,"type":"array","items":{"type":"string","minLength":1,"maxLength":256}},"sourceIds":{"maxItems":128,"type":"array","items":{"type":"string","minLength":1,"maxLength":256}}},"required":["id","label","role","layerIds","sourceIds"],"additionalProperties":false}}},"required":["version","groups"],"additionalProperties":false},"intentSummary":{"type":"string","minLength":1,"maxLength":500}},"required":["expectedRevision","idempotencyKey","semantics","intentSummary"],"additionalProperties":false}
-```
+## map_discard_draft
 
-```json
-{"expectedRevision":4,"idempotencyKey":"RUN_ID:r4:semantics1","semantics":{"version":1,"groups":[]},"intentSummary":"Refresh semantic grouping"}
-```
-
-Returns the new `draftRevision`, semantic digest/summary, and validation summary.
-
-## `map_validate`
-
-Validates a non-negative safe draft revision. Do not proceed to commit while validation reports blocking findings.
-
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"expectedRevision":{"type":"integer","minimum":0,"maximum":9007199254740991}},"required":["expectedRevision"],"additionalProperties":false}
-```
-
-```json
-{"expectedRevision":4}
-```
-
-Returns the validated revision/style hash, validation digest, summary, and bounded findings.
-
-## `map_render_preview`
-
-Renders a revision-bound preview. `viewport` is optional; when provided it contains center, zoom, bearing, pitch, width, height, and pixel ratio within the exact bounds below. Render again after any draft change.
-
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"expectedRevision":{"type":"integer","minimum":0,"maximum":9007199254740991},"idempotencyKey":{"type":"string","minLength":8,"maxLength":128,"pattern":"^[A-Za-z0-9._:-]+$"},"viewport":{"type":"object","properties":{"center":{"type":"array","prefixItems":[{"type":"number","minimum":-180,"maximum":180},{"type":"number","minimum":-90,"maximum":90}]},"zoom":{"type":"number","minimum":0,"maximum":24},"bearing":{"type":"number","minimum":-180,"maximum":180},"pitch":{"type":"number","minimum":0,"maximum":85},"width":{"type":"integer","minimum":320,"maximum":2048},"height":{"type":"integer","minimum":240,"maximum":2048},"pixelRatio":{"type":"number","minimum":0.5,"maximum":2}},"required":["center","zoom","bearing","pitch","width","height","pixelRatio"],"additionalProperties":false}},"required":["expectedRevision","idempotencyKey"],"additionalProperties":false}
-```
-
-```json
-{"expectedRevision":4,"idempotencyKey":"RUN_ID:r4:preview1","viewport":{"center":[121.47,31.23],"zoom":12,"bearing":0,"pitch":30,"width":1280,"height":720,"pixelRatio":1}}
-```
-
-Returns preview status/id, draft revision/style hash, optional PNG reference, report reference, and validation summary.
-
-## `map_commit_revision`
-
-Commits only the preview for the current draft revision.
-
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"expectedRevision":{"type":"integer","minimum":0,"maximum":9007199254740991},"idempotencyKey":{"type":"string","minLength":8,"maxLength":128,"pattern":"^[A-Za-z0-9._:-]+$"},"previewId":{"type":"string","minLength":1,"maxLength":256},"intentSummary":{"type":"string","minLength":1,"maxLength":500}},"required":["expectedRevision","idempotencyKey","previewId","intentSummary"],"additionalProperties":false}
-```
-
-```json
-{"expectedRevision":4,"idempotencyKey":"RUN_ID:r4:commit1","previewId":"preview-1","intentSummary":"Commit the validated map"}
-```
-
-Returns committed revision, draft revision, style hash, attestation digest, and commit timestamp.
-
-## `map_discard_draft`
-
-Discards the current draft revision and restores committed state.
-
-```json-schema
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"expectedRevision":{"type":"integer","minimum":0,"maximum":9007199254740991},"idempotencyKey":{"type":"string","minLength":8,"maxLength":128,"pattern":"^[A-Za-z0-9._:-]+$"},"intentSummary":{"type":"string","minLength":1,"maxLength":500}},"required":["expectedRevision","idempotencyKey","intentSummary"],"additionalProperties":false}
-```
-
-```json
-{"expectedRevision":4,"idempotencyKey":"RUN_ID:r4:discard1","intentSummary":"Discard the experimental changes"}
-```
-
-Returns the replacement draft revision, restored committed revision, style/semantic digests, and validation summary.
+Supply expectedRevision, idempotencyKey and intentSummary only when abandoning the draft is the requested outcome. Returns restored revision and validation status.

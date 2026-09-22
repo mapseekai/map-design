@@ -529,7 +529,7 @@ describe('focused map chat rendering', () => {
     await waitFor(() => expect(screen.getAllByRole('textbox', { name: 'Message map agent', hidden: true })).toHaveLength(1));
   });
 
-  it('preserves pruned conversation drafts exactly and clears only an accepted send', async () => {
+  it('preserves pruned conversation drafts and retains rejected sends in the editable queue', async () => {
     const conversation = (id: string) => ({
       id, projectId: 'map-1', createdAt: '2026-08-28T00:00:00.000Z', updatedAt: '2026-08-28T00:00:00.000Z', messages: [],
     });
@@ -570,8 +570,13 @@ describe('focused map chat rendering', () => {
     expect(restoredB).toHaveValue('Rejected B draft');
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     await screen.findByRole('alert');
-    expect(restoredB).toHaveValue('Rejected B draft');
-    expect(restoredB).toHaveFocus();
+    expect(restoredB).toHaveValue('');
+    const pending = screen.getByRole('region', { name: 'Queued messages' });
+    expect(pending).toHaveTextContent('Rejected B draft');
+    expect(within(pending).getByRole('button', { name: 'Continue queue' })).toBeEnabled();
+    fireEvent.click(within(pending).getByRole('button', { name: 'Edit queued message' }));
+    expect(within(pending).getByRole('textbox')).toHaveValue('Rejected B draft');
+    expect(within(pending).getByRole('textbox')).toHaveFocus();
   });
 
   it('bounds pruned drafts by evicting the least recently used conversation', async () => {
