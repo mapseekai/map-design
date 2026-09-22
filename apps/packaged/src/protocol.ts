@@ -1,4 +1,4 @@
-import { net, protocol } from "electron";
+import { protocol } from "electron";
 
 const MAP_DESIGN_SCHEME = "map-design";
 const MAP_DESIGN_ENTRY_URL = `${MAP_DESIGN_SCHEME}://app/`;
@@ -66,5 +66,6 @@ export async function handleMapDesignRequest(request: Request, webUrl: MapDesign
 export function packagedEntryUrl(): string { return MAP_DESIGN_ENTRY_URL; }
 
 export function registerMapDesignProtocol(resolveWebUrl: () => MapDesignProtocolTarget): void {
-  protocol.handle(MAP_DESIGN_SCHEME, async (request) => await handleMapDesignRequest(request, resolveWebUrl(), async (input, init) => await net.fetch(input instanceof URL ? input.toString() : input, init)));
+  // Use Node's HTTP stack: net.fetch rejects the custom-scheme Origin on module and font requests.
+  protocol.handle(MAP_DESIGN_SCHEME, async (request) => await handleMapDesignRequest(request, resolveWebUrl()));
 }
