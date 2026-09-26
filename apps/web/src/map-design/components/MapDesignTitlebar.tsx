@@ -1,6 +1,7 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Folder } from 'lucide-react';
+import { useWorkspaceTabTitle } from '../WorkspaceTabs';
 
 export const MapDesignTitlebarContext = createContext<{ controls: HTMLElement | null; title: HTMLElement | null } | null>(null);
 
@@ -11,6 +12,8 @@ export function TitlebarControl({ children }: { children: ReactNode }) {
 
 export function TitlebarProject({ title }: { title: string }) {
   const host = useContext(MapDesignTitlebarContext)?.title;
+  const tabbed = useWorkspaceTabTitle(title);
+  if (tabbed) return null;
   return host ? createPortal(<div className="flex h-8 max-w-64 items-center gap-2 rounded-xl border border-border/60 bg-background px-3 text-sm font-medium shadow-sm" title={title}>
     <Folder className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" /><span className="truncate">{title}</span>
   </div>, host) : null;

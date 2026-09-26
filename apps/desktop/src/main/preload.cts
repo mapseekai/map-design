@@ -10,6 +10,12 @@ import type {
 const MAP_DESIGN_HOST_GLOBAL: typeof import('@mapseekai/contracts').MAP_DESIGN_HOST_GLOBAL = '__mapDesign__';
 const MAP_DESIGN_HOST_VERSION: typeof import('@mapseekai/contracts').MAP_DESIGN_HOST_VERSION = 1;
 
+if (process.platform === 'darwin') {
+  ipcRenderer.on('map-design:window:fullscreen', (_event: Electron.IpcRendererEvent, fullscreen: unknown) => {
+    if (typeof fullscreen !== 'boolean') return;
+    document.documentElement?.style.setProperty('--app-titlebar-inset-left', fullscreen ? '12px' : '88px');
+  });
+}
 
 function actionFailure(): MapDesignHostActionResult {
   return { ok: false, message: 'Unable to complete the desktop action.' };

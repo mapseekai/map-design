@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     getPath: vi.fn(() => "/tmp"),
     getPreferredSystemLanguages: vi.fn(() => ["en"]),
     getVersion: vi.fn(() => "1.2.3"),
+    isPackaged: false,
     isReady: vi.fn(() => false),
     on: vi.fn(),
     quit: vi.fn(),
@@ -120,7 +121,8 @@ describe("desktop shutdown", () => {
     mocks.requestJsonIpc.mockResolvedValue({ accepted: true });
   });
 
-  test("allows the cleanup-triggered final quit through before-quit", async () => {
+  test.each([false, true])("allows startup and cleanup-triggered quit (packaged=%s)", async (isPackaged) => {
+    mocks.app.isPackaged = isPackaged;
     const { runDesktopMain } = await import("../../src/main/index.js");
     const desktop = await runDesktopMain(
       { ipc: "/tmp/desktop.sock", namespace: "map-design", source: "packaged" } as never,
@@ -130,7 +132,7 @@ describe("desktop shutdown", () => {
         preloadPath: "/resources/preload.cjs",
       },
     );
-    if (process.platform === "darwin") {
+    if (process.platform === "darwin" && !isPackaged) {
       expect(mocks.app.dock.setIcon).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("/desktop/resources/dock-icon.png"));
       expect(mocks.app.dock.setIcon.mock.invocationCallOrder[0]).toBeGreaterThan(mocks.app.whenReady.mock.invocationCallOrder[0]!);
     } else expect(mocks.app.dock.setIcon).not.toHaveBeenCalled();

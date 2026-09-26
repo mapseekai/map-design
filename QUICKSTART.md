@@ -1,10 +1,14 @@
 # MapDesign quickstart
 
+For a detailed capability and workflow guide in Chinese, read the [中文使用说明](docs/usage.zh-CN.md).
+
 ## Requirements
 
 Use Node.js 24, Corepack, and the pnpm version selected by `package.json`.
 
 ```bash
+nvm use # When using nvm; otherwise select Node.js 24 first
+node --version # Must report v24.x
 corepack enable
 pnpm install
 pnpm tools-dev start
@@ -63,7 +67,7 @@ directory**.
 
 ## Local data
 
-Set `MAP_DESIGN_DATA_DIR` before starting the daemon to choose its data root. It contains daemon-owned SQLite data, configuration, logs, projects, and agent state. Do not share it between unrelated local runs.
+Set `MAP_DESIGN_DATA_DIR` before starting the daemon to choose its data root. It contains daemon-owned SQLite data, configuration, projects, and agent state. Without an override, source development uses `.map-design` in the daemon working directory. Packaged applications use their namespace data directory. Lifecycle logs and caches may live outside the data root. See [local data and cleanup](docs/local-data.md) before backing up or deleting state. Do not share a data directory between unrelated local runs.
 
 ## Check changes
 

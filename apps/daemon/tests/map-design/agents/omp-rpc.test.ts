@@ -108,6 +108,28 @@ function response(request: Frame, command = request.type): Frame {
   return { id: request.id, type: 'response', command, success: true };
 }
 
+it('waits for process cleanup on both the first and repeated cancellation', async () => {
+  let releaseStop!: () => void;
+  const stopping = new Promise<void>((resolve) => { releaseStop = resolve; });
+  const stopProcess = vi.fn(() => stopping);
+  const state = await start({ stopProcess });
+  try {
+    const canceling = state.handle.cancel();
+    const abort = await state.server.nextClientFrame();
+    state.server.send(response(abort));
+    await expect(state.handle.done).resolves.toEqual({ status: 'canceled' });
+    const joining = state.handle.cancel();
+    expect(await settlesWithin(canceling)).toBe(false);
+    expect(await settlesWithin(joining)).toBe(false);
+    expect(stopProcess).toHaveBeenCalledOnce();
+    releaseStop();
+    await Promise.all([canceling, joining]);
+  } finally {
+    releaseStop();
+    await state.handle.cancel();
+  }
+});
+
 function settlesWithin(promise: Promise<unknown>, timeoutMs = 50): Promise<boolean> {
   return Promise.race([
     promise.then(() => true, () => true),

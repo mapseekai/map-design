@@ -30,7 +30,7 @@ Use existing variants and sizes before adding presentation options. Put text tru
 | Button | `size="content"` for multiline choices; `shape="circle"` for round icon actions |
 | PopoverContent | `size="sm"` for compact action lists |
 | ResizableHandle | `variant="subtle"` for the workspace separator |
-| Tabs / TabsTrigger | `spacing="none"` for contiguous panels; `size="sm"` for compact tabs |
+| Tabs / TabsTrigger | `spacing="none"` for contiguous panels; `size="sm"` for compact tabs; TabsList `variant="workspace"` for titlebar tabs with an elevated active tab |
 | DialogContent | `layout="sectioned"`, also forwarded by the Dialog adapter |
 | SheetContent | `variant="panel"` for a sectioned inspector, including its closing transition |
 | Empty | `variant="outline"` and `size="sm"` |
@@ -57,3 +57,12 @@ Review registry updates before overwriting the local React 18 adapters. After ad
 Official references: [monorepos](https://ui.shadcn.com/docs/monorepo), [theming](https://ui.shadcn.com/docs/theming), [Base UI components](https://ui.shadcn.com/docs/components/base/button).
 
 Base UI composition uses `render` instead of `asChild`. Popup focus uses `initialFocus` / `finalFocus`; close cancellation uses `onOpenChange` event details. Use array values for ToggleGroup and a scalar for single-thumb Slider. Runtime UI must not import Radix primitives.
+
+## Workspace tabs
+
+The titlebar opens project and Cartography editor routes as closable tabs.
+Switching tabs preserves each open tab's route query/hash and unsent text drafts
+in memory. Inactive workspaces unmount to release their maps and subscriptions;
+this is not a promise that all component state or pending queues survive a tab
+switch. Closing a tab drops its draft cache, and reloading resets the tab list.
+Daemon-owned project data and accepted runs remain independent of the tab UI.

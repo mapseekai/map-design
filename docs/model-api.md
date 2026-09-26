@@ -4,11 +4,11 @@ MapDesign uses AI SDK 7 in the local daemon. API Model requires no agent CLI. Ch
 
 ## Configure
 
-1. Open Settings and select **API Model** as the runtime.
+1. Open Settings → Runtime, select **API Model**, and choose **Add model** or edit a saved profile.
 2. Select `openai` or `anthropic`.
 3. For OpenAI, select **Chat Completions** (the compatibility default) or **Responses**.
 4. Enter the API key, model ID and optional Base URL. Base URLs are API prefixes, for example `https://api.example.com/v1`; the standard provider URL is used when blank. A full endpoint ending in `/chat/completions`, `/responses`, or `/messages` is also accepted.
-5. Save settings. Select API Model when creating a map, or use the runtime switcher for an existing conversation. Existing conversations keep their own runtime selection.
+5. Choose **Save model**. **Test connection** explicitly sends a small provider request; saving alone does not. Set a default or choose the saved profile when creating a map or switching an existing conversation. Existing conversations keep their own runtime selection. See [saved API model configurations](api-model-profiles.md).
 
 Keys stay in the daemon configuration under `MAP_DESIGN_DATA_DIR`, with owner-only file permissions. Config responses redact keys. Metadata-only updates preserve the saved key. Requests never forward credentials through redirects.
 
@@ -18,7 +18,7 @@ Each run receives the current project context, conversation history, custom inst
 
 The model can use the existing run-scoped tools to inspect/search layers, apply transactions, update semantics, validate, preview, commit revisions or discard drafts. Calls retain project/run authority, revision checks and idempotency. Tool progress and text stream into the conversation. Unresolved map tool failures prevent a run from being reported as successful.
 
-Runs allow up to 24 model steps and 96 tool calls. Cancellation aborts the model request and stops subsequent tool execution. A limit or failure can leave already-applied draft changes available for inspection; it does not silently discard them.
+Runs default to 48 model steps and 192 tool calls, configurable through the API execution budget in Settings. Output budgets default to 16,384 tokens per map-editing call and 32,768 per Cartography call. See [execution budget settings](agent-adapters.md#built-in-api-model) for ranges. Cancellation aborts the model request and stops subsequent tool execution. A limit or failure can leave already-applied draft changes available for inspection; it does not silently discard them.
 
 ## CARTOGRAPHY.md creation
 

@@ -37,6 +37,7 @@ export type MapRunTerminal = {
 
 export interface MapRunHandle {
   done: Promise<MapRunTerminal>;
+  /** Requests cancellation and joins execution cleanup, including on repeated calls. */
   cancel(): Promise<void>;
 }
 

@@ -10,4 +10,4 @@ Source: `mapseekai/cartography.md`, commit
 These documents define reusable visual identity only. Project data, layer and
 field bindings, renderer output, and runtime quality policy stay outside them.
 Documents are pinned by their complete content digest when a project is created.
-See `docs/cartography-runtime.md` for binding and migration behavior.
+See [cartography runtime](../docs/cartography-runtime.md) for binding and migration behavior.

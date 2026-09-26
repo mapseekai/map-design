@@ -10,7 +10,7 @@ import {
   probeCodexAppServer,
   type CodexAppServerSpawn,
 } from '../../../src/map-design/agents/codex-app-server.js';
-import type { MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
+import type { MapAgentEvent, MapRunHandle, MapRunInput } from '../../../src/map-design/agents/types.js';
 import type {
   MapDesignNativeToolRegistry,
   MapNativeToolResult,
@@ -1841,6 +1841,40 @@ describe('Codex app-server Map Agent adapter', () => {
     });
     expect(state.registry.call).not.toHaveBeenCalled();
     expect(state.events).toEqual([{ kind: 'status', label: 'analyzing' }]);
+  });
+
+  it.each([false, true])('joins process cleanup after signal cancellation (during handshake: %s)', async (duringHandshake) => {
+    let releaseStop!: () => void;
+    const stopping = new Promise<void>((resolve) => { releaseStop = resolve; });
+    const stopProcessTree = vi.fn(() => stopping);
+    const controller = new AbortController();
+    let handle: MapRunHandle;
+    if (duringHandshake) {
+      const server = new FakeAppServer();
+      const adapter = createCodexMapAgentAdapter({
+        definition: { id: 'codex', bin: '/opt/codex/bin/codex' },
+        nativeToolRegistry: nativeRegistry(), spawn: () => server.child, stopProcessTree,
+      });
+      const starting = adapter.startMapRun(runInput(controller.signal), [TOOL], () => undefined);
+      await server.nextClientFrame();
+      controller.abort();
+      handle = await starting;
+    } else {
+      const state = await startRun({ input: runInput(controller.signal), stopProcessTree });
+      controller.abort();
+      handle = state.handle;
+    }
+    try {
+      await expect(handle.done).resolves.toMatchObject({ status: 'canceled' });
+      const joining = handle.cancel();
+      expect(await settlesWithin(joining)).toBe(false);
+      expect(stopProcessTree).toHaveBeenCalledOnce();
+      releaseStop();
+      await joining;
+    } finally {
+      releaseStop();
+      await handle.cancel();
+    }
   });
 
   it('interrupts the active turn and resolves cancellation exactly once', async () => {

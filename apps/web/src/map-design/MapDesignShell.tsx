@@ -8,7 +8,7 @@ import { getLocaleDirection, useI18n } from '../i18n';
 import { navigationCopy } from '../i18n/locales/navigation';
 import { sidebarCopy } from '../i18n/locales/sidebar';
 import { settingsNavigationCopy } from '../i18n/locales/settings-navigation';
-import { navigate, useRoute } from '../router';
+import { buildPath, navigate, useRoute } from '../router';
 import { getMapDesignHost } from '../platform/map-design-host';
 import { MapDesignTitlebarContext, TitlebarControl } from './components/MapDesignTitlebar';
 
@@ -84,7 +84,7 @@ function ShellNavigation() {
   </>;
 }
 
-export function MapDesignShell({ children }: { children: ReactNode }) {
+export function MapDesignShell({ children, tabs }: { children: ReactNode; tabs?: ReactNode }) {
   const route = useRoute();
   const { locale } = useI18n();
   const [controls, setControls] = useState<HTMLDivElement | null>(null);
@@ -106,13 +106,13 @@ export function MapDesignShell({ children }: { children: ReactNode }) {
     style={{ '--app-titlebar-height': wide ? '52px' : '0px', paddingTop: wide ? 52 : 0 } as CSSProperties}>
     <div data-app-titlebar className="fixed inset-x-0 top-0 z-30 hidden h-(--app-titlebar-height) select-none items-center gap-2 bg-muted/60 px-3 md:flex"
       style={{ WebkitAppRegion: 'drag', position: 'fixed', inset: '0 0 auto', height: wide ? 52 : 0,
-        display: wide ? 'flex' : 'none', alignItems: 'center', background: 'var(--muted)', paddingLeft: macDesktop ? 88 : 12 } as CSSProperties}>
+        display: wide ? 'flex' : 'none', alignItems: 'center', background: 'var(--muted)', paddingLeft: macDesktop ? 'var(--app-titlebar-inset-left, 88px)' : 12 } as CSSProperties}>
       <div ref={setControls} className="flex shrink-0 items-center gap-1" />
       {route.kind === 'project' || route.kind === 'cartography-editor' ? <Button variant="ghost" size="icon-sm" aria-label={navigationCopy[locale].backHome} title={navigationCopy[locale].backHome}
         style={{ WebkitAppRegion: 'no-drag' } as CSSProperties} onClick={() => navigate({ kind: 'home' })}><House aria-hidden="true" /></Button> : null}
-      <div ref={setTitle} className="min-w-0" />
+      <div className="min-w-0 flex-1">{tabs ?? <div ref={setTitle} />}</div>
     </div>
-    {route.kind === 'project' || route.kind === 'cartography-editor' ? <main className="flex min-h-0 flex-col overflow-hidden" style={{ height: 'calc(100dvh - var(--app-titlebar-height))' }}>{children}</main>
+    {route.kind === 'project' || route.kind === 'cartography-editor' ? <main className="flex min-h-0 flex-col overflow-hidden" style={{ height: 'calc(100dvh - var(--app-titlebar-height))' }}><div id="workspace-panel" role={tabs ? 'tabpanel' : undefined} aria-labelledby={tabs ? `workspace-tab-${buildPath(route)}` : undefined} className="flex min-h-0 flex-1 flex-col">{children}</div></main>
     : <SidebarProvider dir={getLocaleDirection(locale)} open={open} onOpenChange={(value) => {
     setOpen(value);
     try { localStorage.setItem(sidebarPreferenceKey, String(value)); } catch { /* Storage may be unavailable. */ }

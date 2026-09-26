@@ -117,7 +117,9 @@ export async function runDesktopMain(
     else desktop.show();
   });
   await app.whenReady();
-  if (process.platform === "darwin") {
+  // Packaged apps use the icon from their app bundle; this relative PNG exists
+  // only in the development desktop package, not beside the bundled entrypoint.
+  if (process.platform === "darwin" && !app.isPackaged) {
     app.dock?.setIcon(fileURLToPath(new URL("../../resources/dock-icon.png", import.meta.url)));
   }
 

@@ -219,8 +219,12 @@ export function createCodexMapAgentAdapter(
       };
 
       const cancel = async (): Promise<void> => {
-        if (terminal || toolLoopHaltPending) return;
         if (cancellation) return cancellation;
+        if (terminal || toolLoopHaltPending) {
+          await done;
+          await stopProcess();
+          return;
+        }
         cancelRequested = true;
         if (threadId && turnId && peer && !peer.closed) {
           void peer.request('turn/interrupt', { threadId, turnId }).catch(() => undefined);

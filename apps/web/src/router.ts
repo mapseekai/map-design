@@ -50,9 +50,17 @@ export function buildPath(route: MapDesignRoute): string {
 interface NavigationOptions {
   replace?: boolean;
   onCommit?: () => void;
+  search?: string;
+  hash?: string;
 }
 
 const subscribers = new Set<() => void>();
+const beforeNavigation = new Set<() => void>();
+
+export function subscribeBeforeNavigation(listener: () => void): () => void {
+  beforeNavigation.add(listener);
+  return () => { beforeNavigation.delete(listener); };
+}
 let listenerInstalled = false;
 let cachedPathname: string | null = null;
 let cachedRoute: MapDesignRoute | null = null;
@@ -79,8 +87,9 @@ function uninstall(): void {
 }
 
 export function navigate(route: MapDesignRoute, options: NavigationOptions = {}): void {
-  const path = buildPath(route);
-  if (path === window.location.pathname) return;
+  const path = `${buildPath(route)}${options.search ?? ''}${options.hash ?? ''}`;
+  if (path === `${window.location.pathname}${window.location.search}${window.location.hash}`) return;
+  for (const listener of beforeNavigation) listener();
   if (options.replace) window.history.replaceState(null, '', path);
   else window.history.pushState(null, '', path);
   options.onCommit?.();

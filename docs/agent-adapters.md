@@ -4,13 +4,15 @@ The daemon detects and starts local coding-agent CLIs. Adapters change process d
 
 ## Registered adapters
 
-The registry currently includes: `claude`, `codex`, `devin`, `opencode`, `byok-opencode`, `hermes`, `trae-cli`, `grok-build`, `kimi`, `cursor-agent`, `qwen`, `qoder`, `copilot`, `amp`, `pi`, `kiro`, `kilo`, `vibe`, `deepseek`, `aider`, `antigravity`, `reasonix`, `codebuddy`, `mimo`, and `atomcode`. Local profiles may add definitions at runtime.
+The registry currently includes: `api`, `claude`, `codex`, `oh-my-pi`, `devin`, `opencode`, `byok-opencode`, `hermes`, `trae-cli`, `grok-build`, `kimi`, `cursor-agent`, `qwen`, `qoder`, `copilot`, `amp`, `pi`, `kiro`, `kilo`, `vibe`, `deepseek`, `deepseek-harness`, `aider`, `antigravity`, `reasonix`, `codebuddy`, `mimo`, and `atomcode`. Local profiles may add definitions at runtime.
+
+Registration does not imply MapDesign tool compatibility. The native map adapters are `api`, `codex`, `pi`, `oh-my-pi`, `opencode`, and `deepseek-harness`; local availability and capability probes determine whether a CLI can run a map task.
 
 Definitions live in `apps/daemon/src/runtimes/defs/`; `apps/daemon/src/runtimes/registry.ts` is the source of truth for registration. Each definition declares executable discovery and invocation behavior. The shared runtime layer owns detection, process lifecycle, cancellation, and event parsing.
 
 ## BYOK
 
-`byok-opencode` is the registered BYOK adapter. Its provider configuration is local daemon state; keep credentials out of browser code, source control, logs, and diagnostics.
+`byok-opencode` remains in the runtime registry. For MapDesign API-based editing, use the built-in `api` adapter and its saved model profiles. Its provider configuration is local daemon state; keep credentials out of browser code, source control, logs, and diagnostics.
 
 ## Local-process boundary
 

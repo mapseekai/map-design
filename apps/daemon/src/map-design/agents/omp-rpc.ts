@@ -155,8 +155,8 @@ export function createOhMyPiMapAgentAdapter(
       };
       const onInputAbort = (): void => { void cancel(); };
       const cancel = async (): Promise<void> => {
-        if (terminal) return;
         if (cancellation) return cancellation;
+        if (terminal) return stopProcess();
         cancelRequested = true;
         if (!controller.signal.aborted) controller.abort();
         cancellation = (async () => {
@@ -166,6 +166,7 @@ export function createOhMyPiMapAgentAdapter(
             // The result remains canceled even if the peer dies while aborting.
           }
           finish({ status: 'canceled' });
+          await stopProcess();
         })();
         return cancellation;
       };

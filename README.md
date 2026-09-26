@@ -2,11 +2,15 @@
 
 MapDesign is a local-first workspace for creating and reviewing map styles. It imports map sources, keeps projects and revisions in a local daemon, renders the workflow in web and desktop clients, and lets installed coding agents work through the same local API.
 
+阅读[中文使用说明](docs/usage.zh-CN.md)，了解项目能力、AI 制图流程、模型配置、消息队列、样式编辑、版本管理和命令行操作。
+
 ## Start
 
 Node.js 24 and Corepack-managed pnpm 10.33 are required.
 
 ```bash
+nvm use # When using nvm; otherwise select Node.js 24 first
+node --version # Must report v24.x
 corepack enable
 pnpm install
 pnpm tools-dev start
@@ -58,7 +62,7 @@ in memory. See [resource and runtime reliability](docs/resource-runtime-reliabil
 - `apps/daemon` — local HTTP API, SQLite persistence, `md`, MCP, and agent orchestration.
 - `apps/desktop` and `apps/packaged` — Electron desktop runtime and packaged launcher.
 - `packages/contracts` and `packages/map-design-contracts` — shared API and map-domain contracts.
-- `skills/map-design` — bundled agent skill.
+- `skills/map-design`, `skills/cartography-md`, `skills/cartography-init`, and `skills/data-profile` — bundled map and cartography skills.
 - `tools/dev` and `tools/pack` — local lifecycle and installer tooling.
 
 Read [Quickstart](QUICKSTART.md), [architecture](docs/architecture.md), [agent adapters](docs/agent-adapters.md), and the [skill protocol](docs/skills-protocol.md).
@@ -87,11 +91,19 @@ pnpm tools-pack linux build --to appimage
 Each platform accepts its own `install`, `start`, `inspect`, `stop`, and
 `cleanup` actions, for example `pnpm tools-pack mac inspect`.
 
-| Platform | Build artifact and support truth |
+| Platform | Release artifacts |
 | --- | --- |
-| Linux | The AppImage build and extracted-app lifecycle are supported. `tools-dev` Electron is current on WSL. |
-| macOS | Build and lifecycle commands exist, but this workspace has test coverage only; it makes no native macOS verification claim. |
-| Windows | Build and lifecycle commands exist, but this workspace has test coverage only; it makes no native Windows verification claim. |
+| Linux | AppImage |
+| macOS | DMG and ZIP; signing and notarization depend on configured release credentials |
+| Windows | NSIS installer and portable ZIP |
+
+The [release workflow](.github/workflows/release.yml) builds on native runners
+for each platform. Workflow configuration is not evidence that a particular
+release or installation passed; check that release's job results and artifacts.
+See [packaging](tools/pack/README.md) for release commands and prerequisites.
+
+Browse the [documentation index](docs/README.md) for usage, architecture,
+local data, development guidance, and dated review records.
 
 ## Validate
 

@@ -6,6 +6,31 @@ import { ModuleKind, ScriptTarget, transpileModule } from "typescript";
 import { describe, expect, it, vi } from "vitest";
 
 describe("desktop preload MapDesign host boundary", () => {
+  it("updates the macOS titlebar inset from native fullscreen changes", () => {
+    const source = readFileSync(new URL("../../src/main/preload.cts", import.meta.url), "utf8");
+    const ipcRenderer = { on: vi.fn() };
+    const setProperty = vi.fn();
+    const compiled = transpileModule(source, {
+      compilerOptions: { module: ModuleKind.CommonJS, target: ScriptTarget.ES2022 },
+    }).outputText;
+    new Function("require", "process", "exports", "module", "document", compiled)(
+      () => ({ contextBridge: { exposeInMainWorld: vi.fn() }, ipcRenderer }),
+      { platform: "darwin" }, {}, { exports: {} },
+      { documentElement: { style: { setProperty } } },
+    );
+    expect(ipcRenderer.on).toHaveBeenCalledExactlyOnceWith("map-design:window:fullscreen", expect.any(Function));
+    const onFullscreen = ipcRenderer.on.mock.calls[0]![1] as (event: unknown, fullscreen: unknown) => void;
+    onFullscreen({}, false);
+    onFullscreen({}, true);
+    onFullscreen({}, false);
+    onFullscreen({}, "true");
+    expect(setProperty.mock.calls).toEqual([
+      ["--app-titlebar-inset-left", "88px"],
+      ["--app-titlebar-inset-left", "12px"],
+      ["--app-titlebar-inset-left", "88px"],
+    ]);
+  });
+
   it("exposes only the frozen version-one MapDesign bridge through Electron", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const source = readFileSync(join(here, "../../src/main/preload.cts"), "utf8");

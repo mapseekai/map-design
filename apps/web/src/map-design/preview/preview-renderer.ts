@@ -208,6 +208,8 @@ function waitForIdle(map: PreviewMap, signal: AbortSignal, deadline: number): Pr
       return;
     }
     armIdle();
+    // Readiness can change without another idle event after a style update.
+    scheduleObservation();
   });
 }
 

@@ -300,6 +300,17 @@ components:
 
 ## Overview
 
+### MapDesign application scope
+
+This document retains the extracted Claude marketing design reference and its
+original tokens. MapDesign uses its warm surfaces, serif headings and coral
+accent, with application-specific adaptations in `apps/web/src/styles/tokens.css`
+and the shared primitives described in [UI guidance](docs/ui.md). The actual
+product uses MapDesign identity; references below to Anthropic logos, marketing
+sections and licensed fonts describe the source reference, not shipped features.
+Current components, accessibility states and interaction behavior follow the
+application implementation and UI guidance.
+
 ### Studio pending messages
 
 Pending prompts appear in a compact ordered list directly above the chat composer, using the existing muted surface, border, small text, and Button/Textarea primitives. The composer stays editable during a map run and exposes separate queue and stop actions. Pending rows support visible edit/delete actions, inline save/cancel, attachment summaries, keyboard focus, and natural CJK wrapping. The list owns a bounded scroll area so the composer stays reachable. Dispatch locks only the row being submitted. Editing suspends dispatch; failure or stop pauses the queue with a continue action. Conversation switches retain pending drafts. No decorative motion or new color tokens are introduced.

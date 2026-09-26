@@ -33,6 +33,7 @@ const tabsListVariants = cva(
       variant: {
         default: "bg-muted",
         line: "gap-1 bg-transparent",
+        workspace: "group-data-horizontal/tabs:h-10 gap-1.5 justify-start rounded-none bg-transparent p-1",
       },
     },
     defaultVariants: {
@@ -66,6 +67,8 @@ const TabsTrigger = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Tab>,
         "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
         size === "sm" && "px-1 text-xs",
+        "group-data-[variant=workspace]/tabs-list:h-8 group-data-[variant=workspace]/tabs-list:w-44 group-data-[variant=workspace]/tabs-list:justify-start group-data-[variant=workspace]/tabs-list:gap-2 group-data-[variant=workspace]/tabs-list:rounded-xl group-data-[variant=workspace]/tabs-list:ps-3 group-data-[variant=workspace]/tabs-list:pe-8",
+        "group-data-[variant=workspace]/tabs-list:data-active:border-border/60 group-data-[variant=workspace]/tabs-list:data-active:shadow-sm",
         className
       )}
       {...props}

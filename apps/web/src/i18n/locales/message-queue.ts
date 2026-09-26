@@ -108,7 +108,7 @@ export const messageQueueCopy: Record<Locale, MessageQueueCopy> = {
     paused: 'Kolejka wstrzymana', resume: 'Wznów kolejkę', edit: 'Edytuj wiadomość w kolejce', remove: 'Usuń wiadomość z kolejki',
     save: 'Zapisz', cancel: 'Anuluj', editLabel: 'Edytuj wiadomość', submitting: 'Wysyłanie…',
     enqueue: 'Dodaj do kolejki', placeholder: 'Dodaj kolejną wiadomość do kolejki…', attachments: 'Załączniki: {count}',
-    limit: 'Wpisz wiadomość o długości od 1 do {limit} znaków.',
+    limit: 'Wpisz wiadomość o długości 1–{limit} znaków.',
   },
   hu: {
     title: 'Sorban álló üzenetek', count: '{count} üzenet várakozik', hint: 'Az aktuális feladat után lesznek elküldve',

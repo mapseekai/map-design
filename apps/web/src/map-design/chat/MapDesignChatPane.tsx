@@ -4,6 +4,7 @@ import type { MapComment } from '@mapseekai/map-design-contracts';
 import { PanelLeftOpen, Plus } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
+import { useWorkspaceTabDraft } from '../WorkspaceTabs';
 import { TitlebarControl } from '../components/MapDesignTitlebar';
 import { ConversationSession } from './ConversationSession';
 export { latestUnansweredFormOccurrence } from './conversation-forms';
@@ -88,7 +89,7 @@ export function MapDesignChatPane({
       return next;
     });
   }, []);
-  const [draftsByConversation, setDraftsByConversation] = useState<ReadonlyMap<string, string>>(new Map());
+  const [draftsByConversation, setDraftsByConversation] = useWorkspaceTabDraft<ReadonlyMap<string, string>>('project-prompts', new Map());
   const renderedSessionIds = sessionIds.includes(conversationId) ? sessionIds : [...sessionIds, conversationId];
   const setConversationDraft = useCallback((sessionId: string, draft: string) => {
     setDraftsByConversation((current) => {

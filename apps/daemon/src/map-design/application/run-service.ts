@@ -116,6 +116,8 @@ type ActiveRun = {
   response: MapDesignRunResponse;
   assistant: MapDesignMessage;
   mapHandle: MapRunHandle | null;
+  mapStarting: Promise<MapRunHandle> | null;
+  stopping: Promise<void> | null;
   abortController: AbortController;
   grant: ToolTokenGrant;
   callback: RunToolCallback;
@@ -135,6 +137,10 @@ type ActiveRun = {
 const DEFAULT_RUN_INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
 const EVENT_SNAPSHOT_FLUSH_INTERVAL_MS = 50;
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
+function isRunBusy(run: ActiveRun): boolean {
+  return !run.terminal || run.stopping !== null;
+}
 
 export function resolveMapDesignRunInactivityTimeoutMs(
   agentTimeoutMs: number | undefined,
@@ -162,7 +168,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
   const retentionTtl = Math.max(1, Math.min(3_600_000, deps.retainedRunTtlMs ?? 300_000));
   const pruneFinished = () => {
     if (!deps.runHistory) return;
-    const finished = [...runs.entries()].filter(([, run]) => run.terminal);
+    const finished = [...runs.entries()].filter(([, run]) => !isRunBusy(run));
     let excess = Math.max(0, finished.length - retentionLimit);
     for (const [id, run] of finished) {
       if (excess <= 0 && now() - Date.parse(run.response.finishedAt ?? '') < retentionTtl) continue;
@@ -225,17 +231,30 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
     clearTimeout(active.inactivityTimer);
     active.inactivityTimer = null;
   };
+  const stopMapRun = (active: ActiveRun): Promise<void> => {
+    if (active.stopping) return active.stopping;
+    // Keep ownership until both a pending handshake and the adapter's cleanup
+    // settle, even when the public run has already reported a timeout.
+    active.stopping = Promise.resolve().then(async () => {
+      const handle = active.mapHandle ?? await active.mapStarting?.catch(() => null);
+      if (!handle) return;
+      await Promise.allSettled([handle.cancel(), handle.done]);
+    }).finally(() => {
+      active.stopping = null;
+      pruneFinished();
+    });
+    return active.stopping;
+  };
   const timeoutRun = (active: ActiveRun): void => {
     if (active.terminal || active.canceling) return;
     active.canceling = true;
     clearInactivityTimer(active);
+    active.cancellation = stopMapRun(active).then(() => active.response);
     if (!active.abortController.signal.aborted) active.abortController.abort();
-    const stopping = active.mapHandle?.cancel().catch(() => undefined) ?? Promise.resolve();
     finish(active, 'failed', {
       code: 'RUN_TIMED_OUT',
       message: 'The local agent stopped responding.',
     });
-    active.cancellation = stopping.then(() => active.response);
   };
   const resetInactivityTimer = (active: ActiveRun): void => {
     if (active.terminal || active.canceling) return;
@@ -296,7 +315,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
       const project = deps.store.getProject(request.projectId);
       const conversation = deps.store.getConversation(request.conversationId);
       if (!project || !conversation || conversation.projectId !== request.projectId) throw new MapDesignRunRequestError('The map run request is invalid.');
-      if ([...runs.values()].some((run) => !run.terminal && run.response.projectId === request.projectId)) {
+      if ([...runs.values()].some((run) => isRunBusy(run) && run.response.projectId === request.projectId)) {
         throw new MapDesignProjectRunConflictError('Another run is already active for this project.');
       }
       if (request.commentRefs && !deps.comments) throw new MapDesignRunRequestError('Map comments are unavailable.');
@@ -317,7 +336,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
           const existing = runs.get(replay.runId);
           if (existing) return existing.response;
         }
-        if ([...runs.values()].some((run) => !run.terminal && run.response.projectId === request.projectId)) {
+        if ([...runs.values()].some((run) => isRunBusy(run) && run.response.projectId === request.projectId)) {
           throw new MapDesignProjectRunConflictError('Another run is already active for this project.');
         }
       }
@@ -425,6 +444,8 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
         response,
         assistant,
         mapHandle: null,
+        mapStarting: null,
+        stopping: null,
         abortController: new AbortController(),
         grant,
         callback,
@@ -462,7 +483,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
       if (active.terminal || shuttingDown) { if (!active.terminal) finish(active, 'canceled'); return response; }
       const prompt = composeMapPrompt(scopedPrompt, conversation.messages, mapContext, request.projectId, runId, request.locale, config?.customInstructions, cartography);
       try {
-          const handle = await mapAdapter.startMapRun({
+          active.mapStarting = mapAdapter.startMapRun({
             runId,
             projectId: request.projectId,
             conversationId: request.conversationId,
@@ -485,10 +506,11 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
             if (event.kind === 'run_finished') return;
             onMapAdapterEvent(active, event);
           });
+          const handle = await active.mapStarting;
           active.mapHandle = handle;
+          active.mapStarting = null;
           if (active.terminal || active.canceling || shuttingDown) {
-            await handle.cancel().catch(() => undefined);
-            if (!active.terminal) finish(active, 'canceled');
+            await service.cancel(runId);
             return active.response;
           }
           void handle.done.then(
@@ -505,6 +527,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
             },
           );
       } catch {
+          active.mapStarting = null;
           if (!active.terminal && !active.canceling) {
             finish(active, 'failed', {
               code: 'NATIVE_TOOLS_UNAVAILABLE',
@@ -516,29 +539,29 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
     },
     get: (runId) => { pruneFinished(); return runs.get(runId)?.response ?? deps.runHistory?.get(runId)?.response ?? null; },
     isConversationRunning: (conversationId) => [...runs.values()].some((run) =>
-      run.response.conversationId === conversationId && run.response.status === 'running'),
+      run.response.conversationId === conversationId && isRunBusy(run)),
     isProjectRunning: (projectId) => [...runs.values()].some((run) =>
-      !run.terminal && run.response.projectId === projectId),
+      isRunBusy(run) && run.response.projectId === projectId),
     async cancel(runId) {
       const active = runs.get(runId);
       if (!active) return deps.runHistory?.get(runId)?.response ?? null;
-      if (active.terminal) return active.response.status === 'canceled' ? { runId, status: 'canceled' } : active.response;
       if (active.canceling && active.cancellation) return active.cancellation;
+      if (active.terminal) return active.response.status === 'canceled' ? { runId, status: 'canceled' } : active.response;
       active.canceling = true;
       clearSnapshotTimer(active);
       active.cancellation = (async () => {
         if (!active.abortController.signal.aborted) active.abortController.abort();
-        if (active.mapHandle) {
-          await active.mapHandle.cancel().catch(() => undefined);
-          const result = await active.mapHandle.done.catch(() => ({
+        if (active.mapHandle || active.mapStarting) {
+          await stopMapRun(active);
+          const result = await active.mapHandle?.done.catch(() => ({
             status: 'failed' as const,
             error: {
               code: 'NATIVE_TOOLS_UNAVAILABLE',
               message: 'The local agent native tool channel failed.',
             },
           }));
-          if (!active.terminal) finish(active, result.status, result.error);
-          return result.status === 'canceled' ? { runId, status: 'canceled' as const } : active.response;
+          if (!active.terminal) finish(active, result?.status ?? 'canceled', result?.error);
+          return active.response.status === 'canceled' ? { runId, status: 'canceled' as const } : active.response;
         }
         finish(active, 'canceled');
         return { runId, status: 'canceled' };
@@ -568,7 +591,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
     async shutdown() {
       shuttingDown = true;
       await Promise.all([...runs.values()]
-        .filter((run) => !run.terminal)
+        .filter(isRunBusy)
         .map((run) => service.cancel(run.response.runId)));
     },
     getTrustedRun(runId) {

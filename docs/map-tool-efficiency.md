@@ -1,6 +1,6 @@
 # Map tool efficiency
 
-Implemented against the existing batch-read work in the current checkout.
+Map tool behavior and implementation verification records. The verification section preserves historical results; runtime behavior is defined by the current tool schemas and source.
 
 ## Behavior
 
@@ -24,7 +24,10 @@ History compaction is implemented in the daemon-owned API adapter. External codi
 
 Payload byte savings are not equivalent to billed model-token savings. Real provider usage remains available through the existing input/output token counters; compare equal tasks and success rates before claiming a percentage.
 
-## Verification
+## Historical implementation verification
+
+The following results record the implementation work on its original host.
+They do not describe the current shell or a fresh run of the current checkout.
 
 Runtime: isolated Node v24.21.0, downloaded from nodejs.org and SHA-256 verified. The default machine shell still resolves Node 22; project checks used the isolated runtime explicitly.
 

@@ -16,7 +16,7 @@ MapDesign is a local application: web and desktop clients use one local daemon.
 
 A map source enters a project through the daemon. The daemon stores project state, drafts, validation output, previews, revisions, and runs under its data root. Web, desktop, `md`, MCP, and local agent runs use that daemon state instead of separate stores.
 
-Set `MAP_DESIGN_DATA_DIR` before daemon startup to select the data root; otherwise it is `.map-design` in the working directory.
+Set `MAP_DESIGN_DATA_DIR` before daemon startup to select the data root. Direct source startup defaults to `.map-design` in the working directory; the packaged launcher defaults to its namespace data directory and requires an absolute override. Sidecar logs, caches and Electron user data have separate lifecycle paths. See [local data](local-data.md).
 
 ## Security boundary
 

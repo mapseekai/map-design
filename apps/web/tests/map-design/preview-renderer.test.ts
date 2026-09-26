@@ -138,7 +138,7 @@ describe('renderMapDesignPreview', () => {
     expect(fulfill).toHaveBeenCalledWith(expect.objectContaining({ status: 'succeeded' }), expect.any(AbortSignal));
   });
 
-  it('observes readiness at a bounded cadence after incomplete idle when no second idle fires', async () => {
+  it.each([false, true])('observes readiness without another idle (initial idle: %s)', async (initialIdle) => {
     vi.useFakeTimers();
     vi.setSystemTime('2026-09-02T00:00:00.000Z');
     let idle: (() => void) | undefined;
@@ -162,7 +162,7 @@ describe('renderMapDesignPreview', () => {
       validationDigest: DIGEST, fulfill,
     });
     expect(idle).toBeTypeOf('function');
-    idle?.();
+    if (initialIdle) idle?.();
     const checksAfterIdle = tilesReady.mock.calls.length;
     tilesLoaded = true;
 

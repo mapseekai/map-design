@@ -132,6 +132,11 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
     if (event.sender === window.webContents && (theme === "light" || theme === "dark" || theme === "system")) nativeTheme.themeSource = theme;
   });
 
+  const syncFullscreen = () => window.webContents.send("map-design:window:fullscreen", window.isFullScreen());
+  window.on("enter-full-screen", syncFullscreen);
+  window.on("leave-full-screen", syncFullscreen);
+  window.webContents.on("did-finish-load", syncFullscreen);
+
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (isHttpUrl(url)) void shell.openExternal(url);
     return { action: "deny" };

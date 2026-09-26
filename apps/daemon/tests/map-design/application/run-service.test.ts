@@ -1542,6 +1542,9 @@ describe('MapDesignRunService', () => {
 describe('MapDesign native Map Agent selection', () => {
   function nativeRunFixture(options: {
     adapter: MapAgentAdapter | null;
+    store?: CreateMapDesignRunServiceDeps['store'];
+    runHistory?: CreateMapDesignRunServiceDeps['runHistory'];
+    randomId?: CreateMapDesignRunServiceDeps['randomId'];
     cartography?: { id: string; name: string; description: string; version: string; source: string };
     nativeToolRegistry?: MapDesignNativeToolRegistry;
     runtimeChoice?: {
@@ -1606,7 +1609,7 @@ describe('MapDesign native Map Agent selection', () => {
       },
     }));
     const service = createMapDesignRunService({
-      store: {
+      store: options.store ?? {
         inTransaction: () => options.cartography,
         getProject: () => ({
           id: 'map-1',
@@ -1638,7 +1641,8 @@ describe('MapDesign native Map Agent selection', () => {
       projectRoot: '/tmp/projects',
       daemonUrl: () => 'http://127.0.0.1:8787',
       mapContext: { getContext: async () => ({ draftRevision: 4 }) },
-      randomId: () => 'run-1',
+      randomId: options.randomId ?? (() => 'run-1'),
+      ...(options.runHistory ? { runHistory: options.runHistory } : {}),
       ...(options.config ? { config: options.config } : {}),
       runtimeChoices: { requireCurrent },
       runtimeCatalog: { resolveChoice },
@@ -2127,6 +2131,113 @@ describe('MapDesign native Map Agent selection', () => {
     } finally {
       await state.service.shutdown();
       vi.useRealTimers();
+    }
+  });
+
+  it.each([false, true])('keeps a timed-out execution locked and joins cleanup on shutdown (pending handshake: %s)', async (pendingHandshake) => {
+    vi.useFakeTimers();
+    let releaseStop!: () => void;
+    let resolveDone!: (value: { status: 'canceled' }) => void;
+    const stopping = new Promise<void>((resolve) => { releaseStop = resolve; });
+    const done = new Promise<{ status: 'canceled' }>((resolve) => { resolveDone = resolve; });
+    const cancel = vi.fn(async () => {
+      resolveDone({ status: 'canceled' });
+      await stopping;
+    });
+    const handle = { done, cancel };
+    let resolveStart!: (value: typeof handle) => void;
+    const handshake = new Promise<typeof handle>((resolve) => { resolveStart = resolve; });
+    const startMapRun = vi.fn(async () => pendingHandshake ? handshake : handle);
+    const state = nativeRunFixture({
+      adapter: { id: 'codex', capabilities: { nativeMapTools: true, publicReasoningSummary: true }, startMapRun },
+      nativeToolRegistry: { definitions: () => [], call: vi.fn() },
+      inactivityTimeoutMs: 50,
+    });
+    const request = {
+      projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Stay silent.', runtimeRevision: 0,
+      clientRequestId: 'request-timeout', userMessageId: 'user-timeout', assistantMessageId: 'assistant-timeout',
+    };
+    const starting = state.service.start(request);
+    let shutdown: Promise<void> | undefined;
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      expect(startMapRun).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(51);
+      expect(state.service.get('run-1')).toMatchObject({ status: 'failed', error: { code: 'RUN_TIMED_OUT' } });
+      expect(state.toolTokens.activeRunTokenCount('run-1')).toBe(0);
+      expect(state.service.isProjectRunning('map-1')).toBe(true);
+      expect(state.service.isConversationRunning('conversation-1')).toBe(true);
+      await expect(state.service.start({ ...request, clientRequestId: 'request-next' })).rejects.toBeInstanceOf(MapDesignProjectRunConflictError);
+
+      let stopped = false;
+      shutdown = state.service.shutdown().then(() => { stopped = true; });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(stopped).toBe(false);
+      resolveStart(handle);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(stopped).toBe(false);
+
+      releaseStop();
+      await Promise.all([starting, shutdown]);
+      expect(stopped).toBe(true);
+      expect(state.service.isProjectRunning('map-1')).toBe(false);
+      expect(state.service.isConversationRunning('conversation-1')).toBe(false);
+      expect(state.service.get('run-1')?.status).toBe('failed');
+    } finally {
+      resolveStart(handle);
+      releaseStop();
+      await starting;
+      await (shutdown ?? state.service.shutdown());
+      vi.useRealTimers();
+    }
+  });
+
+  it('retains timed-out executions until cleanup, then permits the next project run and durable replay', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'map-timeout-retention-'));
+    const database = openMapDesignDatabase(root);
+    vi.useFakeTimers();
+    let releaseStop!: () => void;
+    const stopping = new Promise<void>((resolve) => { releaseStop = resolve; });
+    const startMapRun = vi.fn<MapAgentAdapter['startMapRun']>()
+      .mockResolvedValueOnce({ done: stopping.then(() => ({ status: 'canceled' as const })), cancel: () => stopping })
+      .mockResolvedValue({ done: Promise.resolve({ status: 'succeeded' }), cancel: async () => undefined });
+    const store = createMapDesignLocalStore(database);
+    store.createProject({ project: { projectId: 'map-1', title: 'Map', runtime: { agentId: 'codex' }, source: { url: 'https://example.com/style.json' }, designRequirement: 'Inspect', idempotencyKey: 'create' }, primaryConversationId: 'conversation-1', verifiedWorkingDirectory: null });
+    const history = createMapRunHistory(database);
+    let nextId = 0;
+    const state = nativeRunFixture({
+      store, runHistory: history, randomId: () => `run-${++nextId}`,
+      adapter: { id: 'codex', capabilities: { nativeMapTools: true, publicReasoningSummary: true }, startMapRun },
+      nativeToolRegistry: { definitions: () => [], call: vi.fn() },
+      inactivityTimeoutMs: 50,
+    });
+    const request = {
+      projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Stay silent.', runtimeRevision: 0,
+      clientRequestId: 'request-timeout', userMessageId: 'user-timeout', assistantMessageId: 'assistant-timeout',
+    };
+    try {
+      await state.service.start(request);
+      await vi.advanceTimersByTimeAsync(51);
+      expect(history.get('run-1')?.response.error?.code).toBe('RUN_TIMED_OUT');
+      expect(state.service.get('run-1')?.status).toBe('failed');
+      expect(state.service.isProjectRunning('map-1')).toBe(true);
+      const next = { ...request, clientRequestId: 'request-next', userMessageId: 'user-next', assistantMessageId: 'assistant-next' };
+      await expect(state.service.start(next)).rejects.toBeInstanceOf(MapDesignProjectRunConflictError);
+      releaseStop();
+      await state.service.cancel('run-1');
+      expect(state.service.getGrant('run-1')).toBeNull();
+      expect(state.service.isProjectRunning('map-1')).toBe(false);
+      expect(await state.service.start(request)).toMatchObject({ runId: 'run-1', status: 'failed' });
+      expect(startMapRun).toHaveBeenCalledOnce();
+      expect(await state.service.start(next)).toMatchObject({ runId: 'run-2' });
+      expect(startMapRun).toHaveBeenCalledTimes(2);
+    } finally {
+      releaseStop();
+      await state.service.shutdown();
+      vi.useRealTimers();
+      closeMapDesignDatabase(database);
+      rmSync(root, { recursive: true, force: true });
     }
   });
 

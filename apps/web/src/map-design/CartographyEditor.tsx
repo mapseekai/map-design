@@ -19,6 +19,7 @@ import { useLocalAgents } from './hooks/useLocalAgents';
 import { MapDesignWorkspacePanels } from './components/MapDesignWorkspacePanels';
 import { MapDesignViewSwitcher, type MapDesignMobileView } from './components/MapDesignViewSwitcher';
 import { TitlebarProject } from './components/MapDesignTitlebar';
+import { useWorkspaceTabDraft } from './WorkspaceTabs';
 import { useMapDesignLayoutPreferences } from './hooks/useMapDesignLayoutPreferences';
 import { navigate } from '../router';
 import { cancelCartographyEdit, getCartographyEdit, saveCartographyEdit, sendCartographyEdit } from './cartography-edit-client';
@@ -51,7 +52,7 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
     if (initial.sourceDocumentId) rememberCartographyEdit(initial.sourceDocumentId, initial.id);
   }, [initial.sourceDocumentId, initial.id]);
   const [session, setSession] = useState(initial);
-  const [drafts, setDrafts] = useState<Record<string, string>>(() =>
+  const [drafts, setDrafts] = useWorkspaceTabDraft<Record<string, string>>('specification-prompts', () =>
     !initial.initialAnalysisStarted && !initial.messages.length && initial.status === 'idle'
       ? { [initial.id]: initial.initialPrompt }
       : {});

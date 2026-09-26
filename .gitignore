@@ -112,3 +112,4 @@ deploy/agent-bins/
 # Python bytecode from workflow helper self-checks / local compile.
 __pycache__/
 *.py[cod]
+output/pdf/

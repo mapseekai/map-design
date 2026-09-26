@@ -1,12 +1,12 @@
 # Privacy
 
-MapDesign is local-first. The daemon stores projects, drafts, revisions, configuration, logs, and agent runtime state in `MAP_DESIGN_DATA_DIR` (or `.map-design` in the working directory when it is unset). Keep that directory under your control.
+MapDesign is local-first. The daemon stores projects, drafts, revisions, configuration and agent runtime state in `MAP_DESIGN_DATA_DIR`. Direct source startup defaults to `.map-design` in the working directory; packaged apps default to their namespace data directory. Process logs, caches and Electron user data can live separately. Keep these local directories under your control; see [local data](docs/local-data.md).
 
 ## Data egress
 
 The daemon retains project, file, map, prompt, brief, conversation, revision,
-validation, preview, run, configuration, log, and local-agent state under its
-local data root. When you start an agent run, the selected local agent or BYOK
+validation, preview, run, configuration and local-agent state under its
+local data root; lifecycle tools also write local process logs. When you start an agent run, the selected local agent or BYOK
 provider receives the prompt and the MapDesign project context needed for that
 run, including the relevant map and file data. Its provider receives that data
 under its own service terms; provider credentials are configured locally and
