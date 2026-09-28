@@ -103,7 +103,8 @@ function extractSymbol(symbol: XmlNode, name: string, family: string | undefined
   if (roleHint) element.roleHint = roleHint;
 
   for (const layer of nodesOf(symbol.layer)) extractSymbolLayer(layer, style, name, extracted, family);
-  extracted.elements.push(element);
+  if (Object.keys(style).length) extracted.elements.push(element);
+  else extracted.skipped.push({ source: 'qgis', layer: name, reason: '未提取到可表示的核心样式属性，省略空符号' });
   return element;
 }
 
@@ -124,6 +125,8 @@ function extractSymbolLayer(layer: XmlNode, style: CoreStyleProps, name: string,
     setColor(props.get('color'), 'fillColor', style, name, extracted);
     setColor(props.get('outline_color'), 'strokeColor', style, name, extracted);
     setDimension(props.get('size'), 'size', style, unit, name, extracted);
+  } else {
+    extracted.skipped.push({ source: 'qgis', layer: name, reason: `不支持的符号图层: ${className ?? 'unknown'}` });
   }
   extractDataDefined(firstNode(layer.data_defined_properties), name, family, extracted);
 }
@@ -166,6 +169,11 @@ function properties(layer: XmlNode): Map<string, string> {
   for (const prop of nodesOf(layer.prop)) {
     const key = attribute(prop, 'k');
     const value = attribute(prop, 'v');
+    if (key && value !== undefined) result.set(key, value);
+  }
+  for (const option of nodesOf(firstNode(layer.Option)?.Option)) {
+    const key = attribute(option, 'name');
+    const value = attribute(option, 'value');
     if (key && value !== undefined) result.set(key, value);
   }
   return result;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { zipSync } from 'fflate';
 import { parseQgis } from '../src/adapters/qgis.js';
+import { initializeCartography } from '../src/index.js';
 import { loadFixture } from './helpers.js';
 
 describe('parseQgis', () => {
@@ -25,6 +26,35 @@ describe('parseQgis', () => {
     const ir = parseQgis(Buffer.from(zipSync({ 'project.qgs': loadFixture('qgis-min.qgs') })), 'project.qgz');
     expect(ir.elements).toHaveLength(1);
     expect(ir.elements[0]?.name).toBe('roads');
+  });
+
+  it('imports modern QGZ properties and reports unsupported symbols without emitting empty elements', () => {
+    const xml = `<qgis><projectlayers><maplayer><layername>roads</layername>
+      <renderer-v2 type="singleSymbol"><symbols><symbol type="line" name="0">
+        <layer class="SimpleLine"><Option type="Map">
+          <Option name="line_color" value="221,136,68,255"/>
+          <Option name="line_width" value="1.06"/>
+          <Option name="line_width_unit" value="MM"/>
+        </Option><data_defined_properties><Option><Option name="line_color" value="0,0,0,255"/></Option></data_defined_properties></layer>
+        <layer class="MarkerLine"><symbol type="marker"><layer class="SimpleMarker">
+          <Option><Option name="color" value="0,0,0,255"/></Option>
+        </layer></symbol></layer>
+      </symbol></symbols></renderer-v2></maplayer>
+      <maplayer><layername>texture</layername><renderer-v2 type="singleSymbol"><symbols>
+        <symbol type="fill" name="0"><layer class="RasterFill"/></symbol>
+      </symbols></renderer-v2></maplayer></projectlayers></qgis>`;
+    const archive = Buffer.from(zipSync({ 'project.qgs': Buffer.from(xml) }));
+    const ir = parseQgis(archive, 'project.qgz');
+    expect(ir.elements).toHaveLength(1);
+    expect(ir.elements[0]?.style).toEqual({ strokeColor: '#dd8844', strokeWidth: { value: 1.06, unit: 'mm' } });
+    const draft = initializeCartography(archive, 'project.qgz', 'Modern QGIS');
+    expect(draft.source).toContain('#dd8844');
+    const report = JSON.parse(draft.reportJson);
+    expect(report.statistics.elements).toBe(1);
+    expect(report.skipped).toEqual(expect.arrayContaining([
+      expect.objectContaining({ layer: 'roads', reason: expect.stringContaining('MarkerLine') }),
+      expect.objectContaining({ layer: 'texture', reason: expect.stringContaining('RasterFill') }),
+    ]));
   });
 
   it('keeps rule symbols as one family and routes filter expressions to bindings', () => {

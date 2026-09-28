@@ -10,6 +10,7 @@ import type { MapDesignRuntimeCatalog } from '../../../src/map-design/applicatio
 import type { generateCartographyEdit } from '../../../src/map-design/application/cartography-authoring.js';
 import { closeMapDesignDatabase, openMapDesignDatabase } from '../../../src/map-design/storage/database.js';
 import { createMapDesignLocalStore } from '../../../src/map-design/storage/local-store.js';
+import { MapDraftError } from '../../../src/map-design/application/errors.js';
 
 const source = '---\nversion: "0.4.0"\nname: Atlas\n---\n\n## Overview\nOriginal guidance.\n';
 const catalog: MapDesignRuntimeCatalog = {
@@ -33,6 +34,19 @@ async function setup() {
   cleanups.push(async () => { await edits.shutdown(); closeMapDesignDatabase(db); await rm(root, { recursive: true, force: true }); });
   return { db, store, deps, edits, conversations, runtimes, generate };
 }
+it.each([
+  [new MapDraftError('INVALID_INPUT', 'The model output was truncated (configured limit: 8192 tokens).'), 'The model output was truncated (configured limit: 8192 tokens).'],
+  [new Error('Internal private diagnostics'), 'The specification edit failed.'],
+  [new MapDraftError('INVALID_INPUT', 'Authorization: Bearer secret-api-token'), 'The specification edit failed.'],
+])('preserves safe edit failure details and the original draft', async (failure, expected) => {
+  const { edits, conversations, generate } = await setup();
+  generate.mockRejectedValue(failure);
+  const session = await edits.create({ source, runtime: 'api', description: '', initialPrompt: 'Improve' });
+  await edits.turn(session.id, { requestId: randomUUID(), expectedRevision: 0, conversationId: session.id, runtimeRevision: 0, prompt: 'Improve' });
+  await vi.waitFor(async () => expect((await edits.get(session.id)).status).toBe('failed'));
+  expect(await edits.get(session.id)).toMatchObject({ source, revision: 0 });
+  expect(conversations.get(session.id, session.id).messages.at(-1)).toMatchObject({ content: expected, runStatus: 'failed' });
+});
 it('starts a new specification conversation before generation completes and preserves the selected model', async () => {
   // Given a selected custom model and a generation that has not completed.
   const { edits, conversations, store, generate } = await setup();

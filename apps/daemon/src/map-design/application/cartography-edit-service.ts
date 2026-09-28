@@ -12,7 +12,7 @@ import { cartographyPreview } from './cartography-preview.js';
 import { generateCartographyEdit, type CartographyModelRoots } from './cartography-authoring.js';
 import { invalidInput, MapDraftError } from './errors.js';
 import type { MapDesignLocalStore, RunMessagePatch } from '../storage/local-store.js';
-import { RunEventAccumulator } from './run-events.js';
+import { RunEventAccumulator, sanitizeEventText } from './run-events.js';
 
 const storedSchema = CartographyEditSessionSchema.omit({ preview: true }).extend({
   reportMarkdown: z.string().max(2 * 1024 * 1024), receipts: z.record(z.string().uuid(), z.string()), assistantId: z.string().uuid().optional(),
@@ -203,20 +203,23 @@ export class CartographyEditService {
       }, this.deps, job.controller.signal));
       if (job.controller.signal.aborted) throw new Error('Canceled');
       const report = lintCartography(reply.source);
-      if (!report.valid || !report.cartography) throw new Error('Invalid specification');
+      if (!report.valid || !report.cartography) throw new MapDraftError('INVALID_INPUT', 'The Agent returned an invalid specification.');
       const sampleBindings = reply.sampleBindings ?? {};
-      if (!validCartographySampleBindings(cartographyPreview(reply.source).elements ?? [], sampleBindings)) throw new Error('Invalid sample binding');
+      if (!validCartographySampleBindings(cartographyPreview(reply.source).elements ?? [], sampleBindings)) throw new MapDraftError('INVALID_INPUT', 'The Agent returned sample bindings that do not match the specification elements.');
       const now = new Date().toISOString();
       job.events.finish('succeeded', undefined, Date.now());
       await this.write({ ...session, source: reply.source, name: report.cartography.name, revision: session.revision + 1,
         sampleBindings: reply.sampleBindings, status: 'idle', error: null, updatedAt: now,
         messages: this.deps.store ? session.messages : [...session.messages, { id: session.assistantId!, role: 'assistant', content: reply.message, createdAt: now }],
       }, { patch: { id: session.assistantId!, value: { content: reply.message, runStatus: 'succeeded', endedAt: Date.now(), events: job.events.snapshot() } } });
-    } catch {
+    } catch (error) {
       const canceled = job.controller.signal.aborted;
+      const content = canceled ? '' : sanitizeEventText(error instanceof MapDraftError ? error.message : undefined, 'The specification edit failed.', 2048);
       job.events.finish(canceled ? 'canceled' : 'failed', undefined, Date.now());
-      try { await this.write({ ...session, status: canceled ? 'canceled' : 'failed', error: canceled ? null : 'generation-failed', updatedAt: new Date().toISOString() },
-        { patch: { id: session.assistantId!, value: { runStatus: canceled ? 'canceled' : 'failed', endedAt: Date.now(), events: job.events.snapshot() } } }); }
+      const now = new Date().toISOString();
+      try { await this.write({ ...session, status: canceled ? 'canceled' : 'failed', error: canceled ? null : 'generation-failed', updatedAt: now,
+        messages: this.deps.store || canceled ? session.messages : [...session.messages, { id: session.assistantId!, role: 'assistant', content, createdAt: now }],
+      }, { patch: { id: session.assistantId!, value: { content, runStatus: canceled ? 'canceled' : 'failed', endedAt: Date.now(), events: job.events.snapshot() } } }); }
       catch { /* A durable running record is recovered on the next read. */ }
     } finally { clearTimeout(timeout); clearTimeout(job.timer); this.jobs.delete(session.id); }
   }
