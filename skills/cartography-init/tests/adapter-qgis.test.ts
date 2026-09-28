@@ -5,6 +5,27 @@ import { initializeCartography } from '../src/index.js';
 import { loadFixture } from './helpers.js';
 
 describe('parseQgis', () => {
+  it('preserves QGIS 3.40 extended RGB colors and Point units in QGZ drafts', () => {
+    const xml = `<qgis><projectlayers><maplayer><layername>管线</layername>
+      <renderer-v2 type="singleSymbol"><symbols><symbol type="line" name="0">
+        <layer class="SimpleLine"><Option type="Map">
+          <Option name="line_color" value="225,89,137,255,rgb:0.88235294117647056,0.34901960784313724,0.53725490196078429,1"/>
+          <Option name="line_width" value="0.6"/><Option name="line_width_unit" value="Point"/>
+        </Option></layer></symbol></symbols></renderer-v2>
+      <labeling><settings><text-style fontFamily="SimSun" fontSize="12" fontSizeUnit="Point"/></settings></labeling>
+      </maplayer></projectlayers></qgis>`;
+    const archive = Buffer.from(zipSync({ '测试配置编号图.qgs': Buffer.from(xml) }));
+    const ir = parseQgis(archive, '测试配置编号图.qgz');
+    expect(ir.elements.find(element => element.geometry === 'line')?.style).toEqual({
+      strokeColor: '#e15989', strokeWidth: { value: 0.6, unit: 'pt' },
+    });
+    expect(ir.typography[0]?.fontSize).toEqual({ value: 12, unit: 'pt' });
+    const draft = initializeCartography(archive, '测试配置编号图.qgz', 'QGIS 3.40');
+    expect(draft.source).toContain('#e15989');
+    expect(draft.source).toContain('0.6pt');
+    expect(draft.source).toContain('SimSun');
+  });
+
   it('extracts single symbols with unit and color conversion', () => {
     const ir = parseQgis(loadFixture('qgis-min.qgs'), 'qgis-min.qgs');
     expect(ir.source.kind).toBe('qgis');

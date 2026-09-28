@@ -14,7 +14,7 @@ import {
 type XmlNode = Record<string, unknown>;
 
 const units: Readonly<Record<string, DimensionUnit>> = {
-  MM: 'mm', Points: 'pt', Pixels: 'px', Inches: 'in',
+  MM: 'mm', Point: 'pt', Points: 'pt', Pixels: 'px', Inches: 'in',
 };
 
 export function parseQgis(buffer: Buffer, fileName: string): ExtractedStyle {
@@ -220,7 +220,7 @@ function unitFor(value: string | undefined, layer: string, extracted: ExtractedS
 
 function qgisColor(value: string | undefined): string | undefined {
   if (!value) return undefined;
-  const channels = value.split(',').map((channel) => Number(channel.trim()));
+  const channels = value.replace(/,rgb:.*$/, '').split(',').map((channel) => Number(channel.trim()));
   if (channels.length < 3 || channels.length > 4 || !channels.every((channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255)) return undefined;
   const red = channels[0]!;
   const green = channels[1]!;
