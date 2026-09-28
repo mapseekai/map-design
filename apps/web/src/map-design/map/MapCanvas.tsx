@@ -1,8 +1,8 @@
 import {
-  Map,
   type MapOptions,
   type StyleSpecification,
 } from 'maplibre-gl';
+import { MapDesignMap } from './map-design-map';
 import { createMapResourceTransform } from './resource-request';
 
 import { prepareMapStyleForRuntime } from './runtime-style';
@@ -30,7 +30,7 @@ export function MapCanvas({
   className,
   maplibre,
   protocolOptions,
-  createMap = (options) => new Map(options),
+  createMap = (options) => new MapDesignMap(options),
   onMapError,
   onMapIdle,
   onMapReady,
