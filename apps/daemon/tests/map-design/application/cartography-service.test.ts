@@ -13,6 +13,34 @@ const source = '---\nversion: "0.4.0"\nname: Quiet Atlas\ncolors:\n  ink: "#2430
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 
 describe('CARTOGRAPHY.md library', () => {
+  it('retains original style bytes across reopen and edits without another upload', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cartography-original-'));
+    roots.push(root);
+    let db = openMapDesignDatabase(root);
+    const sourceFile = { fileName: '测试.qgz', content: Buffer.from([0x50, 0x4b, 0, 0xff, 0x80]).toString('base64') };
+    try {
+      const service = new CartographyService(createMapDesignLocalStore(db));
+      const saved = service.import({ source, sourceFile });
+      service.updateMetadata(saved.id, { name: 'Renamed' });
+      service.import({ source, description: 'Reimport without attachment' });
+      db.close();
+      db = openMapDesignDatabase(root);
+      const reopened = new CartographyService(createMapDesignLocalStore(db));
+      expect(reopened.get(saved.id).sourceFile).toEqual(sourceFile);
+      expect(reopened.list().documents[0]).not.toHaveProperty('sourceFile');
+    } finally { db.close(); }
+  });
+  it('removes the saved original when its unused document is deleted', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cartography-original-delete-'));
+    roots.push(root);
+    const db = openMapDesignDatabase(root);
+    try {
+      const service = new CartographyService(createMapDesignLocalStore(db));
+      const saved = service.import({ source, sourceFile: { fileName: 'style.json', content: Buffer.from('{}').toString('base64') } });
+      service.delete(saved.id);
+      expect(db.prepare('SELECT * FROM cartography_source_files').all()).toEqual([]);
+    } finally { db.close(); }
+  });
   it('renames library metadata without changing source, identity or description', () => {
     const root = mkdtempSync(join(tmpdir(), 'cartography-rename-'));
     roots.push(root);

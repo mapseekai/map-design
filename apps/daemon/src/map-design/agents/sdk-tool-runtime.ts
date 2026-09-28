@@ -2,6 +2,7 @@ import { SafeToolSummarySchema } from '@mapseekai/contracts';
 import { MapToolNameSchema, type MapToolName } from '@mapseekai/map-design-contracts';
 
 import { requestDigest } from '../application/request-digest.js';
+import type { AgentToolName } from './types.js';
 import type {
   MapDesignNativeToolRegistry,
   MapNativeToolResult,
@@ -18,7 +19,7 @@ export interface SdkMapToolCall {
   conversationId: string;
   agentId: string;
   toolUseId: string;
-  name: MapToolName;
+  name: AgentToolName;
   input: unknown;
   signal: AbortSignal;
   /** Internal lifecycle hook; duplicate/rejected calls never receive it. */
@@ -46,7 +47,8 @@ export function createSdkMapToolRuntime(
       const toolUseId = safeIdentifier(call.toolUseId) ?? 'invalid-tool-call';
       if (closedRuns.has(call.runId)) return Promise.resolve(failure(toolUseId, 'RUN_CLOSED', 'The map tool Run is closed.'));
       if (!validCallContext(call)) return Promise.resolve(failure(toolUseId, 'INVALID_INPUT', 'The map tool input is invalid.'));
-      if (!MapToolNameSchema.safeParse(call.name).success || !definitions.has(call.name)) {
+      const mapToolName = MapToolNameSchema.safeParse(call.name);
+      if (!mapToolName.success || !definitions.has(mapToolName.data)) {
         return Promise.resolve(failure(toolUseId, 'UNKNOWN_TOOL', 'The map tool call is not registered.'));
       }
       if (call.signal.aborted) return Promise.resolve(canceled(toolUseId));
@@ -86,7 +88,7 @@ export function createSdkMapToolRuntime(
         if (call.signal.aborted) return canceled(call.toolUseId);
         reportActivity(call, 'admitted');
         try {
-          const value = await executeRegistryCall(registry, call);
+          const value = await executeRegistryCall(registry, call, mapToolName.data);
           return cloneResult(safeResult(value, call.toolUseId));
         } finally {
           reportActivity(call, 'completed');
@@ -112,6 +114,7 @@ export function createSdkMapToolRuntime(
 async function executeRegistryCall(
   registry: MapDesignNativeToolRegistry,
   call: SdkMapToolCall,
+  name: MapToolName,
 ): Promise<MapNativeToolResult> {
   try {
     return await registry.call({
@@ -120,7 +123,7 @@ async function executeRegistryCall(
       conversationId: call.conversationId,
       toolUseId: call.toolUseId,
       signal: call.signal,
-    }, call.name, call.input);
+    }, name, call.input);
   } catch {
     return failure(call.toolUseId, 'SDK_TOOL_FAILED', 'The map tool call failed safely.');
   }

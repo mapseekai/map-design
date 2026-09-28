@@ -65,7 +65,7 @@ describe('API efficiency in the actual SDK loop', () => {
     const model = new MockLanguageModelV4({ doStream: end() });
     const adapter = createApiMapAgentAdapter({ projectRoot: repo, provider: () => undefined, model, report: vi.fn() });
     const handle = await adapter.startMapRun({ ...input(vi.fn()), taskKind: 'cartography' }, [definition], () => {});
-    expect(await handle.done).toEqual({ status: 'succeeded' });
+    expect(await handle.done).toEqual({ status: 'succeeded', finalResponse: '' });
     expect(model.doStreamCalls[0]?.tools?.map((entry) => entry.name)).toEqual(['read_design_reference']);
   });
 });

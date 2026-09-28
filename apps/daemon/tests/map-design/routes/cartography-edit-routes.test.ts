@@ -37,7 +37,7 @@ it('keeps edit sessions local, starts once, publishes explicitly and reports bad
   expect((await request(app, `${path}/turns`, 'POST', turn)).status).toBe(202);
   await vi.waitFor(async () => {
     const current = await (await request(app, path)).json() as { status: string; source: string };
-    expect(current.status).toBe('idle'); expect(current.source).toBe(updated);
+    expect(current.status, JSON.stringify(current)).toBe('idle'); expect(current.source).toBe(updated);
   });
   expect((await request(app, `${path}/turns`, 'POST', turn)).status).toBe(202);
   expect(generateCartographyEdit).toHaveBeenCalledTimes(1);
@@ -45,4 +45,17 @@ it('keeps edit sessions local, starts once, publishes explicitly and reports bad
   expect((await request(app, `${path}/save`, 'POST', { expectedRevision: 0 })).status).toBe(409);
   expect((await request(app, `${path}/save`, 'POST', { expectedRevision: 1 })).status).toBe(200);
   expect(save).toHaveBeenCalledWith({ source: updated, description: '' });
+});
+
+it('accepts a maximum-size original upload with a conversion report when creating an edit', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'edit-source-route-')); roots.push(root);
+  const source = ['---', 'version: "0.4.0"', 'name: Atlas', '---', '', '## Overview', 'Original.'].join(String.fromCharCode(10));
+  const sourceFile = { fileName: 'style.json', content: Buffer.from('{}' + ' '.repeat(4 * 1024 * 1024 - 2)).toString('base64') };
+  const app = express();
+  app.use(createCartographyAuthoringRouter({ dataRoot: root, projectRoot: '/unused', projectService: { importCartography: vi.fn() }, requireLocal: requireLocalDaemonRequest }));
+  const response = await request(app, '/api/map-design/cartography-tools/edit-sessions', 'POST', {
+    source, sourceFile, reportMarkdown: '报告'.repeat(512 * 1024), runtime: 'api', initialPrompt: 'Read the original',
+  });
+  expect(response.status).toBe(201);
+  expect(await response.json()).not.toHaveProperty('sourceFile');
 });

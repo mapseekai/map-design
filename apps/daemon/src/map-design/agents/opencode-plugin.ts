@@ -6,11 +6,11 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { SafeToolSummarySchema, type SafeToolSummary } from '@mapseekai/contracts';
-import type { MapToolName } from '@mapseekai/map-design-contracts';
+import type { AgentToolName } from './types.js';
 
 import type { RuntimeAgentDef } from '../../runtimes/types.js';
 import { stopMapDesignProcessTree } from '../application/run-service.js';
-import type { NativeMapToolDefinition } from '../tools/tool-context.js';
+import type { AgentToolDefinition } from './types.js';
 import { sanitizeMapAgentLaunchEnvironment } from './launch-environment.js';
 import {
   createMemoryMapAgentSessionBroker,
@@ -70,7 +70,8 @@ export type OpenCodeStagePlugin = (
 ) => Promise<OpenCodePluginLease>;
 
 type OpenCodeEventParserOptions = {
-  tools: readonly NativeMapToolDefinition[];
+  tools: readonly AgentToolDefinition[];
+  cartography?: boolean;
   maxFrameBytes?: number;
   onEvent(event: MapAgentEvent): void;
   onSession(sessionId: string): void;
@@ -79,6 +80,7 @@ type OpenCodeEventParserOptions = {
 
 type OpenCodeEventParserLike = {
   readonly activeToolCalls: number;
+  readonly finalResponse?: string | undefined;
   failed: boolean;
   feed(chunk: Buffer | string): void;
   flush(): void;
@@ -86,7 +88,7 @@ type OpenCodeEventParserLike = {
 
 export type CreateOpenCodeMapAgentAdapterOptions = {
   definition: RuntimeAgentDef;
-  toolDefinitions: () => readonly NativeMapToolDefinition[];
+  toolDefinitions: () => readonly AgentToolDefinition[];
   spawn?: OpenCodePluginSpawn;
   environment?: () => NodeJS.ProcessEnv | null;
   environmentKeys?: () => readonly string[];
@@ -106,6 +108,7 @@ const DEFAULT_PROBE_TIMEOUT_MS = 10_000;
 const MAX_PROBE_TIMEOUT_MS = 30_000;
 const DEFAULT_PROCESS_STOP_TIMEOUT_MS = 250;
 const MAX_EVENT_TEXT_LENGTH = 65_536;
+const MAX_CARTOGRAPHY_RESPONSE_BYTES = 512 * 1024;
 const MAX_REJECTION_STDERR_BYTES = 8_192;
 const FAILED_CONNECTION = {
   code: 'RUN_FAILED',
@@ -265,6 +268,7 @@ export function createOpenCodeMapAgentAdapter(
         if (!child.stdin || !child.stdout) throw new OpenCodeProtocolError('OpenCode stdio is unavailable.');
         const parser = (options.parserFactory ?? ((parserOptions) => new OpenCodeEventParser(parserOptions)))({
           tools,
+          cartography: input.taskKind === 'cartography',
           ...(options.maxFrameBytes === undefined ? {} : { maxFrameBytes: options.maxFrameBytes }),
           onEvent: (event) => {
             if (event.kind === 'text' || event.kind === 'tool_use' || event.kind === 'tool_result') {
@@ -333,7 +337,11 @@ export function createOpenCodeMapAgentAdapter(
             }
           }
           if (code === 0 && !parser.failed && parser.activeToolCalls === 0) {
-            finish({ status: 'succeeded' });
+            if (input.taskKind === 'cartography' && parser.finalResponse === undefined) {
+              fail({ code: 'INCOMPLETE_RESPONSE', message: 'OpenCode ended without a complete final response.' });
+              return;
+            }
+            finish({ status: 'succeeded', ...(parser.finalResponse === undefined ? {} : { finalResponse: parser.finalResponse }) });
           } else {
             fail();
           }
@@ -432,7 +440,7 @@ export async function probeOpenCodeNativeMapTools(
 }
 
 function buildOpenCodeRunPlugin(
-  tools: readonly NativeMapToolDefinition[],
+  tools: readonly AgentToolDefinition[],
   input: Pick<MapRunInput, 'runId' | 'projectId' | 'conversationId' | 'toolCallback'>,
   agentId: string,
 ): OpenCodeRunPlugin {
@@ -440,12 +448,12 @@ function buildOpenCodeRunPlugin(
     description: definition.description,
     inputSchema: definition.inputSchema,
   }]));
-  const surface = tools.map((definition) => `${definition.name}: tool({
+  const surface = tools.map((definition) => `${definition.name}: {
       description: DEFINITIONS[${JSON.stringify(definition.name)}].description,
       args: schemaArguments(DEFINITIONS[${JSON.stringify(definition.name)}].inputSchema),
       execute: executeTool(${JSON.stringify(definition.name)}),
-    })`).join(',\n    ');
-  const source = `import { tool } from '@opencode-ai/plugin';
+    }`).join(',\n    ');
+  const source = `import { z } from ${javascriptLiteral(import.meta.resolve('zod'))};
 
 const DEFINITIONS = ${javascriptLiteral(definitions)};
 const MAX_BODY_BYTES = 262144;
@@ -457,7 +465,7 @@ function requiredEnvironment(name) {
 }
 
 function schemaArguments(inputSchema) {
-  const schema = tool.schema.fromJSONSchema(inputSchema);
+  const schema = z.fromJSONSchema(inputSchema);
   if (!schema || typeof schema !== 'object' || !schema.shape) {
     throw new Error('MapDesign tool input schema is invalid.');
   }
@@ -642,10 +650,13 @@ class OpenCodeEventParser implements OpenCodeEventParserLike {
   private buffer = Buffer.alloc(0);
   private readonly limit: number;
   private readonly toolNames: Set<string>;
-  private readonly calls = new Map<string, { name: MapToolName; input: unknown }>();
+  private readonly calls = new Map<string, { name: AgentToolName; input: unknown }>();
   private readonly completed = new Set<string>();
   private readonly loopGuard = createMapToolLoopGuard();
   private statusEmitted = false;
+  private stepText = '';
+  private stepBytes = 0;
+  finalResponse: string | undefined;
   failed = false;
 
   constructor(private readonly options: OpenCodeEventParserOptions) {
@@ -692,6 +703,9 @@ class OpenCodeEventParser implements OpenCodeEventParserLike {
     if (!event || typeof event.type !== 'string') return this.protocolFailure();
     const part = record(event.part) ?? {};
     if (event.type === 'step_start') {
+      this.stepText = '';
+      this.stepBytes = 0;
+      this.finalResponse = undefined;
       const sessionId = safeIdentifier(event.sessionID);
       if (!sessionId) return this.protocolFailure();
       this.options.onSession(sessionId);
@@ -702,10 +716,32 @@ class OpenCodeEventParser implements OpenCodeEventParserLike {
       return;
     }
     if (event.type === 'text') {
-      if (typeof part.text !== 'string' || part.text.length === 0 || part.text.length > MAX_EVENT_TEXT_LENGTH) {
+      if (typeof part.text !== 'string' || part.text.length === 0) {
+        return this.protocolFailure();
+      }
+      if (this.options.cartography) {
+        this.stepBytes += Buffer.byteLength(part.text, 'utf8');
+        if (this.stepBytes > MAX_CARTOGRAPHY_RESPONSE_BYTES) {
+          this.failed = true;
+          this.options.onFailure({ code: 'RESPONSE_TOO_LARGE', message: 'OpenCode returned a response larger than 512 KiB.' });
+          return;
+        }
+        this.stepText += part.text;
+      } else if (part.text.length > MAX_EVENT_TEXT_LENGTH) {
         return this.protocolFailure();
       }
       this.options.onEvent({ kind: 'text', text: part.text });
+      return;
+    }
+    if (event.type === 'step_finish') {
+      if (part.reason === 'length') {
+        this.failed = true;
+        this.options.onFailure({ code: 'RESPONSE_TRUNCATED', message: 'OpenCode reached the model output limit before completing the response.' });
+      } else if (part.reason === 'stop') {
+        if (this.options.cartography) this.finalResponse = this.stepText;
+      } else if (part.reason !== 'tool-calls') {
+        this.protocolFailure();
+      }
       return;
     }
     if (event.type === 'tool_use') this.handleToolUse(part);
@@ -713,7 +749,7 @@ class OpenCodeEventParser implements OpenCodeEventParserLike {
   }
 
   private handleToolUse(part: Record<string, unknown>): void {
-    const name = safeIdentifier(part.tool) as MapToolName | null;
+    const name = safeIdentifier(part.tool) as AgentToolName | null;
     const id = safeIdentifier(part.callID);
     const state = record(part.state);
     if (!name || !id || !state || !this.toolNames.has(name)) return this.protocolFailure();

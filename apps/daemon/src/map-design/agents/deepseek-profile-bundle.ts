@@ -449,7 +449,7 @@ function assistantText(content) {
 }
 
 function resultStatus(reason) {
-  if (reason?.kind === 'completed' || reason?.kind === 'max-tokens') return 'completed';
+  if (reason?.kind === 'completed') return 'completed';
   if (reason?.kind === 'aborted') return 'cancelled';
   return 'failed';
 }
@@ -457,6 +457,7 @@ function resultStatus(reason) {
 function resultError(reason) {
   if (resultStatus(reason) !== 'failed') return undefined;
   if (!reason) return { code: 'DSH_PROFILE_MISSING_TURN_END', message: 'DeepSeek Harness became idle without a terminal reason.' };
+  if (reason.kind === 'max-tokens') return { code: 'RESPONSE_TRUNCATED', message: 'DeepSeek Harness reached the model output limit before completing the response.' };
   if (reason.kind === 'error') return errorFacts(reason.error, 'DSH_PROFILE_TURN_FAILED');
   if (reason.kind === 'blocked') return { code: 'DSH_PROFILE_TURN_BLOCKED', message: 'DeepSeek Harness blocked the turn.' };
   return { code: 'DSH_PROFILE_TURN_FAILED', message: 'DeepSeek Harness did not complete the turn.' };
@@ -615,6 +616,7 @@ async function execute(ctx, request, output, onHandle, signal) {
   let handle;
   let firstSeq = Number.POSITIVE_INFINITY;
   let turnEnd;
+  let finalOutput;
   const streamedTextSteps = new Set();
   let eventsOpen = true;
   let terminalWritten = false;
@@ -651,6 +653,7 @@ async function execute(ctx, request, output, onHandle, signal) {
       return;
     }
     if (event.type === 'assistant/message') {
+      finalOutput = assistantText(event.data.message?.content);
       const stepKey = event.data.turn + '\u0000' + event.data.step;
       if (!streamedTextSteps.has(stepKey)) {
         const assembled = assistantText(event.data.message?.content);
@@ -738,6 +741,7 @@ async function execute(ctx, request, output, onHandle, signal) {
       session_id: String(sessionId),
       stop_reason: reason?.kind ?? 'unknown',
       resume_rejected: false,
+      ...(finalOutput === undefined ? {} : { output: finalOutput }),
       ...(failure === undefined ? {} : { error: failure }),
     });
   } catch (error) {

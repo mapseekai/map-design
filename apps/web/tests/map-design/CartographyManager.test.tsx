@@ -13,7 +13,7 @@ vi.mock('../../src/map-design/hooks/useLocalAgents', () => ({ useLocalAgents: vi
 vi.mock('../../src/map-design/client', () => ({ listCartographies: vi.fn(), getCartography: vi.fn(), deleteCartography: vi.fn(), updateCartography: vi.fn(), importCartography: vi.fn(), importCartographyUrl: vi.fn(), initializeCartography: vi.fn(), initializeCartographyUrl: vi.fn(), generateCartography: vi.fn() }));
 const document = { id: 'a'.repeat(64), name: 'Quiet Atlas', description: 'Warm paper', version: '0.4.0' };
 const source = '---\nname: Quiet Atlas\nversion: "0.4.0"\n---\n## Overview\nWarm paper.';
-const draft = { source, reportMarkdown: 'Conversion evidence', reportJson: '{"bindings":[]}' };
+const draft = { source, reportMarkdown: 'Conversion evidence', reportJson: '{"bindings":[]}', sourceFile: { fileName: 'style.json', content: 'e30=' } };
 beforeEach(() => {
   vi.mocked(listActiveCartographyEdits).mockResolvedValue({ sessions: [] });
   vi.mocked(listCartographyEditHistory).mockResolvedValue({ sessions: [] });
@@ -147,9 +147,12 @@ it('shows style conversion reports and saves only when the draft is accepted', a
   fireEvent.change(input, { target: { files: [{ name: 'style.json', size: 2, arrayBuffer: async () => new TextEncoder().encode('{}').buffer }] } });
   await act(async () => { fireEvent.submit(input.closest('form')!); });
   expect(await screen.findByText('Conversion evidence')).toBeInTheDocument();
+  const editButton = screen.getByRole('button', { name: 'Edit with Agent' });
+  expect(editButton.compareDocumentPosition(screen.getByRole('textbox', { name: 'CARTOGRAPHY.md' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(client.importCartography).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Save to library' }));
   expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
+  expect(client.importCartography).toHaveBeenCalledWith(source, expect.any(AbortSignal), undefined, draft.sourceFile);
 });
 it('opens the AI editing conversation immediately with the selected model and design brief', async () => {
   const sessionId = '12345678-1234-4234-8234-123456789abc';
@@ -262,7 +265,37 @@ it('opens an agent editing workspace from the extracted draft without publishing
   await act(async () => { fireEvent.submit(screen.getByLabelText('Style URL').closest('form')!); });
   fireEvent.click(await screen.findByRole('button', { name: 'Edit with Agent' }));
   await act(async () => {});
-  expect(createCartographyEdit).toHaveBeenCalledWith(expect.objectContaining({ source: draft.source, reportMarkdown: draft.reportMarkdown, runtime: 'api' }), expect.any(AbortSignal));
+  expect(createCartographyEdit).toHaveBeenCalledWith(expect.objectContaining({ source: draft.source, reportMarkdown: draft.reportMarkdown, sourceFile: draft.sourceFile, runtime: 'api' }), expect.any(AbortSignal));
   expect(window.location.pathname).toBe(`/cartographies/edit/${sessionId}`);
   expect(client.importCartography).not.toHaveBeenCalled();
+});
+
+it('clears the extracted draft when a different uploaded style is selected', async () => {
+  render(<I18nProvider><CartographyManager /></I18nProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'Add specification' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Create from style' }));
+  const input = screen.getByLabelText('Create from style', { selector: 'input' });
+  fireEvent.change(input, { target: { files: [{ name: 'style.json', size: 2, arrayBuffer: async () => new TextEncoder().encode('{}').buffer }] } });
+  const form = input.closest('form');
+  if (!form) throw new Error('Style form is missing');
+  await act(async () => { fireEvent.submit(form); });
+  expect(await screen.findByRole('button', { name: 'Edit with Agent' })).toBeEnabled();
+
+  fireEvent.change(input, { target: { files: [new File(['new style'], 'new.qgs')] } });
+
+  expect(screen.queryByRole('button', { name: 'Edit with Agent' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: 'CARTOGRAPHY.md' })).not.toBeInTheDocument();
+});
+
+it('reuses the original style of the selected saved specification when editing', async () => {
+  vi.mocked(client.listCartographies).mockResolvedValue({ documents: [document] });
+  vi.mocked(client.getCartography).mockResolvedValue({ ...document, source, sourceFile: draft.sourceFile });
+  vi.mocked(createCartographyEdit).mockRejectedValueOnce(new Error('No agent started in this test'));
+  render(<I18nProvider><CartographyManager /></I18nProvider>);
+  const button = await screen.findByRole('button', { name: 'Edit with Agent' });
+  await waitFor(() => expect(button).toBeEnabled());
+
+  fireEvent.click(button);
+
+  await waitFor(() => expect(createCartographyEdit).toHaveBeenCalledWith(expect.objectContaining({ source, sourceDocumentId: document.id, sourceFile: draft.sourceFile }), expect.any(AbortSignal)));
 });

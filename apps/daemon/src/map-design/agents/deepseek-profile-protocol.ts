@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 
 import { SafeToolSummarySchema, type SafeToolSummary } from '@mapseekai/contracts';
 
-import type { NativeMapToolDefinition } from '../tools/tool-context.js';
+import type { AgentToolDefinition } from './types.js';
 
 export const DEEPSEEK_PROFILE_PROTOCOL_VERSION = 1 as const;
 export const DEEPSEEK_PROFILE_RUNTIME = 'map-design' as const;
@@ -31,7 +31,7 @@ export type DeepSeekProfileExecuteCommand = {
   resume_session_id?: string;
   model?: { provider: string; id: string };
   reasoning_effort?: string;
-  host_tools: NativeMapToolDefinition[];
+  host_tools: AgentToolDefinition[];
   callback: DeepSeekProfileCallbackDescriptor;
 };
 
@@ -170,7 +170,7 @@ export function createDeepSeekProfileExecuteCommand(input: {
   model?: string | null;
   reasoningEffort?: string | null;
   resumeSessionId?: string | null;
-  tools: readonly NativeMapToolDefinition[];
+  tools: readonly AgentToolDefinition[];
   callbackUrl: string;
 }): DeepSeekProfileExecuteCommand {
   const requestId = requireIdentifier(input.requestId, 'request_id');
@@ -280,7 +280,7 @@ export function parseDeepSeekProfileRuntimeFrame(value: unknown): DeepSeekProfil
       }
       requireIdentifier(frame.session_id, 'session_id');
       requireBoolean(frame.resume_rejected, 'resume_rejected');
-      if (frame.output !== undefined) requireText(frame.output, 'output', MAX_EVENT_TEXT_LENGTH, true);
+      if (frame.output !== undefined) requireText(frame.output, 'output', 512 * 1024, true);
       if (frame.stop_reason !== undefined) requireIdentifier(frame.stop_reason, 'stop_reason');
       if (frame.error !== undefined) validateWireError(frame.error);
       if (frame.status === 'failed' && frame.error === undefined) {
@@ -399,10 +399,10 @@ function validateWireError(value: unknown): void {
   requireText(error.message, 'error.message', 2_048, false);
 }
 
-function cloneToolDefinition(value: NativeMapToolDefinition): NativeMapToolDefinition {
+function cloneToolDefinition(value: AgentToolDefinition): AgentToolDefinition {
   const tool = requireObject(value, 'host tool');
   assertExactKeys(tool, ['name', 'description', 'inputSchema']);
-  const name = requireIdentifier(tool.name, 'host tool name') as NativeMapToolDefinition['name'];
+  const name = requireIdentifier(tool.name, 'host tool name') as AgentToolDefinition['name'];
   const description = requireText(tool.description, 'host tool description', 4_096, false);
   const inputSchema = requireObject(tool.inputSchema, 'host tool input schema');
   let cloned: Record<string, unknown>;
@@ -415,7 +415,7 @@ function cloneToolDefinition(value: NativeMapToolDefinition): NativeMapToolDefin
   return { name, description, inputSchema: cloned };
 }
 
-function requireUniqueToolNames(tools: readonly NativeMapToolDefinition[]): void {
+function requireUniqueToolNames(tools: readonly AgentToolDefinition[]): void {
   const names = new Set<string>();
   for (const tool of tools) {
     if (names.has(tool.name)) throw new DeepSeekProfileProtocolError('Host tool names must be unique.');

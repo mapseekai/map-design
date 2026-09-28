@@ -6,9 +6,16 @@ import { MapDigestSchema, mapStringByteLength } from './project.js';
 export const CARTOGRAPHY_MAX_BYTES = 64 * 1024;
 export const CartographySourceSchema = z.string().min(1).max(CARTOGRAPHY_MAX_BYTES)
   .refine((source) => mapStringByteLength(source) <= CARTOGRAPHY_MAX_BYTES, 'CARTOGRAPHY.md exceeds 64 KiB');
+export const CARTOGRAPHY_STYLE_MAX_BYTES = 4 * 1024 * 1024;
+export const CartographyStyleFileSchema = z.strictObject({
+  fileName: z.string().min(1).max(256).regex(/^[^/\\]+\.(json|qgs|qgz|lyrx|stylx|sld|xml)$/i),
+  content: z.string().min(1).max(Math.ceil(CARTOGRAPHY_STYLE_MAX_BYTES / 3) * 4).regex(/^[A-Za-z0-9+/]*={0,2}$/),
+});
+export type CartographyStyleFile = z.infer<typeof CartographyStyleFileSchema>;
+
 export const CartographyDescriptionSchema = z.string().trim().max(2048);
 export const CartographyMetadataInputSchema = z.strictObject({ description: CartographyDescriptionSchema.optional(), name: z.string().trim().min(1).max(256).optional() }).refine(value => value.description !== undefined || value.name !== undefined);
-export const CartographyImportInputSchema = z.strictObject({ source: CartographySourceSchema, description: CartographyDescriptionSchema.optional(), sampleBindings: CartographySampleBindingsSchema.optional() });
+export const CartographyImportInputSchema = z.strictObject({ source: CartographySourceSchema, sourceFile: CartographyStyleFileSchema.optional(), description: CartographyDescriptionSchema.optional(), sampleBindings: CartographySampleBindingsSchema.optional() });
 // Preview paint is data, never an SVG resource URL or executable markup.
 export const CartographyPreviewColorSchema = z.string().max(96).regex(/^(?:#[0-9a-f]{3,4}|#[0-9a-f]{6}|#[0-9a-f]{8}|(?:rgb|hsl)a?\([\d\s.,%/+\-]+\))$/i);
 export const CartographyMapElementSchema = z.object({
@@ -48,18 +55,14 @@ export const CartographySummarySchema = z.object({
   version: z.string().min(1).max(64),
   preview: CartographyPreviewSchema.optional(),
 });
-export const CartographyDocumentSchema = CartographySummarySchema.extend({ source: CartographySourceSchema });
+export const CartographyDocumentSchema = CartographySummarySchema.extend({ source: CartographySourceSchema, sourceFile: CartographyStyleFileSchema.optional() });
 export const CartographyListOutputSchema = z.strictObject({ documents: z.array(CartographySummarySchema) });
 export type CartographySummary = z.infer<typeof CartographySummarySchema>;
 export type CartographyDocument = z.infer<typeof CartographyDocumentSchema>;
 
-export const CARTOGRAPHY_STYLE_MAX_BYTES = 4 * 1024 * 1024;
+
 export const CartographyUrlInputSchema = z.strictObject({ url: z.string().url().max(8192), description: CartographyDescriptionSchema.optional() });
-export const CartographyInitializeInputSchema = z.strictObject({
-  name: z.string().trim().min(1).max(256),
-  fileName: z.string().min(1).max(256).regex(/^[^/\\]+\.(json|qgs|qgz|lyrx|stylx|sld|xml)$/i),
-  content: z.string().min(1).max(Math.ceil(CARTOGRAPHY_STYLE_MAX_BYTES / 3) * 4).regex(/^[A-Za-z0-9+/]*={0,2}$/),
-});
+export const CartographyInitializeInputSchema = CartographyStyleFileSchema.extend({ name: z.string().trim().min(1).max(256) });
 export const CartographyInitializeUrlInputSchema = z.strictObject({
   name: CartographyInitializeInputSchema.shape.name,
   url: CartographyUrlInputSchema.shape.url,
@@ -72,6 +75,7 @@ export const CartographyGenerateInputSchema = z.strictObject({
   name: z.string().trim().min(1).max(256), requirements: z.string().trim().min(1).max(8000),
 });
 export const CartographyDraftOutputSchema = z.strictObject({
+  sourceFile: CartographyStyleFileSchema.optional(),
   source: CartographySourceSchema,
   reportMarkdown: z.string().max(2 * 1024 * 1024),
   reportJson: z.string().max(2 * 1024 * 1024),

@@ -90,11 +90,69 @@ const TOOL: NativeMapToolDefinition = {
     required: ['target'],
   },
 };
+
+it('returns the final answer separately when commentary precedes native source reads', async () => {
+  const state = await startRun({ stopProcessTree: async () => undefined });
+  const finalResponse = '{"message":"Done","source":"complete specification"}';
+  for (const [id, phase, text] of [
+    ['commentary-1', 'commentary', 'Inspecting the uploaded QGIS source.'],
+    ['answer-1', 'final_answer', finalResponse],
+  ]) {
+    state.server.send({ method: 'item/agentMessage/delta', params: {
+      threadId: 'thread-1', turnId: 'turn-1', itemId: id, delta: text,
+    } });
+    state.server.send({ method: 'item/completed', params: {
+      threadId: 'thread-1', turnId: 'turn-1', item: { type: 'agentMessage', id, phase, text },
+    } });
+    if (phase === 'commentary') state.server.send({ method: 'item/completed', params: {
+      threadId: 'thread-1', turnId: 'turn-1', item: { type: 'commandExecution', id: 'read-1' },
+    } });
+  }
+  state.server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn('completed') } });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse });
+  expect(state.events.filter(event => event.kind === 'text')).toEqual([
+    { kind: 'text', text: 'Inspecting the uploaded QGIS source.' },
+    { kind: 'text', text: finalResponse },
+  ]);
+});
 const MUTATION_TOOL: NativeMapToolDefinition = {
   name: 'map_apply_transaction',
   description: 'Apply an atomic map transaction.',
   inputSchema: { type: 'object' },
 };
+
+it.each([null, undefined, 'final_answer'] as const)('returns only the completed answer when its phase is %s', async (phase) => {
+  const state = await startRun({ stopProcessTree: async () => undefined });
+  const finalResponse = '{"source":"complete"}';
+  for (const item of [
+    { type: 'agentMessage', id: 'progress', text: 'Reading source', phase: null },
+    { type: 'agentMessage', id: 'answer', text: finalResponse, ...(phase === undefined ? {} : { phase }) },
+    { type: 'reasoning', id: 'private', content: ['private reasoning'] },
+  ]) state.server.send({ method: 'item/completed', params: { threadId: 'thread-1', turnId: 'turn-1', item } });
+  state.server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn('completed') } });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse });
+});
+
+it.each([null, undefined, 'final_answer', 'commentary'] as const)('does not reuse streamed text for an empty or commentary-only completion with phase %s', async (phase) => {
+  const state = await startRun({ stopProcessTree: async () => undefined });
+  state.server.send({ method: 'item/agentMessage/delta', params: { threadId: 'thread-1', turnId: 'turn-1', itemId: 'answer', delta: 'stale or incomplete JSON' } });
+  state.server.send({ method: 'item/completed', params: { threadId: 'thread-1', turnId: 'turn-1', item: {
+    type: 'agentMessage', id: 'answer', text: phase === 'commentary' ? 'Still reading' : '', ...(phase === undefined ? {} : { phase }),
+  } } });
+  state.server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn('completed') } });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse: '' });
+});
+
+it.each(['failed', 'interrupted'] as const)('does not return an answer when the turn is %s', async (status) => {
+  const state = await startRun({ stopProcessTree: async () => undefined });
+  state.server.send({ method: 'item/completed', params: { threadId: 'thread-1', turnId: 'turn-1', item: {
+    type: 'agentMessage', id: 'answer', text: '{"source":"partial', phase: null,
+  } } });
+  state.server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn(status) } });
+  const result = await state.handle.done;
+  expect(result.status).toBe(status === 'failed' ? 'failed' : 'canceled');
+  expect(result).not.toHaveProperty('finalResponse');
+});
 const SEARCH_TOOL: NativeMapToolDefinition = {
   name: 'map_search_layers',
   description: 'Search map layers.',
@@ -196,6 +254,8 @@ async function startRun(options: {
   maxFrameBytes?: number;
   stopProcessTree?: (child: unknown) => Promise<void>;
   input?: MapRunInput;
+  expectedSourceReader?: boolean;
+  earlyFinalResponse?: string;
 } = {}) {
   const server = options.server ?? new FakeAppServer();
   const registry = options.registry ?? nativeRegistry();
@@ -240,16 +300,16 @@ async function startRun(options: {
         model_reasoning_effort: 'high',
         model_reasoning_summary: 'detailed',
       },
-      dynamicTools: tools.length ? [{
+      dynamicTools: tools.length || options.expectedSourceReader ? [{
         type: 'namespace',
         name: 'map-design',
         description: 'Transactional map design tools',
-        tools: tools.map((tool) => ({
+        tools: [...tools.map((tool) => ({
           type: 'function',
           name: tool.name,
           description: tool.description,
           inputSchema: tool.inputSchema,
-        })),
+        })), ...(options.expectedSourceReader ? [expect.objectContaining({ type: 'function', name: 'read_cartography_source' })] : [])],
       }] : [],
     },
   });
@@ -278,6 +338,9 @@ async function startRun(options: {
       environments: [],
     },
   });
+  if (options.earlyFinalResponse !== undefined) server.send({ method: 'item/completed', params: {
+    threadId: 'thread-1', turnId: 'turn-1', item: { type: 'agentMessage', id: 'early-answer', phase: 'final_answer', text: options.earlyFinalResponse },
+  } });
   server.send({ id: turnStart.id, result: { turn: turn('inProgress') } });
 
   return {
@@ -290,6 +353,13 @@ async function startRun(options: {
   };
 }
 
+it('retains the final answer when its completion arrives before the turn start response', async () => {
+  const finalResponse = '{"message":"Done","source":"complete specification"}';
+  const state = await startRun({ earlyFinalResponse: finalResponse, stopProcessTree: async () => undefined });
+  state.server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn('completed') } });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse });
+});
+
 it('sends screenshots as Codex image URL input items', async () => {
   const state = await startRun({
     input: runInput(undefined, { images: [{ data: 'iVBORw0KGgo=', mimeType: 'image/png' }] }),
@@ -298,6 +368,31 @@ it('sends screenshots as Codex image URL input items', async () => {
     method: 'turn/completed',
     params: { threadId: 'thread-1', turn: turn('completed') },
   });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded' });
+});
+
+it('reads only the uploaded cartography documents through a native tool without map mutation authority', async () => {
+  const state = await startRun({
+    tools: [], expectedSourceReader: true, stopProcessTree: async () => undefined,
+    input: runInput(undefined, { taskKind: 'cartography', cartographySources: [{ fileName: 'source/document-1.qgs', content: '<qgis>original styling</qgis>' }] }),
+  });
+  for (const [index, args, success] of [
+    [0, { fileName: 'source/document-1.qgs', offset: 6, length: 8 }, true],
+    [1, { fileName: '../secrets' }, false],
+    [2, { fileName: 'source/document-1.qgs', length: 16001 }, false],
+  ] as const) {
+    state.server.send({ id: 300 + index, method: 'item/tool/call', params: {
+      threadId: 'thread-1', turnId: 'turn-1', namespace: 'map-design', callId: 'source-' + index,
+      tool: 'read_cartography_source', arguments: args,
+    } });
+    const response = await state.server.nextClientFrame();
+    expect(response).toMatchObject({ id: 300 + index, result: { success } });
+    if (success) expect(response).toEqual({ id: 300, result: { success: true, contentItems: [{ type: 'inputText', text: JSON.stringify({
+      fileName: 'source/document-1.qgs', offset: 6, totalLength: 29, nextOffset: 14, content: 'original',
+    }) }] } });
+  }
+  expect(state.registry.call).not.toHaveBeenCalled();
+  state.server.send({ method: 'turn/completed', params: { threadId: 'thread-1', turn: turn('completed') } });
   await expect(state.handle.done).resolves.toEqual({ status: 'succeeded' });
 });
 
@@ -376,6 +471,24 @@ async function completeSessionRun(
   });
   await expect(accepted.done).resolves.toEqual({ status: 'succeeded' });
 }
+
+it('starts a fresh cartography thread with current source tools when an older thread is remembered', async () => {
+  const sessionBroker = createMemoryMapAgentSessionBroker();
+  const input = runInput(undefined, { taskKind: 'cartography',
+    cartographySources: [{ fileName: 'source/document-1.qgs', content: '<qgis />' }],
+  });
+  sessionBroker.save(mapAgentSessionScope(input, 'codex'), 'old-cartography-thread');
+  const state = await beginSessionRun({ sessionBroker, input });
+  expect(state.threadRequest).toMatchObject({ method: 'thread/start', params: {
+    dynamicTools: [{ name: 'map-design', tools: expect.arrayContaining([
+      expect.objectContaining({ name: 'read_cartography_source', inputSchema: expect.objectContaining({
+        properties: expect.objectContaining({ fileName: expect.objectContaining({ enum: ['source/document-1.qgs'] }) }),
+      }) }),
+    ]) }],
+  } });
+  const handle = acceptSessionThread(state, state.threadRequest, 'fresh-cartography-thread', input.prompt);
+  await completeSessionRun(state, handle, 'fresh-cartography-thread');
+});
 
 async function assertCodexCreateThenResume(): Promise<void> {
   const sessionBroker = createMemoryMapAgentSessionBroker();
@@ -862,6 +975,7 @@ describe('Codex app-server Map Agent adapter', () => {
   });
 
   it('bounds each app-server handshake request', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const server = new FakeAppServer();
     const adapter = createCodexMapAgentAdapter({
       definition: { id: 'codex', bin: '/opt/codex/bin/codex' },
@@ -875,6 +989,8 @@ describe('Codex app-server Map Agent adapter', () => {
 
     await expect(settlesWithin(starting)).resolves.toBe(true);
     await expect(starting).rejects.toThrow(/Codex app-server protocol unavailable/u);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"protocolCategory":"timeout"'));
+    warn.mockRestore();
   });
 
   it.each(['thread/start', 'turn/start'] as const)('bounds a hung %s app-server handshake request', async (phase) => {

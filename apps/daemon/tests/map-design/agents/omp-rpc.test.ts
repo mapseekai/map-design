@@ -9,7 +9,9 @@ import {
   type OhMyPiRpcSpawn,
 } from '../../../src/map-design/agents/omp-rpc.js';
 import { createLocalAgentRegistry } from '../../../src/map-design/application/local-agent-registry.js';
-import type { MapAgentAdapter, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
+import type { AgentToolDefinition, MapAgentAdapter, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
+import { cartographySourceReaderTool } from '../../../src/map-design/agents/cartography-source-reader.js';
+import { createCartographySourceAccess } from '../../../src/map-design/agents/cartography-source-access.js';
 import type { NativeMapToolDefinition } from '../../../src/map-design/tools/tool-context.js';
 import { defineMapAgentAdapterConformance } from './adapter-conformance.js';
 import {
@@ -138,6 +140,7 @@ function settlesWithin(promise: Promise<unknown>, timeoutMs = 50): Promise<boole
 }
 
 async function start(options: {
+  tools?: AgentToolDefinition[];
   server?: FakeOmpRpc;
   replacementServer?: FakeOmpRpc;
   runInput?: MapRunInput;
@@ -163,7 +166,8 @@ async function start(options: {
     ...(options.maxFrameBytes === undefined ? {} : { maxFrameBytes: options.maxFrameBytes }),
   });
   const run = options.runInput ?? input();
-  const starting = adapter.startMapRun(run, [TOOL], (event) => events.push(event));
+  const tools = options.tools ?? [TOOL];
+  const starting = adapter.startMapRun(run, tools, (event) => events.push(event));
   server.ready();
   let activeServer = server;
 
@@ -186,9 +190,9 @@ async function start(options: {
   expect(setTools).toEqual({
     id: expect.any(String),
     type: 'set_host_tools',
-    tools: [{ name: 'map_validate', label: 'map_validate', description: 'Validate the draft.', parameters: { type: 'object' } }],
+    tools: tools.map(tool => ({ name: tool.name, label: tool.name, description: tool.description, parameters: tool.inputSchema })),
   });
-  activeServer.send({ ...response(setTools), data: { toolNames: ['map_validate'] } });
+  activeServer.send({ ...response(setTools), data: { toolNames: tools.map(tool => tool.name) } });
   const setModel = await activeServer.nextClientFrame();
   expect(setModel).toEqual({
     id: expect.any(String), type: 'set_model', provider: 'anthropic', modelId: 'sonnet-4.5',
@@ -290,6 +294,52 @@ it('accepts a successful model retry after an earlier upstream error', async () 
     { role: 'assistant', stopReason: 'stop' },
   ] });
   await expect(state.handle.done).resolves.toEqual({ status: 'succeeded' });
+});
+
+it('dispatches the registered uploaded source reader through the OMP host protocol', async () => {
+  const content = '{"version":8,"name":"原始样式"}';
+  const access = await createCartographySourceAccess({
+    runId: 'run-1', projectId: 'project-1', conversationId: 'conversation-1', agentId: 'oh-my-pi',
+    sources: [{ fileName: 'source/style.json', content }],
+    signal: new AbortController().signal,
+  });
+  try {
+    const state = await start({ tools: [cartographySourceReaderTool], runInput: input(undefined, access.toolRuntime.execute, { taskKind: 'cartography' }) });
+    state.server.send({ type: 'host_tool_call', id: 'host-source', toolCallId: 'source-1', toolName: 'read_cartography_source', arguments: { fileName: 'source/style.json' } });
+    const frame = await state.server.nextClientFrame();
+    expect(frame).toMatchObject({ type: 'host_tool_result', id: 'host-source', result: { content: [{ type: 'text', text: JSON.stringify({ fileName: 'source/style.json', offset: 0, totalLength: content.length, nextOffset: null, content }) }] } });
+    state.server.send({ type: 'agent_end', messages: [] });
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded' });
+  } finally {
+    access.toolCallback.close();
+  }
+});
+
+it('returns only the final assistant response after streamed commentary', async () => {
+  const state = await start();
+  state.server.send({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: 'Checking the source.' } });
+  const finalResponse = '{"source":"complete specification"}';
+  state.server.send({ type: 'agent_end', messages: [
+    { role: 'assistant', stopReason: 'toolUse', content: [{ type: 'text', text: 'Checking the source.' }] },
+    { role: 'toolResult', content: [{ type: 'text', text: 'original document' }] },
+    { role: 'assistant', stopReason: 'stop', content: [{ type: 'text', text: finalResponse }] },
+  ] });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse });
+});
+
+it.each([['aborted', 'canceled'], ['length', 'failed']] as const)(
+  'does not accept an assistant stopped by %s as successful', async (stopReason, status) => {
+    const state = await start();
+    state.server.send({ type: 'agent_end', messages: [{ role: 'assistant', stopReason, content: [{ type: 'text', text: 'incomplete' }] }] });
+    await expect(state.handle.done).resolves.toMatchObject({ status });
+  },
+);
+
+it('clears prior text when a cartography final answer is empty', async () => {
+  const state = await start({ runInput: { ...input(), taskKind: 'cartography' } });
+  state.server.send({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: '{"source":"stale"}' } });
+  state.server.send({ type: 'agent_end', messages: [{ role: 'assistant', stopReason: 'stop', content: [{ type: 'thinking', thinking: 'private' }] }] });
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse: '' });
 });
 
 defineMapAgentAdapterConformance('Oh My Pi RPC', {

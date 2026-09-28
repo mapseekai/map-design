@@ -20,7 +20,7 @@ import {
 } from '../../../src/map-design/agents/deepseek-profile.js';
 import { parseDeepSeekProfileRuntimeFrame } from '../../../src/map-design/agents/deepseek-profile-protocol.js';
 import { createLocalAgentRegistry } from '../../../src/map-design/application/local-agent-registry.js';
-import type { MapAgentAdapter, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
+import type { AgentToolDefinition, MapAgentAdapter, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
 import type { NativeMapToolDefinition } from '../../../src/map-design/tools/tool-context.js';
 import { defineMapAgentAdapterConformance } from './adapter-conformance.js';
 
@@ -190,6 +190,34 @@ function sessionFrame(
   };
 }
 
+describe('DeepSeek cartography completion', () => {
+  it('registers and correlates the uploaded-source tool without map mutation tools', async () => {
+    const state = await beginRun({ tools: [{ name: 'read_cartography_source', description: 'Read source.', inputSchema: { type: 'object', properties: { fileName: { type: 'string' } }, required: ['fileName'] } }] });
+    expect(state.execute.host_tools).toEqual([expect.objectContaining({ name: 'read_cartography_source' })]);
+    state.server.send(sessionFrame('run-1', 'session-1'));
+    state.server.send({ v: 1, type: 'tool_call', request_id: 'run-1', call_id: 'read-1', name: 'read_cartography_source', arguments: '{"fileName":"source.qgs"}' });
+    state.server.send({ v: 1, type: 'tool_result', request_id: 'run-1', call_id: 'read-1', name: 'read_cartography_source', status: 'succeeded', summary: {} });
+    state.server.send(profileResult('run-1', 'session-1', { output: '{}' }));
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded' });
+    expect(state.events).toContainEqual({ kind: 'tool_use', id: 'read-1', name: 'read_cartography_source', summary: {} });
+  });
+
+  it('uses the terminal output instead of streamed progress text', async () => {
+    const state = await beginRun({ input: runInput(undefined, { taskKind: 'cartography' }) });
+    state.server.send(sessionFrame('run-1', 'session-1'));
+    state.server.send({ v: 1, type: 'text', request_id: 'run-1', content: 'Checking source.' });
+    state.server.send(profileResult('run-1', 'session-1', { output: '{"source":"complete"}', stop_reason: 'completed' }));
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded', finalResponse: '{"source":"complete"}' });
+  });
+
+  it('rejects max-tokens even when the runtime labels it completed', async () => {
+    const state = await beginRun({ input: runInput(undefined, { taskKind: 'cartography' }) });
+    state.server.send(sessionFrame('run-1', 'session-1'));
+    state.server.send(profileResult('run-1', 'session-1', { stop_reason: 'max-tokens' }));
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'failed', error: { code: 'RESPONSE_TRUNCATED' } });
+  });
+});
+
 function createAdapterHarness(options: {
   servers?: FakeDeepSeekProfile[];
   maxFrameBytes?: number;
@@ -258,6 +286,7 @@ function createAdapterHarness(options: {
 }
 
 async function beginRun(options: {
+  tools?: AgentToolDefinition[];
   adapter?: MapAgentAdapter;
   server?: FakeDeepSeekProfile;
   input?: MapRunInput;
@@ -274,7 +303,7 @@ async function beginRun(options: {
   const adapter = options.adapter ?? harness!.adapter;
   const events = options.events ?? [];
   const input = options.input ?? runInput();
-  const handle = await adapter.startMapRun(input, TOOLS, (event) => events.push(event));
+  const handle = await adapter.startMapRun(input, options.tools ?? TOOLS, (event) => events.push(event));
   server.send(READY);
   const execute = await server.nextCommand();
   return { adapter, events, execute, handle, input, server, ...harness };
@@ -1198,6 +1227,15 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
     expect(result.frames).toEqual([]);
   });
 
+  it('fails the staged runtime when the model exhausts its output tokens', async () => {
+    const result = await runStagedProfileExecution([
+      { type: 'turn/end', seq: 1, data: { turn: 1, reason: { kind: 'max-tokens' } } },
+    ]);
+    expect(result.frames.find((frame) => frame.type === 'result')).toMatchObject({
+      status: 'failed', stop_reason: 'max-tokens', error: { code: 'RESPONSE_TRUNCATED' },
+    });
+  });
+
   it('emits authoritative assembled assistant text when no text delta was observed', async () => {
     const result = await runStagedProfileExecution([
       {
@@ -1223,7 +1261,7 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
     }]);
     const terminal = result.frames.find((frame) => frame.type === 'result');
     expect(terminal).toMatchObject({ status: 'completed' });
-    expect(terminal).not.toHaveProperty('output');
+    expect(terminal).toHaveProperty('output', 'Assembled only.');
   });
 
   it('does not duplicate assembled assistant text after streaming its delta', async () => {
@@ -1256,7 +1294,7 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
     }]);
     const terminal = result.frames.find((frame) => frame.type === 'result');
     expect(terminal).toMatchObject({ status: 'completed' });
-    expect(terminal).not.toHaveProperty('output');
+    expect(terminal).toHaveProperty('output', 'Streamed once.');
   });
 
   it('chunks a large assembled-only message into valid surrogate-safe text frames', async () => {
@@ -1283,7 +1321,7 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
       expect(String(frame.content)).not.toMatch(/^[\uDC00-\uDFFF]/u);
     }
     const terminal = result.frames.find((frame) => frame.type === 'result');
-    expect(terminal).not.toHaveProperty('output');
+    expect(terminal).toHaveProperty('output', assembled);
     expect(() => parseDeepSeekProfileRuntimeFrame(terminal)).not.toThrow();
   });
 
@@ -1318,7 +1356,7 @@ describe('DeepSeek Harness MapDesign profile adapter', () => {
     for (const frame of textFrames) {
       expect(() => parseDeepSeekProfileRuntimeFrame(frame)).not.toThrow();
     }
-    expect(terminal).not.toHaveProperty('output');
+    expect(terminal).toHaveProperty('output', second);
     expect(() => parseDeepSeekProfileRuntimeFrame(terminal)).not.toThrow();
   });
 

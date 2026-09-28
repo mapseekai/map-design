@@ -10,6 +10,7 @@ describe('cartography authoring', () => {
   it.each(['style-min.json', 'qgis-min.qgs', 'arcgis-min.lyrx', 'sld-min.xml'])('creates a reviewable draft from %s', (fileName) => {
     const draft = initializeCartographyDraft({ name: 'Library test', fileName, content: fixture(fileName).toString('base64') });
     expect(draft.source).toContain('Library test');
+    expect(draft.sourceFile).toEqual({ fileName, content: fixture(fileName).toString('base64') });
     expect(draft.reportMarkdown).toBeTruthy();
     expect(JSON.parse(draft.reportJson)).toHaveProperty('bindings');
   });
@@ -66,4 +67,30 @@ it.each(['api', 'codex', 'omp'])('generates with the selected %s agent and model
   }, new AbortController().signal);
   expect(result.source).toBe(source);
   expect(runCartographyAgent).toHaveBeenLastCalledWith(expect.objectContaining({ runtime }));
+});
+
+it('repairs an invalid geometry-only element once using validator feedback', async () => {
+  const source = '---\nversion: "0.4.0"\nname: Atlas\ncolors:\n  paper: "#faf9f5"\nelements:\n  paper:\n    geometry: background\n    color: "{colors.paper}"\n---\n\n## Overview\nPaper map.';
+  const invalidSource = source.replace('elements:\n', 'elements:\n  building-public:\n    geometry: polygon\n');
+  const runner = vi.mocked(runCartographyAgent).mockReset();
+  runner.mockResolvedValueOnce(JSON.stringify({ message: 'Draft', source: invalidSource }))
+    .mockResolvedValueOnce(JSON.stringify({ message: 'Corrected', source }));
+  const result = await generateCartographyEdit({ source, prompt: 'Improve', history: [], reportMarkdown: '', runtime: 'codex' }, {
+    dataRoot: '/unused', projectRoot: fileURLToPath(new URL('../../../../../', import.meta.url)),
+    agents: { runtimeCatalog: { refresh: async () => undefined, list: () => [], validate: value => value,
+      normalizeSaved: value => ({ runtime: value }), resolveChoice: () => { throw new Error('Runner is replaced'); } } },
+  }, new AbortController().signal);
+  expect(result.source).toBe(source);
+  expect(runner).toHaveBeenCalledTimes(2);
+});
+
+it('stops after one repair attempt and reports the actual specification finding', async () => {
+  const source = '---\nversion: "0.4.0"\nname: Atlas\nelements:\n  building-public:\n    geometry: polygon\n---\n\n## Overview\nDraft.';
+  const runner = vi.mocked(runCartographyAgent).mockReset().mockResolvedValue(JSON.stringify({ message: 'Draft', source }));
+  await expect(generateCartographyEdit({ source, prompt: 'Improve', history: [], reportMarkdown: '', runtime: 'codex' }, {
+    dataRoot: '/unused', projectRoot: fileURLToPath(new URL('../../../../../', import.meta.url)),
+    agents: { runtimeCatalog: { refresh: async () => undefined, list: () => [], validate: value => value,
+      normalizeSaved: value => ({ runtime: value }), resolveChoice: () => { throw new Error('Runner is replaced'); } } },
+  }, new AbortController().signal)).rejects.toThrow('MapElement must contain at least one core style property');
+  expect(runner).toHaveBeenCalledTimes(2);
 });

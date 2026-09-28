@@ -136,7 +136,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     });
     await agents.probeNativeMapTools();
     void agents.runtimeCatalog.refresh();
-    cartographyEdits = new CartographyEditService({ dataRoot: dataDir, projectRoot, config, agents, store, saveDocument: (input) => projectService.importCartography(input) });
+    cartographyEdits = new CartographyEditService({ dataRoot: dataDir, projectRoot, config, agents, store, readSourceFile: (id) => projectService.getCartography(id).sourceFile, saveDocument: (input) => projectService.importCartography(input) });
     const conversationRuntimeService = new MapDesignConversationRuntimeService({
       store,
       policy: agents.runtimeCatalog,

@@ -1,7 +1,7 @@
 import { Router, json as expressJson, type NextFunction, type Request, type RequestHandler, type Response } from 'express';
 import {
   MapDesignProjectCreateInputSchema,
-  CARTOGRAPHY_MAX_BYTES,
+  CARTOGRAPHY_STYLE_MAX_BYTES, CARTOGRAPHY_MAX_BYTES,
   MapDigestSchema,
   MapIdentifierSchema,
   MapInspectInputSchema,
@@ -30,7 +30,7 @@ const PROJECT_ROUTE = '/api/map-design/projects/:projectId';
 const MAP_DESIGN_READ_BODY_MAX_BYTES = 64 * 1024;
 const parseMapDesignJson = expressJson({ limit: MAP_DESIGN_READ_BODY_MAX_BYTES, strict: true });
 // A JSON-escaped document can occupy six wire bytes per source byte, plus metadata.
-const parseCartographyJson = expressJson({ limit: CARTOGRAPHY_MAX_BYTES * 6 + 16 * 1024, strict: true });
+const parseCartographyJson = expressJson({ limit: CARTOGRAPHY_MAX_BYTES * 6 + 16 * 1024 + Math.ceil(CARTOGRAPHY_STYLE_MAX_BYTES / 3) * 4, strict: true });
 
 export function createMapDesignProjectRouter(deps: CreateMapDesignProjectRouterDependencies): Router {
   const router = Router();
@@ -40,6 +40,10 @@ export function createMapDesignProjectRouter(deps: CreateMapDesignProjectRouterD
     response.json(cartographies.listCartographies());
   }));
   router.post('/api/map-design/cartographies', requireJson, route(async (request, response) => {
+    if (typeof request.body?.source === 'string' && Buffer.byteLength(request.body.source, 'utf8') > CARTOGRAPHY_MAX_BYTES) {
+      response.status(413).json({ error: { code: 'INVALID_INPUT', message: 'CARTOGRAPHY.md exceeds 64 KiB.', retryable: false } });
+      return;
+    }
     response.status(201).json(cartographies.importCartography(request.body));
   }));
   router.patch('/api/map-design/cartographies/:id', requireJson, route(async (request, response) => {

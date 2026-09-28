@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CartographySampleBindingsSchema } from './cartography-sample.js';
-import { CartographyDescriptionSchema, CartographyPreviewSchema, CartographySourceSchema, CartographySummarySchema } from './cartography.js';
+import { CartographyStyleFileSchema, CartographyDescriptionSchema, CartographyPreviewSchema, CartographySourceSchema, CartographySummarySchema } from './cartography.js';
 import { MapDigestSchema, MapSafeRevisionSchema } from './project.js';
 import { MapDesignRuntimeSelectionSchema } from './studio.js';
 
@@ -8,6 +8,7 @@ export const CartographyEditRuntimeSchema = z.enum(['api', 'codex']);
 export const CartographyEditCreateSchema = z.union([z.strictObject({
   sourceDocumentId: MapDigestSchema.optional(),
   source: CartographySourceSchema,
+  sourceFile: CartographyStyleFileSchema.optional(),
   description: CartographyDescriptionSchema.default(''),
   reportMarkdown: z.string().max(2 * 1024 * 1024).default(''),
   runtime: CartographyEditRuntimeSchema.default('api'),

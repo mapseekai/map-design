@@ -32,6 +32,7 @@ import {
   type MapAgentSessionBroker,
 } from './session-broker.js';
 import { sanitizeMapAgentLaunchEnvironment } from './launch-environment.js';
+import { cartographySourceReaderTool, createCartographySourceReaderTool, readCartographySource } from './cartography-source-reader.js';
 
 export interface CodexAppServerProcess {
   pid?: number | undefined;
@@ -121,6 +122,7 @@ export function createCodexMapAgentAdapter(
       let child: CodexAppServerProcess | null = null;
       let threadId: string | null = null;
       let turnId: string | null = null;
+      let finalResponse: string | undefined;
       let turnStartReady: Promise<void> | null = null;
       let resolveTurnStartReady: (() => void) | null = null;
       let turnStartSettled = true;
@@ -274,6 +276,26 @@ export function createCodexMapAgentAdapter(
           onEvent({ kind: 'text', text: notification.delta });
           return;
         }
+        if (method === 'item/completed') {
+          requireCurrentTurn(notification, threadId, turnId);
+          const item = record(notification.item);
+          if (item?.type === 'agentMessage') {
+            if (typeof item.text !== 'string') throw new JsonRpcProtocolError();
+            switch (item.phase) {
+              case 'commentary':
+                finalResponse ??= '';
+                break;
+              case 'final_answer':
+              case null:
+              case undefined:
+                finalResponse = item.text;
+                break;
+              default:
+                throw new JsonRpcProtocolError();
+            }
+          }
+          return;
+        }
         if (method === 'turn/started') {
           requireCurrentThread(notification, threadId);
           const currentTurn = record(notification.turn);
@@ -287,7 +309,7 @@ export function createCodexMapAgentAdapter(
           if (!completed || typeof completed.id !== 'string') throw new JsonRpcProtocolError();
           if (!turnId || completed.id !== turnId) throw new JsonRpcProtocolError();
           if (cancelRequested) return;
-          if (completed.status === 'completed') finish({ status: 'succeeded' });
+          if (completed.status === 'completed') finish({ status: 'succeeded', ...(finalResponse === undefined ? {} : { finalResponse }) });
           else if (completed.status === 'interrupted') finish({ status: 'canceled' });
           else if (completed.status === 'failed') {
             recordFailure('turn-failed', safeCodexError(completed.error));
@@ -409,7 +431,7 @@ export function createCodexMapAgentAdapter(
         peer.notify('initialized', {});
 
         let resumed = false;
-        const rememberedThreadId = sessionBroker.load(sessionScope);
+        const rememberedThreadId = input.taskKind === 'cartography' ? null : sessionBroker.load(sessionScope);
         if (rememberedThreadId) {
           try {
             const resumedThread = await requestWithDeadline(
@@ -437,7 +459,8 @@ export function createCodexMapAgentAdapter(
           const thread = await requestWithDeadline(
             peer,
             'thread/start',
-            threadStartParams(input.cwd, input.model, input.serviceTier, reasoning, tools, false),
+            threadStartParams(input.cwd, input.model, input.serviceTier, reasoning,
+              input.taskKind === 'cartography' && input.cartographySources?.length ? [...tools, createCartographySourceReaderTool(input.cartographySources)] : tools, false),
             requestTimeoutMs,
           );
           threadId = requireThreadId(thread);
@@ -597,7 +620,7 @@ function threadStartParams(
   model: string | null,
   serviceTier: string | null,
   reasoning: string | null,
-  tools: NativeMapToolDefinition[],
+  tools: ReadonlyArray<{ readonly name: string; readonly description: string; readonly inputSchema: Record<string, unknown> }>,
   ephemeral: boolean,
 ): Record<string, unknown> {
   return {
@@ -672,6 +695,7 @@ function isTurnScopedNotification(method: string): boolean {
   return method === 'item/reasoning/textDelta'
     || method === 'item/reasoning/summaryTextDelta'
     || method === 'item/agentMessage/delta'
+    || method === 'item/completed'
     || method === 'turn/started'
     || method === 'turn/completed'
     || method === 'error';
@@ -708,6 +732,15 @@ async function handleServerRequest(
     || seenToolCalls.has(callId)
   ) {
     return failedToolResponse('UNKNOWN_TOOL', 'The map tool call is not registered.', false);
+  }
+  if (name === cartographySourceReaderTool.name && input.taskKind === 'cartography' && input.cartographySources?.length) {
+    seenToolCalls.add(callId);
+    onEvent({ kind: 'tool_use', id: callId, name, summary: {} });
+    const result = readCartographySource(input.cartographySources, request.arguments);
+    onEvent({ kind: 'tool_result', toolUseId: callId, status: result.ok ? 'succeeded' : 'failed',
+      summary: result.ok ? { fileName: result.output.fileName, offset: result.output.offset } : { code: result.code } });
+    return result.ok ? { contentItems: [{ type: 'inputText', text: JSON.stringify(result.output) }], success: true }
+      : failedToolResponse(result.code, result.message, false);
   }
   if (!tools.some((tool) => tool.name === name)) {
     return failedToolResponse('UNKNOWN_TOOL', 'The map tool call is not registered.', false);
@@ -887,6 +920,10 @@ function safeCodexError(value: unknown): SafeToolSummary {
 function safeProtocolCategory(error: unknown): string {
   if (!(error instanceof JsonRpcProtocolError)) return 'other';
   switch (error.message) {
+    case 'The initialize request timed out.':
+    case 'The thread/start request timed out.':
+    case 'The thread/resume request timed out.':
+    case 'The turn/start request timed out.': return 'timeout';
     case 'The JSON-RPC peer ended unexpectedly.': return 'eof';
     case 'The JSON-RPC peer input failed.': return 'input';
     case 'The JSON-RPC peer output failed.': return 'output';

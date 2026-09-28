@@ -2,6 +2,7 @@ import {
   CartographyGenerationSchema,
   CartographyDraftOutputSchema,
   type CartographyGenerateInput,
+  type CartographyStyleFile,
   type CartographyInitializeInput,
   type CartographyInitializeUrlInput,
   CartographyListOutputSchema,
@@ -59,10 +60,10 @@ export function listCartographies(signal?: AbortSignal) {
   return requestContract('/api/map-design/cartographies', { signal }, CartographyListOutputSchema);
 }
 
-export function importCartography(source: string, signal?: AbortSignal, description?: string) {
+export function importCartography(source: string, signal?: AbortSignal, description?: string, sourceFile?: CartographyStyleFile) {
   return requestContract('/api/map-design/cartographies', {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ source, ...(description === undefined ? {} : { description }) }), signal,
+    body: JSON.stringify({ source, ...(description === undefined ? {} : { description }), ...(sourceFile ? { sourceFile } : {}) }), signal,
   }, CartographySummarySchema);
 }
 

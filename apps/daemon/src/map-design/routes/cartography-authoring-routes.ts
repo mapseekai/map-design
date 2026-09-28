@@ -1,7 +1,7 @@
 import type { MapDesignAppConfig } from '@mapseekai/contracts';
 import type { CartographyModelRoots } from '../application/cartography-authoring.js';
 import { Router, json, type RequestHandler, type Request, type Response, type NextFunction } from 'express';
-import { CartographyGenerateInputSchema, type CartographyGeneration, CartographyUrlInputSchema } from '@mapseekai/map-design-contracts';
+import { CARTOGRAPHY_MAX_BYTES, CARTOGRAPHY_STYLE_MAX_BYTES, CartographyGenerateInputSchema, type CartographyGeneration, CartographyUrlInputSchema } from '@mapseekai/map-design-contracts';
 import { fetchCartographySource, generateCartographyDraft, initializeCartographyDraft, initializeCartographyUrlDraft } from '../application/cartography-authoring.js';
 import { invalidInput, isMapDraftError } from '../application/errors.js';
 import type { MapDesignProjectService } from '../application/project-service.js';
@@ -19,7 +19,12 @@ export function createCartographyAuthoringRouter(deps: {
   const router = Router();
   const edits = deps.editService ?? new CartographyEditService({ ...deps, saveDocument: (input) => deps.projectService.importCartography(input) });
   const jobs = new Map<string, { controller: AbortController; result: CartographyGeneration }>();
-  router.use('/api/map-design/cartography-tools', deps.requireLocal, json({ limit: '6mb', strict: true }));
+  const parseAuthoringJson = json({ limit: '6mb', strict: true });
+  const parseEditJson = json({ limit: Math.ceil(CARTOGRAPHY_STYLE_MAX_BYTES / 3) * 4 + (CARTOGRAPHY_MAX_BYTES + 2 * 1024 * 1024) * 6 + 16 * 1024, strict: true });
+  router.use('/api/map-design/cartography-tools', deps.requireLocal, (request, response, next) => {
+    const parse = request.method === 'POST' && request.path === '/edit-sessions' ? parseEditJson : parseAuthoringJson;
+    parse(request, response, next);
+  });
   const editPath = '/api/map-design/cartography-tools/edit-sessions';
   router.get(editPath, route(async (_request, response) => {
     response.json(await edits.activeEdits());

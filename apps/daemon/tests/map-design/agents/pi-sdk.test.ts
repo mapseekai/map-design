@@ -13,10 +13,13 @@ import {
 } from '../../../src/map-design/agents/pi-sdk.js';
 import { createLocalAgentRegistry } from '../../../src/map-design/application/local-agent-registry.js';
 import type {
+  AgentToolDefinition,
   MapAgentAdapter,
   MapAgentEvent,
   MapRunInput,
 } from '../../../src/map-design/agents/types.js';
+import { cartographySourceReaderTool } from '../../../src/map-design/agents/cartography-source-reader.js';
+import { createCartographySourceAccess } from '../../../src/map-design/agents/cartography-source-access.js';
 import type { NativeMapToolDefinition } from '../../../src/map-design/tools/tool-context.js';
 import {
   createMemoryMapAgentSessionBroker,
@@ -207,6 +210,7 @@ async function exists(path: string): Promise<boolean> {
 }
 
 async function start(options: {
+  tools?: AgentToolDefinition[];
   adapter?: MapAgentAdapter;
   server?: FakePiRpc;
   replacementServer?: FakePiRpc;
@@ -236,7 +240,7 @@ async function start(options: {
   });
   const spawnCallIndex = spawn.mock.calls.length;
   const run = options.input ?? runInput();
-  const starting = adapter.startMapRun(run, TOOLS, (event) => events.push(event));
+  const starting = adapter.startMapRun(run, options.tools ?? TOOLS, (event) => events.push(event));
   await vi.waitFor(() => expect(spawn.mock.calls.length).toBe(spawnCallIndex + 1));
   const [, args, spawnOptions] = spawn.mock.calls[spawnCallIndex]!;
   expect(args).toEqual([
@@ -323,6 +327,33 @@ function settle(server: FakePiRpc, messages: unknown[] = []): void {
   server.send({ type: 'agent_settled' });
 }
 
+it('returns only the final assistant response after streamed commentary', async () => {
+  const state = await start();
+  state.server.send({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: 'Checking the source.' } });
+  const finalResponse = '{"source":"complete specification"}';
+  settle(state.server, [
+    { role: 'assistant', stopReason: 'toolUse', content: [{ type: 'text', text: 'Checking the source.' }] },
+    { role: 'toolResult', content: [{ type: 'text', text: 'original document' }] },
+    { role: 'assistant', stopReason: 'stop', content: [{ type: 'text', text: finalResponse }] },
+  ]);
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse });
+});
+
+it.each([['aborted', 'canceled'], ['length', 'failed']] as const)(
+  'does not accept an assistant stopped by %s as successful', async (stopReason, status) => {
+    const state = await start();
+    settle(state.server, [{ role: 'assistant', stopReason, content: [{ type: 'text', text: 'incomplete' }] }]);
+    await expect(state.handle.done).resolves.toMatchObject({ status });
+  },
+);
+
+it('clears prior text when a cartography final answer is empty', async () => {
+  const state = await start({ input: runInput(undefined, undefined, { taskKind: 'cartography' }) });
+  state.server.send({ type: 'message_update', assistantMessageEvent: { type: 'text_delta', delta: '{"source":"stale"}' } });
+  settle(state.server, [{ role: 'assistant', stopReason: 'stop', content: [{ type: 'thinking', thinking: 'private' }] }]);
+  await expect(state.handle.done).resolves.toEqual({ status: 'succeeded', finalResponse: '' });
+});
+
 function bridgeFetch(input: MapRunInput) {
   return vi.fn(async (url: string | URL | globalThis.Request, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
@@ -343,6 +374,30 @@ function bridgeFetch(input: MapRunInput) {
     });
   });
 }
+
+it('reads an uploaded source through the generated Pi extension and authenticated callback', async () => {
+  const access = await createCartographySourceAccess({
+    runId: 'run-1', projectId: 'project-1', conversationId: 'conversation-1', agentId: 'pi',
+    sources: [{ fileName: 'source/document-1.qgs', content: '<qgis><layer name="原始样式" /></qgis>' }],
+    signal: new AbortController().signal,
+  });
+  try {
+    const state = await start({ tools: [cartographySourceReaderTool], input: runInput(undefined, access.toolRuntime.execute, { taskKind: 'cartography', toolCallback: access.toolCallback }) });
+    const extension = await loadExtension(state.extensionPath);
+    const reader = extension.tools.find(tool => tool.name === 'read_cartography_source');
+    if (!reader) throw new Error('Source reader was not registered.');
+    const args = { fileName: 'source/document-1.qgs' };
+    state.server.send({ type: 'tool_execution_start', toolCallId: 'source-1', toolName: reader.name, args });
+    const result = await reader.execute('source-1', args, new AbortController().signal);
+    expect(JSON.parse(result.content[0]?.text ?? '{}')).toMatchObject({ content: '<qgis><layer name="原始样式" /></qgis>', nextOffset: null });
+    state.server.send({ type: 'tool_execution_end', toolCallId: 'source-1', toolName: reader.name, result, isError: false });
+    settle(state.server);
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded' });
+    expect(state.events).toContainEqual({ kind: 'tool_result', toolUseId: 'source-1', status: 'succeeded', summary: { fileName: args.fileName, offset: 0 } });
+  } finally {
+    access.toolCallback.close();
+  }
+});
 
 defineMapAgentAdapterConformance('Pi run-scoped extension', {
   async registration() {

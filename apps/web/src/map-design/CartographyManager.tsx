@@ -14,7 +14,7 @@ import { AgentModelFields } from './components/AgentModelFields';
 import { useLocalAgents } from './hooks/useLocalAgents';
 import { apiModelCopy } from '../i18n/locales/api-model';
 import { Alert, AlertDescription, Button, Input, Textarea, Field, FieldLabel, FieldSet, Empty, EmptyHeader, EmptyDescription, Tabs, TabsList, TabsTrigger, TabsContent } from '@mapseekai/components';
-import { CARTOGRAPHY_MAX_BYTES, CARTOGRAPHY_STYLE_MAX_BYTES, type CartographyDraft, type CartographySummary } from '@mapseekai/map-design-contracts';
+import { CARTOGRAPHY_MAX_BYTES, CARTOGRAPHY_STYLE_MAX_BYTES, type CartographyDraft, type CartographySummary, type CartographyStyleFile } from '@mapseekai/map-design-contracts';
 import { navigate } from '../router';
 import { useI18n } from '../i18n';
 import { cartographyCopy, cartographyManagerCopy } from '../i18n/locales/cartography';
@@ -63,6 +63,7 @@ export function CartographyManager() {
   }, []);
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get('cartography') ?? '');
   const [source, setSource] = useState('');
+  const [sourceFile, setSourceFile] = useState<CartographyStyleFile>();
   const [mode, setMode] = useState<Mode>('upload');
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -99,13 +100,15 @@ export function CartographyManager() {
   }, []);
   useEffect(() => {
     setSource('');
+    setSourceFile(undefined);
     setDocumentLoading(Boolean(selected));
     if (!selected) return;
     const controller = new AbortController();
     void getCartography(selected, controller.signal).then((document) => {
       if (!controller.signal.aborted) {
         setSource(document.source);
-        const { source: _source, ...summary } = document;
+        setSourceFile(document.sourceFile);
+        const { source: _source, sourceFile: _sourceFile, ...summary } = document;
         setDocuments((current) => current.map((item) => item.id === document.id ? summary : item));
       }
     }).catch(() => { if (!controller.signal.aborted) setError(true); })
@@ -177,7 +180,7 @@ export function CartographyManager() {
     : library.unknownTime;
   function openDocument(id: string) { setCreateOpen(false); setSelected(id); setError(false); setSaved(false); setDeleted(false); }
   function useDocument(id: string) { navigate({ kind: 'home', cartographyId: id }); }
-  function editWithAgent(documentSource: string, documentDescription: string, reportMarkdown = '', sourceDocumentId?: string) {
+  function editWithAgent(documentSource: string, documentDescription: string, reportMarkdown = '', sourceDocumentId?: string, documentSourceFile?: CartographyStyleFile) {
     void perform(async (signal) => {
       if (sourceDocumentId) {
         const { sessions } = await listCartographyEditHistory(sourceDocumentId, signal);
@@ -190,7 +193,7 @@ export function CartographyManager() {
           return;
         }
       }
-      const session = await createCartographyEdit({ source: documentSource, description: documentDescription, reportMarkdown, runtime: generationRuntime, initialPrompt: editor.initialPrompt, ...(sourceDocumentId ? { sourceDocumentId } : {}) }, signal);
+      const session = await createCartographyEdit({ source: documentSource, description: documentDescription, reportMarkdown, runtime: generationRuntime, initialPrompt: editor.initialPrompt, ...(sourceDocumentId ? { sourceDocumentId } : {}), ...(documentSourceFile ? { sourceFile: documentSourceFile } : {}) }, signal);
       if (!signal.aborted) {
         if (sourceDocumentId) rememberCartographyEdit(sourceDocumentId, session.id);
         navigate({ kind: 'cartography-editor', sessionId: session.id });
@@ -282,7 +285,7 @@ export function CartographyManager() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div><div className="mb-2 flex items-center gap-2"><h2 className="text-xl font-medium">{selectedDocument.name}</h2><Button type="button" variant="ghost" size="icon-sm" aria-label={`${renameCopy.rename}: ${selectedDocument.name}`} disabled={busy} onClick={() => { setRenameTarget(selectedDocument); setRenameName(selectedDocument.name); setRenameFailed(false); }}><Pencil aria-hidden="true" /></Button></div><p className="text-sm text-muted-foreground">CARTOGRAPHY.md · {selectedDocument.version} · {library.updated}: {selectedDocument.updatedAt ? <time dateTime={selectedDocument.updatedAt}>{updatedTime(selectedDocument)}</time> : library.unknownTime}</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" disabled={busy || documentLoading || !source} onClick={() => editWithAgent(source, selectedDocument.description, '', selectedDocument.id)}>
+          <Button type="button" disabled={busy || documentLoading || !source.trim()} onClick={() => editWithAgent(source, selectedDocument.description, '', selectedDocument.id, sourceFile)}>
             {activeEdits[selectedDocument.id] ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
             <span aria-live="polite">{activeEdits[selectedDocument.id] ? editor.analyzing : editor.edit}</span>
           </Button>
@@ -299,7 +302,7 @@ export function CartographyManager() {
     </section> : null}
     </div> : null}
     {createOpen ? <section className="flex flex-col gap-6 rounded-xl border border-border bg-card p-6">
-        <Tabs value={mode} onValueChange={(value) => { if (typeof value !== "string") return; setMode(value as Mode); setFile(null); setError(false); setSaved(false); }}><TabsList className="h-auto flex-wrap" aria-label={copy.manage}>{modes.map(([value, label]) => <TabsTrigger key={value} value={value} disabled={busy}>{label}</TabsTrigger>)}</TabsList><TabsContent value={mode}>
+        <Tabs value={mode} onValueChange={(value) => { if (typeof value !== "string") return; setMode(value as Mode); setFile(null); setDraft(null); setError(false); setSaved(false); }}><TabsList className="max-w-full flex-wrap gap-1 group-data-horizontal/tabs:h-auto" aria-label={copy.manage}>{modes.map(([value, label]) => <TabsTrigger key={value} value={value} className="h-8" disabled={busy}>{label}</TabsTrigger>)}</TabsList><TabsContent value={mode}>
         <form onSubmit={submit} className="flex flex-col gap-5" aria-busy={busy}>
           <FieldSet disabled={busy}>
             {mode === 'style' || mode === 'ai' ? <Field><FieldLabel htmlFor="cartographymanager-3">{text.name}</FieldLabel><Input id="cartographymanager-3" value={name} onChange={(event) => setName(event.target.value)} maxLength={256} required /></Field> : null}
@@ -309,12 +312,12 @@ export function CartographyManager() {
               <Button type="button" variant={styleInput === 'url' ? 'secondary' : 'ghost'} aria-pressed={styleInput === 'url'} onClick={() => { setStyleInput('url'); setDraft(null); }}>{library.styleUrl}</Button>
             </div> : null}
             {mode === 'style' && styleInput === 'url' ? <>
-              <Field><FieldLabel htmlFor="cartography-style-url">{library.styleUrl}</FieldLabel><Input id="cartography-style-url" type="url" required value={styleUrl} placeholder="https://…/style.json" onChange={(event) => setStyleUrl(event.target.value)} /><small className="text-muted-foreground">{library.styleUrlHint}</small></Field>
-              <Field><FieldLabel htmlFor="cartography-style-filename">{library.fileName}</FieldLabel><Input id="cartography-style-filename" value={styleFileName} placeholder="style.json" maxLength={256} onChange={(event) => setStyleFileName(event.target.value)} /></Field>
+              <Field><FieldLabel htmlFor="cartography-style-url">{library.styleUrl}</FieldLabel><Input id="cartography-style-url" type="url" required value={styleUrl} placeholder="https://…/style.json" onChange={(event) => { setStyleUrl(event.target.value); setDraft(null); }} /><small className="text-muted-foreground">{library.styleUrlHint}</small></Field>
+              <Field><FieldLabel htmlFor="cartography-style-filename">{library.fileName}</FieldLabel><Input id="cartography-style-filename" value={styleFileName} placeholder="style.json" maxLength={256} onChange={(event) => { setStyleFileName(event.target.value); setDraft(null); }} /></Field>
               <small>ArcGIS (.lyrx, .stylx) · QGIS (.qgs, .qgz) · style.json · SLD (.sld) · 4 MiB</small>
             </> : null}
             {mode === 'upload' || (mode === 'style' && styleInput === 'file') ? <Field><FieldLabel htmlFor="cartographymanager-5">{mode === 'upload' ? copy.import : text.fromStyle}
-              </FieldLabel><Input id="cartographymanager-5" aria-label={mode === 'upload' ? copy.import : text.fromStyle} key={mode} type="file" accept={mode === 'upload' ? '.md,text/markdown,text/plain' : '.json,.qgs,.qgz,.lyrx,.stylx,.sld,.xml'} required onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+              </FieldLabel><Input id="cartographymanager-5" aria-label={mode === 'upload' ? copy.import : text.fromStyle} key={mode} type="file" accept={mode === 'upload' ? '.md,text/markdown,text/plain' : '.json,.qgs,.qgz,.lyrx,.stylx,.sld,.xml'} required onChange={(event) => { setFile(event.target.files?.[0] ?? null); setDraft(null); }} />
               <small>{mode === 'upload' ? `CARTOGRAPHY.md · ${CARTOGRAPHY_MAX_BYTES / 1024} KiB` : 'ArcGIS (.lyrx, .stylx) · QGIS (.qgs, .qgz) · style.json · SLD (.sld) · 4 MiB'}</small>
             </Field> : null}
             {mode === 'ai' ? <><AgentModelFields id="cartographymanager-6" agents={agents} agentId={generationAgent} model={generationModel} disabled={busy || agentsLoading} onAgentChange={setGenerationAgent} onModelChange={setGenerationModel} />{agentsError ? <Alert variant="destructive"><AlertDescription>{agentsError}</AlertDescription></Alert> : null}<Field><FieldLabel htmlFor="cartographymanager-7">{text.brief}</FieldLabel><Textarea id="cartographymanager-7" rows={5} maxLength={8000} required value={brief} onChange={(event) => setBrief(event.target.value)} /></Field><p className="text-sm text-muted-foreground">{generationRuntime === 'api' ? apiCopy.generationHint : text.aiHint}</p></> : null}
@@ -324,15 +327,15 @@ export function CartographyManager() {
         </form></TabsContent></Tabs>
         {busy ? <Button type="button" variant="ghost" onClick={() => { request.current?.abort(); setBusy(false); }}>{text.cancel}</Button> : null}
         {draft ? <section className="flex flex-col gap-4">
-          <p>{text.draft}</p>
-          <Field><FieldLabel htmlFor="cartographymanager-8">CARTOGRAPHY.md</FieldLabel><Textarea id="cartographymanager-8" aria-label="CARTOGRAPHY.md" rows={16} value={draft.source} disabled={busy} onChange={(event) => setDraft({ ...draft, source: event.target.value })} /></Field>
-          {draft.reportMarkdown ? <details><summary>INIT_REPORT.md</summary><pre>{draft.reportMarkdown}</pre></details> : null}
+          <p className="text-pretty">{text.draft}</p>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" disabled={busy || !draft.source.trim()} onClick={() => editWithAgent(draft.source, description.trim(), draft.reportMarkdown)}>{editor.edit}</Button>
-            <Button type="button" variant="default" disabled={busy} onClick={() => { void perform(async (signal) => { const result = await importCartography(draft.source, signal, description.trim() || undefined); if (!signal.aborted) remember(result); }); }}>{text.save}</Button>
+            <Button type="button" disabled={busy || !draft.source.trim()} onClick={() => editWithAgent(draft.source, description.trim(), draft.reportMarkdown, undefined, draft.sourceFile)}>{editor.edit}</Button>
+            <Button type="button" variant="default" disabled={busy || !draft.source.trim()} onClick={() => { void perform(async (signal) => { const result = await importCartography(draft.source, signal, description.trim() || undefined, draft.sourceFile); if (!signal.aborted) remember(result); }); }}>{text.save}</Button>
             <Button type="button" variant="ghost" onClick={() => download('CARTOGRAPHY.md', draft.source)}>{text.download} CARTOGRAPHY.md</Button>
             {draft.reportMarkdown ? [{ name: 'INIT_REPORT.md', content: draft.reportMarkdown }, { name: 'INIT_REPORT.json', content: draft.reportJson }].map((report) => <Button key={report.name} type="button" variant="ghost" onClick={() => download(report.name, report.content)}>{text.download} {report.name}</Button>) : null}
           </div>
+          <Field><FieldLabel htmlFor="cartographymanager-8">CARTOGRAPHY.md</FieldLabel><Textarea id="cartographymanager-8" aria-label="CARTOGRAPHY.md" rows={16} value={draft.source} disabled={busy} onChange={(event) => setDraft({ ...draft, source: event.target.value })} /></Field>
+          {draft.reportMarkdown ? <details className="min-w-0"><summary>INIT_REPORT.md</summary><pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs">{draft.reportMarkdown}</pre></details> : null}
         </section> : null}
     </section> : null}
 

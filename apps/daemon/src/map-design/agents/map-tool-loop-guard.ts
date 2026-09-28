@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import type { MapToolName } from '@mapseekai/map-design-contracts';
+import type { AgentToolName } from './types.js';
 
 export type MapToolLoopVerdict = {
   action: 'warn' | 'halt';
@@ -10,12 +10,12 @@ export type MapToolLoopVerdict = {
 
 export interface MapToolLoopGuard {
   failure(
-    name: MapToolName,
+    name: AgentToolName,
     signature: string,
     failureClassSignature?: string,
     countConsecutive?: boolean,
   ): MapToolLoopVerdict | null;
-  success(name: MapToolName): void;
+  success(name: AgentToolName): void;
 }
 
 export type MapToolLoopGuardOptions = {
@@ -38,13 +38,13 @@ const MAX_CANONICAL_COLLECTION_ITEMS = 64;
 const MAX_CANONICAL_STRING_LENGTH = 512;
 const MAX_OPTION_VALUE = 1_024;
 
-export function createMapToolCallSignature(name: MapToolName, input: unknown): string {
+export function createMapToolCallSignature(name: AgentToolName, input: unknown): string {
   const digest = createHash('sha256').update(boundedCanonicalJson(input)).digest('hex');
   return `${name}:${digest}`;
 }
 
 export function createMapToolFailureClassSignature(
-  name: MapToolName,
+  name: AgentToolName,
   failure: { code: string; retryable?: boolean; message?: unknown; details?: unknown },
 ): string | null {
   if (failure.retryable === true) return null;
@@ -120,7 +120,7 @@ export function createMapToolLoopGuard(
     },
   };
 
-  function trackRepeat(counts: Map<string, number>, name: MapToolName, signature: string): number {
+  function trackRepeat(counts: Map<string, number>, name: AgentToolName, signature: string): number {
     const key = `${name}:${signature.slice(0, MAX_SIGNATURE_LENGTH)}`;
     const count = incrementBounded(counts.get(key), repeatHaltAt);
     if (!counts.has(key) && counts.size >= maxSignatures) {
@@ -133,7 +133,7 @@ export function createMapToolLoopGuard(
   }
 }
 
-function clearToolCounts(counts: Map<string, number>, name: MapToolName): void {
+function clearToolCounts(counts: Map<string, number>, name: AgentToolName): void {
   const prefix = `${name}:`;
   for (const key of counts.keys()) {
     if (key.startsWith(prefix)) counts.delete(key);

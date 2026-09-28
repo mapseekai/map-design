@@ -5,6 +5,7 @@ import { PassThrough } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
 import { opencodeAgentDef } from '../../../src/runtimes/defs/opencode.js';
 import {
@@ -15,7 +16,7 @@ import {
   type OpenCodeRunPlugin,
 } from '../../../src/map-design/agents/opencode-plugin.js';
 import { createLocalAgentRegistry } from '../../../src/map-design/application/local-agent-registry.js';
-import type { MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
+import type { AgentToolDefinition, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
 import type { NativeMapToolDefinition } from '../../../src/map-design/tools/tool-context.js';
 import { defineMapAgentAdapterConformance } from './adapter-conformance.js';
 import {
@@ -144,12 +145,7 @@ async function trackedPluginLease(
 async function loadGeneratedPlugin(
   plugin: OpenCodeRunPlugin,
   environment: NodeJS.ProcessEnv = plugin.env,
-): Promise<{ tool: Record<string, { description: string; args: unknown; execute(args: unknown, context: Record<string, unknown>): Promise<string> }> }> {
-  const toolShim = `
-const tool = (definition) => definition;
-tool.schema = { fromJSONSchema: (schema) => ({ shape: schema.properties || {} }), ZodObject: class {} };
-`;
-  const executable = plugin.source.replace("import { tool } from '@opencode-ai/plugin';", toolShim);
+): Promise<{ tool: Record<string, { description: string; args: Record<string, z.ZodType>; execute(args: unknown, context: Record<string, unknown>): Promise<string> }> }> {
   const previous = new Map<string, string | undefined>();
   for (const [key, value] of Object.entries(environment)) {
     previous.set(key, process.env[key]);
@@ -157,7 +153,7 @@ tool.schema = { fromJSONSchema: (schema) => ({ shape: schema.properties || {} })
     else process.env[key] = value;
   }
   try {
-    const href = `data:text/javascript;base64,${Buffer.from(executable).toString('base64')}#${Math.random()}`;
+    const href = `data:text/javascript;base64,${Buffer.from(plugin.source).toString('base64')}#${Math.random()}`;
     const loaded = await import(href) as { MapDesignOpenCodePlugin(): Promise<{ tool: Record<string, { execute(...args: unknown[]): Promise<string> }> }> };
     const surface = await loaded.MapDesignOpenCodePlugin();
     for (const definition of Object.values(surface.tool)) {
@@ -198,6 +194,7 @@ async function start(options: {
   sessionBroker?: MapAgentSessionBroker;
   maxFrameBytes?: number;
   environment?: NodeJS.ProcessEnv;
+  tools?: AgentToolDefinition[];
 } = {}) {
   const root = options.root ?? await pluginRoot();
   const server = options.server ?? new FakeOpenCodeProcess();
@@ -218,12 +215,67 @@ async function start(options: {
     }),
     ...(options.maxFrameBytes === undefined ? {} : { maxFrameBytes: options.maxFrameBytes }),
   });
-  const handle = await adapter.startMapRun(options.input ?? runInput(), TOOLS, (event) => events.push(event));
+  const handle = await adapter.startMapRun(options.input ?? runInput(), options.tools ?? TOOLS, (event) => events.push(event));
   const [, args, spawnOptions] = spawn.mock.calls.at(-1)!;
   const config = JSON.parse(String(spawnOptions.env.OPENCODE_CONFIG_CONTENT)) as Record<string, unknown>;
   const pluginPath = fileURLToPath((config.plugin as string[]).at(-1)!);
   return { adapter, args, config, events, handle, pluginPath, root, server, spawn, spawnOptions };
 }
+
+describe('OpenCode cartography completion', () => {
+  it('accepts a complete specification whose JSON envelope exceeds 64 KiB', async () => {
+    const reply = JSON.stringify({ message: 'Updated.', source: 'x'.repeat(65_536), sampleBindings: {} });
+    const state = await start({ input: runInput(undefined, { taskKind: 'cartography' }) });
+    state.server.send({ type: 'step_start', sessionID: 'ses_1', part: {} });
+    state.server.send({ type: 'text', part: { text: reply } });
+    state.server.send({ type: 'step_finish', part: { reason: 'stop' } });
+    state.server.close();
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded', finalResponse: reply });
+  });
+
+  it('rejects a final step whose combined text parts exceed 512 KiB', async () => {
+    const state = await start({ input: runInput(undefined, { taskKind: 'cartography' }) });
+    state.server.send({ type: 'step_start', sessionID: 'ses_1', part: {} });
+    for (let index = 0; index < 9; index += 1) {
+      state.server.send({ type: 'text', part: { text: 'x'.repeat(65_536) } });
+    }
+    state.server.send({ type: 'step_finish', part: { reason: 'stop' } });
+    state.server.close();
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'failed', error: { code: 'RESPONSE_TOO_LARGE' } });
+  });
+
+  it('registers and correlates the uploaded-source tool without map mutation tools', async () => {
+    const state = await start({ tools: [{ name: 'read_cartography_source', description: 'Read source.', inputSchema: { type: 'object', properties: { fileName: { type: 'string' } }, required: ['fileName'] } }] });
+    const source = await readFile(state.pluginPath, 'utf8');
+    const surface = await loadGeneratedPlugin({ source, env: state.spawnOptions.env });
+    expect(Object.keys(surface.tool)).toEqual(['read_cartography_source']);
+    state.server.send({ type: 'tool_use', part: { tool: 'read_cartography_source', callID: 'read-1', state: { status: 'completed', input: { fileName: 'source.qgs' }, output: '{}' } } });
+    state.server.close();
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded' });
+    expect(state.events).toContainEqual({ kind: 'tool_use', id: 'read-1', name: 'read_cartography_source', summary: {} });
+  });
+
+  it('returns only the final step when a prior step contains progress text', async () => {
+    const state = await start({ input: runInput(undefined, { taskKind: 'cartography' }) });
+    state.server.send({ type: 'step_start', sessionID: 'ses_1', part: {} });
+    state.server.send({ type: 'text', part: { text: 'Checking the uploaded source.' } });
+    state.server.send({ type: 'step_finish', part: { reason: 'tool-calls' } });
+    state.server.send({ type: 'step_start', sessionID: 'ses_1', part: {} });
+    state.server.send({ type: 'text', part: { text: '{"source":"complete"}' } });
+    state.server.send({ type: 'step_finish', part: { reason: 'stop' } });
+    state.server.close();
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'succeeded', finalResponse: '{"source":"complete"}' });
+  });
+
+  it('rejects a token-limited response despite a successful process exit', async () => {
+    const state = await start({ input: runInput(undefined, { taskKind: 'cartography' }) });
+    state.server.send({ type: 'step_start', sessionID: 'ses_1', part: {} });
+    state.server.send({ type: 'text', part: { text: '{"source":' } });
+    state.server.send({ type: 'step_finish', part: { reason: 'length' } });
+    state.server.close();
+    await expect(state.handle.done).resolves.toMatchObject({ status: 'failed', error: { code: 'RESPONSE_TRUNCATED' } });
+  });
+});
 
 defineMapAgentAdapterConformance('OpenCode run-scoped plugin', {
   async registration() {
@@ -638,8 +690,6 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
     const state = await start();
     const source = await readFile(state.pluginPath, 'utf8');
 
-    expect(source).toContain("import { tool } from '@opencode-ai/plugin';");
-    expect(source).toContain('map_validate: tool({');
     expect(source).not.toContain('test-only-secret-token');
     expect(state.args.join(' ')).not.toContain('test-only-secret-token');
     expect(state.spawnOptions.env).toMatchObject({
@@ -654,8 +704,8 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
     expect(Object.entries(surface.tool).map(([name, value]) => ({
       name,
       description: value.description,
-      args: value.args,
-    }))).toEqual(TOOLS.map((definition) => ({
+      args: z.toJSONSchema(z.object(value.args)).properties ?? {},
+    }))).toMatchObject(TOOLS.map((definition) => ({
       name: definition.name,
       description: definition.description,
       args: (definition.inputSchema.properties as Record<string, unknown> | undefined) ?? {},

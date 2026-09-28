@@ -11,7 +11,6 @@ import {
 import type { MapToolName } from '@mapseekai/map-design-contracts';
 
 import { stopMapDesignProcessTree } from '../application/run-service.js';
-import type { NativeMapToolDefinition } from '../tools/tool-context.js';
 import { sanitizeMapAgentLaunchEnvironment } from './launch-environment.js';
 import {
   createMemoryMapAgentSessionBroker,
@@ -31,6 +30,8 @@ import {
   RUN_TOOL_CALLBACK_TOOL_USE_HEADER,
 } from './tool-callback.js';
 import type {
+  AgentToolDefinition,
+  AgentToolName,
   MapAgentAdapter,
   MapAgentEvent,
   MapRunHandle,
@@ -58,7 +59,7 @@ export type PiSdkSpawn = (
 
 export type CreatePiMapAgentAdapterOptions = {
   definition: { id: string; bin: string; inheritedEnvKeys?: readonly string[] };
-  toolDefinitions: () => readonly NativeMapToolDefinition[];
+  toolDefinitions: () => readonly AgentToolDefinition[];
   spawn?: PiSdkSpawn;
   environment?: () => NodeJS.ProcessEnv | null;
   environmentKeys?: () => readonly string[];
@@ -134,10 +135,10 @@ export function createPiMapAgentAdapter(
       let stoppingPromise: Promise<void> | null = null;
       let phase: PiRunPhase = 'starting';
       let observedSessionPath: string | null = null;
-      let lastAgentFailed = false;
+      let lastAgentTerminal: MapRunTerminal = { status: 'succeeded' };
       let resolveDone!: (result: MapRunTerminal) => void;
       const done = new Promise<MapRunTerminal>((resolve) => { resolveDone = resolve; });
-      const toolCalls = new Map<string, { name: MapToolName; input: unknown }>();
+      const toolCalls = new Map<string, { name: AgentToolName; input: unknown }>();
       const completedToolCalls = new Set<string>();
       const toolLoopGuard = createMapToolLoopGuard();
       const sessionScope = mapAgentSessionScope(input, options.definition.id);
@@ -182,7 +183,9 @@ export function createPiMapAgentAdapter(
           sessionBroker.delete(sessionScope);
         }
         onEvent({ kind: 'run_finished', status: result.status });
-        resolveDone(result);
+        resolveDone(result.status === 'succeeded' && input.taskKind === 'cartography'
+          ? { ...result, finalResponse: result.finalResponse ?? '' }
+          : result);
         peer?.close();
         void cleanup();
       };
@@ -235,7 +238,7 @@ export function createPiMapAgentAdapter(
         }
         if (type === 'tool_execution_start') {
           const toolCallId = safeIdentifier(frame.toolCallId);
-          const toolName = safeIdentifier(frame.toolName) as MapToolName | null;
+          const toolName = tools.find((tool) => tool.name === safeIdentifier(frame.toolName))?.name;
           if (
             !toolCallId
             || !toolName
@@ -270,19 +273,18 @@ export function createPiMapAgentAdapter(
             || typeof frame.willRetry !== 'boolean'
             || toolCalls.size > 0
           ) throw new PiProtocolError();
-          lastAgentFailed = frame.willRetry === false && agentMessagesFailed(frame.messages);
+          lastAgentTerminal = frame.willRetry ? { status: 'succeeded' } : agentMessagesTerminal(frame.messages);
           return;
         }
         if (type === 'auto_retry_end') {
           if (typeof frame.success !== 'boolean') throw new PiProtocolError();
-          if (frame.success === false) lastAgentFailed = true;
+          if (frame.success === false) lastAgentTerminal = { status: 'failed', error: FAILED_CONNECTION };
           return;
         }
         if (type === 'agent_settled') {
           if (toolCalls.size > 0) throw new PiProtocolError();
           if (cancelRequested) return;
-          if (lastAgentFailed) finish({ status: 'failed', error: FAILED_CONNECTION });
-          else finish({ status: 'succeeded' });
+          finish(lastAgentTerminal);
           return;
         }
         if (type === 'extension_error') {
@@ -624,12 +626,22 @@ function isRunScopedFrame(type: string): boolean {
     || type === 'extension_error';
 }
 
-function agentMessagesFailed(messages: unknown[]): boolean {
+function agentMessagesTerminal(messages: unknown[]): MapRunTerminal {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = record(messages[index]);
-    if (message?.role === 'assistant') return message.stopReason === 'error';
+    if (message?.role !== 'assistant') continue;
+    if (message.stopReason === 'error') return { status: 'failed', error: FAILED_CONNECTION };
+    if (message.stopReason === 'aborted') return { status: 'canceled' };
+    if (message.stopReason === 'length') return {
+      status: 'failed',
+      error: { code: 'API_OUTPUT_TRUNCATED', message: 'The model response reached its output limit. Retry with a larger output limit or a smaller request.' },
+    };
+    const text = Array.isArray(message.content)
+      ? message.content.map(record).filter((part) => part?.type === 'text' && typeof part.text === 'string').map((part) => part?.text).join('')
+      : '';
+    return { status: 'succeeded', ...(text ? { finalResponse: text } : {}) };
   }
-  return false;
+  return { status: 'succeeded' };
 }
 
 async function stageExtension(
@@ -657,7 +669,7 @@ async function stageExtension(
 }
 
 function buildPiExtensionSource(
-  tools: readonly NativeMapToolDefinition[],
+  tools: readonly AgentToolDefinition[],
   context: {
     agentId: string;
     callbackUrl: string;

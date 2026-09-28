@@ -77,3 +77,38 @@ it('recovers interrupted edits without restarting the agent and rejects path tra
   expect(generate).not.toHaveBeenCalled();
   await expect(service.get('../secrets')).rejects.toThrow();
 });
+
+it('retains original uploads after reopening and forwards them on every edit and save', async () => {
+  const { deps, generate, saveDocument } = await setup();
+  const sourceFile = { fileName: '样式.json', content: Buffer.from('{"layers":[],"custom":"evidence"}').toString('base64') };
+  const first = await new CartographyEditService(deps).create({ source, sourceFile, runtime: 'api', initialPrompt: 'Inspect the original' });
+  expect(first).not.toHaveProperty('sourceFile');
+  const reopened = new CartographyEditService(deps);
+  generate.mockResolvedValue({ source: updated, message: 'Improved using source.' });
+  for (const revision of [0, 1]) {
+    await reopened.turn(first.id, { requestId: randomUUID(), expectedRevision: revision, prompt: 'Read source again' });
+    await vi.waitFor(async () => expect((await reopened.get(first.id)).revision).toBe(revision + 1));
+    expect(generate.mock.lastCall?.[0].sourceFile).toEqual(sourceFile);
+  }
+  await reopened.save(first.id, { expectedRevision: 2 });
+  expect(saveDocument).toHaveBeenLastCalledWith(expect.objectContaining({ sourceFile }));
+  const unrelated = await reopened.create({ source, runtime: 'api', initialPrompt: 'No source' });
+  await reopened.turn(unrelated.id, { requestId: randomUUID(), expectedRevision: 0, prompt: 'Improve' });
+  await vi.waitFor(async () => expect((await reopened.get(unrelated.id)).status).toBe('idle'));
+  expect(generate.mock.lastCall?.[0].sourceFile).toBeUndefined();
+});
+
+it('recovers a newly imported original for an older session without replacing its captured source', async () => {
+  const { deps, session, generate } = await setup();
+  const sourceFile = { fileName: 'style.json', content: Buffer.from('{}').toString('base64') };
+  const readSourceFile = vi.fn(() => sourceFile);
+  const service = new CartographyEditService({ ...deps, readSourceFile });
+  generate.mockResolvedValue({ source: updated, message: 'Improved' });
+  for (const revision of [0, 1]) {
+    await service.turn(session.id, { requestId: randomUUID(), expectedRevision: revision, prompt: 'Read source' });
+    await vi.waitFor(async () => expect((await service.get(session.id)).revision).toBe(revision + 1));
+    expect(generate.mock.lastCall?.[0].sourceFile).toEqual(sourceFile);
+  }
+  expect(readSourceFile).toHaveBeenCalledTimes(1);
+  expect(readSourceFile).toHaveBeenCalledWith('b'.repeat(64));
+});

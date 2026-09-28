@@ -6,6 +6,8 @@ import { parseStyleJson } from './adapters/style-json.js';
 import { detectSource } from './detect.js';
 import { initializeDocument } from './init.js';
 
+export { readStyleSource } from './source-content.js';
+
 /** Bounded application entrypoint; keeps the original CLI and all format adapters available. */
 export function initializeCartography(content: Buffer, fileName: string, name: string) {
   if (content.length > 4 * 1024 * 1024) throw new Error('Style exceeds 4 MiB');

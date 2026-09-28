@@ -2,11 +2,11 @@ import { Buffer } from 'node:buffer';
 import { spawnAgentProcess } from '../../runtimes/spawn.js';
 
 import type { SafeToolSummary } from '@mapseekai/contracts';
-import type { MapToolName } from '@mapseekai/map-design-contracts';
+import type { AgentToolName } from './types.js';
 
 import type { RuntimeAgentDef } from '../../runtimes/types.js';
 import { stopMapDesignProcessTree } from '../application/run-service.js';
-import type { NativeMapToolDefinition } from '../tools/tool-context.js';
+import type { AgentToolDefinition } from './types.js';
 import {
   type DeepSeekProfileBundle,
   stageDeepSeekProfileBundle,
@@ -55,7 +55,7 @@ export type DeepSeekProfileSpawn = (
 
 export type CreateDeepSeekHarnessMapAgentAdapterOptions = {
   definition: RuntimeAgentDef;
-  toolDefinitions: () => readonly NativeMapToolDefinition[];
+  toolDefinitions: () => readonly AgentToolDefinition[];
   spawn?: DeepSeekProfileSpawn;
   environment?: () => NodeJS.ProcessEnv | null;
   environmentKeys?: () => readonly string[];
@@ -82,7 +82,7 @@ type RunAttempt = {
   stopPromise: Promise<void> | null;
   cancelSent: boolean;
   readyDeadline: NodeJS.Timeout | null;
-  calls: Map<string, { name: MapToolName; input: unknown }>;
+  calls: Map<string, { name: AgentToolName; input: unknown }>;
   completedCalls: Set<string>;
 };
 
@@ -250,8 +250,12 @@ export function createDeepSeekHarnessMapAgentAdapter(
           return;
         }
         if (frame.status === 'completed') {
+          if (frame.stop_reason === 'max-tokens') {
+            fail({ code: 'RESPONSE_TRUNCATED', message: 'DeepSeek Harness reached the model output limit before completing the response.' });
+            return;
+          }
           sessionBroker.save(sessionScope, frame.session_id);
-          finish({ status: 'succeeded' });
+          finish({ status: 'succeeded', ...(frame.output === undefined ? {} : { finalResponse: frame.output }) });
         } else if (frame.status === 'cancelled') {
           if (cancelRequested || input.signal.aborted) finish({ status: 'canceled' });
           else fail({ code: 'DSH_PROFILE_UNEXPECTED_CANCEL', message: 'DeepSeek Harness canceled the Run unexpectedly.' });
@@ -264,7 +268,7 @@ export function createDeepSeekHarnessMapAgentAdapter(
         frame: Extract<DeepSeekProfileRuntimeFrame, { type: 'tool_call' }>,
       ): void => {
         if (!requireSession(attempt)) return;
-        const name = frame.name as MapToolName;
+        const name = frame.name as AgentToolName;
         if (!knownToolNames.has(name) || attempt.calls.has(frame.call_id) || attempt.completedCalls.has(frame.call_id)) {
           fail({ code: 'DSH_PROFILE_INVALID_TOOL_CALL', message: 'DeepSeek Harness emitted an invalid map tool call.' });
           return;
@@ -431,7 +435,7 @@ export function createDeepSeekHarnessMapAgentAdapter(
           stopPromise: null,
           cancelSent: false,
           readyDeadline: null,
-          calls: new Map<string, { name: MapToolName; input: unknown }>(),
+          calls: new Map<string, { name: AgentToolName; input: unknown }>(),
           completedCalls: new Set<string>(),
         };
         attempt.parser = createDeepSeekProfileFrameStream({
@@ -574,7 +578,7 @@ function runEnvironment(
 function probeEnvironment(
   base: NodeJS.ProcessEnv,
   home: string,
-  tools: readonly NativeMapToolDefinition[],
+  tools: readonly AgentToolDefinition[],
   inheritedEnvKeys: readonly string[],
 ): NodeJS.ProcessEnv {
   return {

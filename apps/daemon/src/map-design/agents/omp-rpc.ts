@@ -1,7 +1,6 @@
 import { spawnAgentProcess } from '../../runtimes/spawn.js';
 
 import type { SafeToolSummary } from '@mapseekai/contracts';
-import type { MapToolName } from '@mapseekai/map-design-contracts';
 
 import { stopMapDesignProcessTree } from '../application/run-service.js';
 import {
@@ -17,6 +16,7 @@ import {
   type MapAgentSessionBroker,
 } from './session-broker.js';
 import type {
+  AgentToolDefinition,
   MapAgentAdapter,
   MapAgentEvent,
   MapRunHandle,
@@ -24,7 +24,6 @@ import type {
   MapRunTerminal,
 } from './types.js';
 import { MAP_RUN_MAX_FRAME_BYTES } from './types.js';
-import type { NativeMapToolDefinition } from '../tools/tool-context.js';
 import { CommandRpcPeer } from './command-rpc-peer.js';
 
 export interface OhMyPiRpcProcess {
@@ -45,7 +44,7 @@ export type OhMyPiRpcSpawn = (
 
 export type CreateOhMyPiMapAgentAdapterOptions = {
   definition: { id: string; bin: string; inheritedEnvKeys?: readonly string[] };
-  toolDefinitions: () => readonly NativeMapToolDefinition[];
+  toolDefinitions: () => readonly AgentToolDefinition[];
   spawn?: OhMyPiRpcSpawn;
   environment?: () => NodeJS.ProcessEnv | null;
   environmentKeys?: () => readonly string[];
@@ -145,7 +144,9 @@ export function createOhMyPiMapAgentAdapter(
           sessionBroker.delete(sessionScope);
         }
         onEvent({ kind: 'run_finished', status: result.status });
-        resolveDone(result);
+        resolveDone(result.status === 'succeeded' && input.taskKind === 'cartography'
+          ? { ...result, finalResponse: result.finalResponse ?? '' }
+          : result);
         peer?.close();
         void stopProcess();
       };
@@ -222,6 +223,14 @@ export function createOhMyPiMapAgentAdapter(
           if (!Array.isArray(frame.messages)) throw new OmpProtocolError();
           if (cancelRequested) return;
           const lastAssistant = frame.messages.map(record).reverse().find((message) => message?.role === 'assistant');
+          if (lastAssistant?.stopReason === 'aborted') {
+            finish({ status: 'canceled' });
+            return;
+          }
+          if (lastAssistant?.stopReason === 'length') {
+            finish({ status: 'failed', error: { code: 'API_OUTPUT_TRUNCATED', message: 'The model response reached its output limit. Retry with a larger output limit or a smaller request.' } });
+            return;
+          }
           if (lastAssistant?.stopReason === 'error') {
             // RPC completion does not imply that the upstream model succeeded.
             // Never expose its raw error, which may contain credentials or URLs.
@@ -232,7 +241,10 @@ export function createOhMyPiMapAgentAdapter(
               : { code: 'API_REQUEST_FAILED', message: 'The model API request failed. Check the endpoint, response format and model configuration.' } });
             return;
           }
-          finish({ status: 'succeeded' });
+          const text = Array.isArray(lastAssistant?.content)
+            ? lastAssistant.content.map(record).filter((part) => part?.type === 'text' && typeof part.text === 'string').map((part) => part?.text).join('')
+            : '';
+          finish({ status: 'succeeded', ...(text ? { finalResponse: text } : {}) });
           return;
         }
         if (type === 'session_info_update') {
@@ -260,14 +272,15 @@ export function createOhMyPiMapAgentAdapter(
       const handleHostToolCall = async (frame: Record<string, unknown>): Promise<void> => {
         const hostId = safeIdentifier(frame.id);
         const toolCallId = safeIdentifier(frame.toolCallId);
-        const toolName = safeIdentifier(frame.toolName) as MapToolName | null;
-        if (!hostId || !toolCallId || !toolName || !record(frame.arguments)) {
+        const requestedName = safeIdentifier(frame.toolName);
+        if (!hostId || !toolCallId || !requestedName || !record(frame.arguments)) {
           if (hostId) sendHostError(hostId, 'INVALID_INPUT', 'The map tool input is invalid.');
           else throw new OmpProtocolError();
           return;
         }
+        const toolName = tools.find((tool) => tool.name === requestedName)?.name;
         if (seenHostRequestIds.has(hostId)) throw new OmpProtocolError('Duplicate Oh My Pi host tool request id.');
-        if (seenToolCallIds.has(toolCallId) || !tools.some((tool) => tool.name === toolName)) {
+        if (seenToolCallIds.has(toolCallId) || !toolName) {
           seenHostRequestIds.add(hostId);
           sendHostError(hostId, 'UNKNOWN_TOOL', 'The map tool call is not registered.');
           return;
@@ -531,13 +544,13 @@ class OmpRpcPeer extends CommandRpcPeer {
   }
 }
 
-function hostTools(tools: readonly NativeMapToolDefinition[]): Array<Record<string, unknown>> {
+function hostTools(tools: readonly AgentToolDefinition[]): Array<Record<string, unknown>> {
   return tools.map((tool) => ({ name: tool.name, label: tool.name, description: tool.description, parameters: tool.inputSchema }));
 }
 
 function requireRegisteredToolNames(
   result: Record<string, unknown> | null,
-  definitions: readonly NativeMapToolDefinition[],
+  definitions: readonly AgentToolDefinition[],
 ): void {
   const names = Array.isArray(result?.toolNames) ? result.toolNames : [];
   if (!names.every((name) => typeof name === 'string')

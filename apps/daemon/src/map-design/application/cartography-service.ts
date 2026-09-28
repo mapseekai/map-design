@@ -2,7 +2,7 @@ import { NO_DESIGN_SYSTEM, parseCartographyDesignSystem } from '../validation/de
 import { createHash } from 'node:crypto';
 import { lintCartography } from '@mapseekai/cartography.md';
 import {
-  CartographySampleBindingsSchema, validCartographySampleBindings, CartographyDocumentSchema, CartographyImportInputSchema, CartographyMetadataInputSchema, CartographySummarySchema,
+  CartographySampleBindingsSchema, validCartographySampleBindings, CartographyDocumentSchema, CartographyImportInputSchema, CartographyMetadataInputSchema, CartographySummarySchema, CartographyStyleFileSchema,
   type CartographyDocument, type CartographySummary,
 } from '@mapseekai/map-design-contracts';
 import type { MapDesignLocalStore } from '../storage/local-store.js';
@@ -11,7 +11,13 @@ import { cartographyPreview } from './cartography-preview.js';
 
 /** Document bodies are immutable; names, descriptions and timestamps are editable library metadata. */
 export class CartographyService {
-  constructor(private readonly store: Pick<MapDesignLocalStore, 'inTransaction'>) {}
+  constructor(private readonly store: Pick<MapDesignLocalStore, 'inTransaction'>) {
+    store.inTransaction((db) => db.exec(`CREATE TABLE IF NOT EXISTS cartography_source_files (
+      cartography_id TEXT PRIMARY KEY REFERENCES cartography_documents(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      content TEXT NOT NULL
+    )`));
+  }
 
   import(input: unknown): CartographySummary {
     const parsed = CartographyImportInputSchema.safeParse(input);
@@ -43,6 +49,11 @@ export class CartographyService {
           .run(document.description, document.updatedAt, document.id, document.description);
       }
       if (parsed.data.sampleBindings !== undefined) db.prepare('UPDATE cartography_documents SET sample_bindings_json = ? WHERE id = ?').run(JSON.stringify(parsed.data.sampleBindings), document.id);
+      if (parsed.data.sourceFile) {
+        db.prepare(`INSERT INTO cartography_source_files (cartography_id, file_name, content) VALUES (?, ?, ?)
+          ON CONFLICT(cartography_id) DO UPDATE SET file_name = excluded.file_name, content = excluded.content`)
+          .run(document.id, parsed.data.sourceFile.fileName, parsed.data.sourceFile.content);
+      }
       return previewSummary(db.prepare('SELECT *, updated_at AS updatedAt FROM cartography_documents WHERE id = ?').get(document.id));
     });
   }
@@ -90,10 +101,13 @@ export class CartographyService {
   }
 
   get(id: string): CartographyDocument {
-    const row = this.store.inTransaction((db) => db.prepare('SELECT *, updated_at AS updatedAt FROM cartography_documents WHERE id = ?').get(id));
-    if (!row) throw new MapDraftError('NOT_FOUND', 'The selected CARTOGRAPHY.md was not found.');
-    const document = CartographyDocumentSchema.parse(row);
-    return { ...document, preview: previewForRow(row, document.source) };
+    return this.store.inTransaction((db) => {
+      const row = db.prepare('SELECT *, updated_at AS updatedAt FROM cartography_documents WHERE id = ?').get(id);
+      if (!row) throw new MapDraftError('NOT_FOUND', 'The selected CARTOGRAPHY.md was not found.');
+      const document = CartographyDocumentSchema.parse(row);
+      const original = db.prepare('SELECT file_name AS fileName, content FROM cartography_source_files WHERE cartography_id = ?').get(id);
+      return { ...document, ...(original ? { sourceFile: CartographyStyleFileSchema.parse(original) } : {}), preview: previewForRow(row, document.source) };
+    });
   }
 
   forProject(projectId: string): CartographyDocument | null {

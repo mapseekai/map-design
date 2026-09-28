@@ -5,10 +5,14 @@ import type {
 } from '@mapseekai/contracts';
 
 import type { NativeMapToolDefinition } from '../tools/tool-context.js';
+import type { MapToolName } from '@mapseekai/map-design-contracts';
 import type { SdkMapToolRuntime } from './sdk-tool-runtime.js';
 import type { RunToolCallback } from './tool-callback.js';
 
 export const MAP_RUN_MAX_FRAME_BYTES = 24 * 1024 * 1024;
+
+export type AgentToolName = MapToolName | 'read_cartography_source';
+export type AgentToolDefinition = Omit<NativeMapToolDefinition, 'name'> & { readonly name: AgentToolName };
 
 export type MapRunInput = {
   runId: string;
@@ -16,6 +20,7 @@ export type MapRunInput = {
   conversationId: string;
   prompt: string;
   taskKind?: 'cartography';
+  cartographySources?: ReadonlyArray<{ readonly fileName: string; readonly content: string }>;
   resumePrompt: string;
   images?: Array<{ data: string; mimeType: 'image/png' }>;
   cwd: string;
@@ -32,6 +37,7 @@ export type MapRunInput = {
 
 export type MapRunTerminal = {
   status: 'succeeded' | 'failed' | 'canceled';
+  readonly finalResponse?: string;
   error?: { code: string; message: string };
 };
 
@@ -49,7 +55,7 @@ export interface MapAgentAdapter {
   probeNativeMapTools?(): Promise<boolean>;
   startMapRun(
     input: MapRunInput,
-    tools: NativeMapToolDefinition[],
+    tools: AgentToolDefinition[],
     onEvent: (event: MapAgentEvent) => void,
   ): Promise<MapRunHandle>;
 }

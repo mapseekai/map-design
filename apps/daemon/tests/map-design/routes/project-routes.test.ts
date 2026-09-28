@@ -70,6 +70,15 @@ describe('MapDesign project legacy read routes', () => {
     expect(response.status).toBe(201);
     expect(projectService.importCartography).toHaveBeenCalledWith({ source });
   });
+  it('accepts original style uploads without increasing the Markdown size allowance', async () => {
+    const { app, projectService } = setup();
+    projectService.importCartography.mockReturnValue({ id: 'a'.repeat(64) });
+    const sourceFile = { fileName: 'style.json', content: Buffer.alloc(1024 * 1024, 32).toString('base64') };
+    const body = { source: 'specification', sourceFile };
+    expect((await request(app, '/api/map-design/cartographies', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })).status).toBe(201);
+    expect(projectService.importCartography).toHaveBeenLastCalledWith(body);
+    expect((await request(app, '/api/map-design/cartographies', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, source: 'x'.repeat(65537) }) })).status).toBe(413);
+  });
   it('deletes specifications through the local boundary and reports referenced or missing documents', async () => {
     const { app, projectService } = setup();
     const id = 'a'.repeat(64);
