@@ -9,6 +9,25 @@ import type { MapDesignNativeToolRegistry } from '../../../src/map-design/tools/
 import { AGENT_DEFS } from '../../../src/runtimes/registry.js';
 
 describe('local MapDesign agent registry', () => {
+  it('retries a failed capability probe on refresh and caches its later success', async () => {
+    const probe = vi.fn<() => Promise<boolean>>().mockResolvedValueOnce(false).mockResolvedValue(true);
+    const capability = { nativeMapTools: true, publicReasoningSummary: false };
+    const adapter = { id: 'codex', capabilities: capability, probeNativeMapTools: probe,
+      startMapRun: async () => { throw new Error('Unexpected model request'); } };
+    const registry = createLocalAgentRegistry({
+      definitions: [{ id: 'codex', name: 'Probe', bin: process.execPath, versionArgs: ['--version'],
+        fallbackModels: [], streamFormat: 'plain', buildArgs: () => [],
+        mapDesign: { nativeToolAdapter: 'opencode-plugin', publicReasoningSummary: false } }],
+      mapAgentAdapters: { get: () => adapter, capability: () => capability },
+      config: { read: () => ({ agentCliEnv: { codex: { CODEX_BIN: process.execPath } } }) },
+    });
+    await registry.probeNativeMapTools();
+    expect(registry.list()[0]?.mapDesign.nativeMapTools).toBe(false);
+    await registry.probeNativeMapTools();
+    expect(registry.list()[0]?.mapDesign.nativeMapTools).toBe(true);
+    await registry.probeNativeMapTools();
+    expect(probe).toHaveBeenCalledTimes(2);
+  });
   it('projects every canonical runtime definition in canonical order', () => {
     const registry = createLocalAgentRegistry({ stageSkill: async () => undefined });
 
@@ -348,7 +367,7 @@ describe('local MapDesign agent registry', () => {
     expect(second.turnInputs).toEqual([[{ type: 'text', text: 'second latest only' }]]);
   });
 
-  it('caches a failed Codex app-server probe as unsupported', async () => {
+  it('marks a failed Codex app-server probe as unsupported', async () => {
     const definition = {
       id: 'codex',
       name: 'Codex',
@@ -403,10 +422,10 @@ describe('local MapDesign agent registry', () => {
         reason: 'native-tools-unavailable',
       },
     }]);
-    expect(spawn).toHaveBeenCalledOnce();
+    expect(spawn).toHaveBeenCalledTimes(2);
   });
 
-  it('caches an unsupported verdict when app-server rejects the offered dynamic tools after initialize', async () => {
+  it('marks app-server unsupported when it rejects the offered dynamic tools after initialize', async () => {
     const definition = {
       id: 'codex',
       name: 'Codex',
@@ -480,7 +499,7 @@ describe('local MapDesign agent registry', () => {
       },
     }]);
     expect(registry.getMapAgent?.('codex')).toBeNull();
-    expect(spawn).toHaveBeenCalledOnce();
+    expect(spawn).toHaveBeenCalledTimes(2);
   });
 
   it('binds Codex native support to the currently resolved executable path', async () => {

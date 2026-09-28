@@ -229,6 +229,7 @@ export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}
       }
       const supported = await probe;
       nativeMapToolSupport.set(probeKey, supported);
+      if (!supported && nativeMapToolProbes.get(probeKey) === probe) nativeMapToolProbes.delete(probeKey);
     }));
   };
   const mapCapability = (definition: RuntimeAgentDef, available: boolean): MapAgentCapability => {
