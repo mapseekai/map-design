@@ -35,6 +35,7 @@ export const CartographyEditSessionSchema = z.strictObject({
   sourceDocumentId: MapDigestSchema.optional(),
   sampleBindings: CartographySampleBindingsSchema.optional(),
   initialAnalysisStarted: z.boolean().optional(),
+  canOverwrite: z.boolean().optional(),
   activeConversationId: z.string().uuid().optional(),
   id: z.string().uuid(), name: z.string().min(1).max(256),
   source: CartographySourceSchema, description: CartographyDescriptionSchema,
@@ -47,7 +48,12 @@ export const CartographyEditSessionSchema = z.strictObject({
   messages: z.array(z.strictObject({ id: z.string().uuid(), role: z.enum(['user', 'assistant']), content: z.string().max(16_384), createdAt: z.string().datetime() })).max(200),
   preview: CartographyPreviewSchema.optional(),
 });
-export const CartographyEditSaveSchema = z.strictObject({ expectedRevision: MapSafeRevisionSchema });
+export const CartographyEditSaveSchema = z.union([
+  z.strictObject({ expectedRevision: MapSafeRevisionSchema, mode: z.literal('overwrite') }),
+  z.strictObject({ expectedRevision: MapSafeRevisionSchema, mode: z.literal('new'), name: z.string().trim().min(1).max(256) }),
+  z.strictObject({ expectedRevision: MapSafeRevisionSchema }),
+]);
+export type CartographyEditSave = z.input<typeof CartographyEditSaveSchema>;
 export const CartographyActiveEditsSchema = z.object({ sessions: z.array(z.object({
   id: z.string().uuid(), sourceDocumentId: MapDigestSchema.optional(),
 })) });

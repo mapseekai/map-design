@@ -17,6 +17,7 @@ import type { MapDesignConversation } from '@mapseekai/contracts';
 
 import { invalidInput, MapDraftError } from './errors.js';
 import { CartographyService } from './cartography-service.js';
+import type { CartographyLibrarySave } from './cartography-library-save.js';
 import { requestDigest } from './request-digest.js';
 import type { MapDesignQueryService } from './query-service.js';
 import type { MapImportJobRunner } from '../ingestion/import-job-runner.js';
@@ -117,6 +118,9 @@ export class MapDesignProjectService {
   listCartographies() { return new CartographyService(this.deps.store).list(); }
   deleteCartography(id: string) { return new CartographyService(this.deps.store).delete(id); }
   importCartography(input: unknown) { return new CartographyService(this.deps.store).import(input); }
+  saveCartographyEdit(input: CartographyLibrarySave) { return new CartographyService(this.deps.store).saveEdit(input); }
+  canOverwriteCartography(id: string) { return new CartographyService(this.deps.store).canOverwrite(id); }
+  cartographyHistoryIds(id: string) { return new CartographyService(this.deps.store).historyIds(id); }
   updateCartography(id: string, input: unknown) { return new CartographyService(this.deps.store).updateMetadata(id, input); }
   getCartography(id: string) { return new CartographyService(this.deps.store).get(id); }
 

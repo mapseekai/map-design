@@ -8,7 +8,7 @@ import { I18nProvider } from '../../src/i18n';
 import * as api from '../../src/api/client';
 vi.mock('../../src/api/client', () => ({ listMapDesignConversations: vi.fn(), getMapDesignConversation: vi.fn(), getMapDesignConversationRuntime: vi.fn(), getLocalAgents: vi.fn(), createMapDesignConversation: vi.fn(), deleteMapDesignConversation: vi.fn(), updateMapDesignConversationRuntime: vi.fn() }));
 import * as client from '../../src/map-design/cartography-edit-client';
-vi.mock('../../src/map-design/cartography-edit-client', () => ({ getCartographyEdit: vi.fn(), sendCartographyEdit: vi.fn(), saveCartographyEdit: vi.fn(), cancelCartographyEdit: vi.fn() }));
+vi.mock('../../src/map-design/cartography-edit-client', () => ({ getCartographyEdit: vi.fn(), sendCartographyEdit: vi.fn(), saveCartographyEdit: vi.fn(), cancelCartographyEdit: vi.fn(), rememberCartographyEdit: vi.fn() }));
 vi.mock('../../src/map-design/components/CartographySpecificationMap', () => ({ default: () => <div>Example map</div> }));
 vi.mock('@mapseekai/components', async (load) => {
   const actual = await load<typeof import('@mapseekai/components')>();
@@ -75,8 +75,42 @@ it('updates the document and conversation after the agent finishes, then saves e
   fireEvent.click(screen.getByRole('button', { name: 'Sample map' }));
   expect(await screen.findByText('Example map')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Save as new specification' }));
+  const saveDialog = await screen.findByRole('dialog');
+  fireEvent.change(within(saveDialog).getByRole('textbox'), { target: { value: 'Atlas copy' } });
+  fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save as new specification' }));
   expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
-  expect(client.saveCartographyEdit).toHaveBeenCalledWith(session.id, 1);
+  expect(client.saveCartographyEdit).toHaveBeenCalledWith(session.id, { expectedRevision: 1, mode: 'new', name: 'Atlas copy' });
+});
+
+it('overwrites the current specification explicitly and still allows saving a copy', async () => {
+  // Given an edited library specification.
+  const edited = { ...session, revision: 1, sourceDocumentId: 'b'.repeat(64), canOverwrite: true };
+  vi.mocked(client.getCartographyEdit).mockResolvedValue(edited);
+  vi.mocked(client.saveCartographyEdit).mockResolvedValue({ session: { ...edited, savedId: edited.sourceDocumentId, savedRevision: 1 }, document: { id: edited.sourceDocumentId, name: 'Atlas', version: '0.4.0', description: '' } });
+  render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
+  // When the author saves over the current specification.
+  fireEvent.click(await screen.findByRole('button', { name: 'Overwrite specification' }));
+  // Then the overwrite request is explicit and save-as remains available.
+  await waitFor(() => expect(client.saveCartographyEdit).toHaveBeenCalledWith(session.id, { expectedRevision: 1, mode: 'overwrite' }));
+  expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Overwrite specification' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Save as new specification' })).toBeEnabled();
+});
+
+it('keeps the copy name and draft visible when saving fails', async () => {
+  // Given a draft whose library save fails.
+  vi.mocked(client.saveCartographyEdit).mockRejectedValue(new Error('offline'));
+  render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Save as new specification' }));
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'My Atlas' } });
+  // When the author saves a copy.
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Save as new specification' }));
+  // Then retry stays in the save dialog and does not run the Agent again.
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('could not be saved');
+  expect(within(dialog).getByRole('textbox')).toHaveValue('My Atlas');
+  expect(screen.getByText('Original guidance.')).toBeInTheDocument();
+  expect(client.sendCartographyEdit).not.toHaveBeenCalled();
 });
 it('retains the valid document on failure and lets the author retry deliberately', async () => {
   vi.mocked(client.getCartographyEdit).mockResolvedValue({ ...running, status: 'failed', error: 'generation-failed' });

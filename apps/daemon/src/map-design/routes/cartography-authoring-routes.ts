@@ -12,12 +12,18 @@ export function createCartographyAuthoringRouter(deps: {
   dataRoot: string; projectRoot: string;
   config?: { read(): MapDesignAppConfig };
   agents?: NonNullable<CartographyModelRoots['agents']>;
-  projectService: Pick<MapDesignProjectService, 'importCartography'>;
+  projectService: Pick<MapDesignProjectService, 'importCartography'> & Partial<Pick<MapDesignProjectService, 'getCartography' | 'canOverwriteCartography' | 'saveCartographyEdit' | 'cartographyHistoryIds'>>;
   requireLocal: RequestHandler;
   editService?: CartographyEditService | undefined;
 }): Router {
   const router = Router();
-  const edits = deps.editService ?? new CartographyEditService({ ...deps, saveDocument: (input) => deps.projectService.importCartography(input) });
+  const edits = deps.editService ?? new CartographyEditService({ ...deps,
+    saveDocument: (input) => deps.projectService.importCartography(input),
+    ...(deps.projectService.getCartography ? { readSourceFile: (id: string) => deps.projectService.getCartography?.(id).sourceFile } : {}),
+    ...(deps.projectService.canOverwriteCartography ? { canOverwriteDocument: deps.projectService.canOverwriteCartography.bind(deps.projectService) } : {}),
+    ...(deps.projectService.cartographyHistoryIds ? { documentHistoryIds: deps.projectService.cartographyHistoryIds.bind(deps.projectService) } : {}),
+    ...(deps.projectService.saveCartographyEdit ? { saveEditedDocument: deps.projectService.saveCartographyEdit.bind(deps.projectService) } : {}),
+  });
   const jobs = new Map<string, { controller: AbortController; result: CartographyGeneration }>();
   const parseAuthoringJson = json({ limit: '6mb', strict: true });
   const parseEditJson = json({ limit: Math.ceil(CARTOGRAPHY_STYLE_MAX_BYTES / 3) * 4 + (CARTOGRAPHY_MAX_BYTES + 2 * 1024 * 1024) * 6 + 16 * 1024, strict: true });

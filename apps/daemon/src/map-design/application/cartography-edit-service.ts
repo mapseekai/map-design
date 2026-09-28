@@ -6,16 +6,17 @@ import { readStyleSource } from '@cartographymd/init-skill';
 import { lintCartography } from '@mapseekai/cartography.md';
 import type { MapDesignMessage, MapDesignRuntimeSelectionInput } from '@mapseekai/contracts';
 import {
-  CartographyStyleFileSchema, type CartographyStyleFile, CartographyEditCreateSchema, CartographyEditTurnSchema, CartographyEditSessionSchema, CartographyEditSaveSchema, CartographyEditReplySchema,
-  validCartographySampleBindings, type CartographySampleBindings, type CartographyEditSession, type CartographyEditTurn, type CartographySummary,
+  CartographySummarySchema, CartographyStyleFileSchema, type CartographyStyleFile, CartographyEditCreateSchema, CartographyEditTurnSchema, CartographyEditSessionSchema, CartographyEditSaveSchema, CartographyEditReplySchema,
+  validCartographySampleBindings, type CartographySampleBindings, type CartographyEditSession, type CartographyEditTurn, type CartographySummary, type CartographyDocument,
 } from '@mapseekai/map-design-contracts';
 import { cartographyPreview } from './cartography-preview.js';
 import { generateCartographyEdit, type CartographyModelRoots } from './cartography-authoring.js';
 import { invalidInput, MapDraftError } from './errors.js';
 import type { MapDesignLocalStore, RunMessagePatch } from '../storage/local-store.js';
 import { RunEventAccumulator, sanitizeEventText } from './run-events.js';
+import type { CartographyLibrarySave } from './cartography-library-save.js';
 
-const storedSchema = CartographyEditSessionSchema.omit({ preview: true }).extend({
+const storedSchema = CartographyEditSessionSchema.omit({ preview: true, canOverwrite: true }).extend({
   sourceFile: CartographyStyleFileSchema.optional(),
   reportMarkdown: z.string().max(2 * 1024 * 1024), receipts: z.record(z.string().uuid(), z.string()), assistantId: z.string().uuid().optional(),
 });
@@ -31,6 +32,9 @@ export class CartographyEditService {
   constructor(private readonly deps: CartographyModelRoots & {
     store?: MapDesignLocalStore;
     readSourceFile?(documentId: string): CartographyStyleFile | undefined;
+    canOverwriteDocument?(documentId: string): boolean;
+    documentHistoryIds?(documentId: string): string[];
+    saveEditedDocument?(input: CartographyLibrarySave): CartographyDocument;
     saveDocument(input: { source: string; description: string; sourceFile?: CartographyStyleFile; sampleBindings?: CartographySampleBindings }): CartographySummary;
     generate?: typeof generateCartographyEdit;
   }) {
@@ -40,14 +44,15 @@ export class CartographyEditService {
   isProjectRunning(id: string) { return this.jobs.has(id) || this.locks.has(id); }
   async history(documentId: string) {
     if (!z.string().regex(/^[a-f0-9]{64}$/).safeParse(documentId).success) throw invalidInput();
-    const rows = this.deps.store?.inTransaction((db) => db.prepare('SELECT id FROM cartography_edit_sessions WHERE json_extract(document_json, \'$.sourceDocumentId\') = ?').all(documentId)) as { id: string }[] | undefined;
+    const documentIds = this.deps.documentHistoryIds?.(documentId) ?? [documentId];
+    const rows = this.deps.store?.inTransaction((db) => db.prepare(`SELECT id FROM cartography_edit_sessions WHERE json_extract(document_json, '$.sourceDocumentId') IN (${documentIds.map(() => '?').join(',')})`).all(...documentIds)) as { id: string }[] | undefined;
     const files = rows ? [] : await readdir(this.directory).catch((error: NodeJS.ErrnoException) => {
       if (error.code === 'ENOENT') return [];
       throw error;
     });
     const ids = rows?.map((row) => row.id) ?? files.filter((file) => /^[a-f0-9-]{36}\.json$/.test(file)).map((file) => file.slice(0, -5));
     const sessions = await Promise.all(ids.map((id) => this.get(id)));
-    return { sessions: sessions.filter((session) => session.sourceDocumentId === documentId)
+    return { sessions: sessions.filter((session) => session.sourceDocumentId && documentIds.includes(session.sourceDocumentId))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))
       .map(({ id, name, createdAt, updatedAt, status, revision }) => ({ id, name, createdAt, updatedAt, status, revision })) };
   }
@@ -188,13 +193,22 @@ export class CartographyEditService {
       if (this.jobs.has(id)) throw busy();
       const session = await this.read(id);
       if (session.revision !== parsed.data.expectedRevision) throw new MapDraftError('REVISION_CONFLICT', 'The specification draft has changed.');
-      const document = this.deps.saveDocument({ source: session.source, description: session.description,
+      const content = { source: session.source, description: session.description,
         ...(session.sourceFile ? { sourceFile: session.sourceFile } : {}),
         ...(session.sampleBindings ? { sampleBindings: session.sampleBindings } : {}),
-      });
-      const next = { ...session, savedId: document.id, savedRevision: session.revision, updatedAt: new Date().toISOString() };
+      };
+      const targetId = session.savedId ?? session.sourceDocumentId;
+      const request = parsed.data;
+      const document = 'mode' in request
+        ? this.deps.saveEditedDocument?.({ ...content, ...(targetId ? { targetId } : {}), ...request })
+        : this.deps.saveDocument(content);
+      if (!document) throw invalidInput();
+      const source = 'source' in document && typeof document.source === 'string' ? document.source : session.source;
+      const revision = source === session.source ? session.revision : session.revision + 1;
+      const next = { ...session, source, name: document.name, revision, sourceDocumentId: document.id,
+        savedId: document.id, savedRevision: revision, updatedAt: new Date().toISOString() };
       await this.write(next);
-      return { session: this.publicSession(next), document };
+      return { session: this.publicSession(next), document: CartographySummarySchema.parse(document) };
     });
   }
 
@@ -239,7 +253,9 @@ export class CartographyEditService {
 
   private publicSession(session: StoredSession): CartographyEditSession {
     const { sourceFile: _sourceFile, reportMarkdown: _report, receipts: _receipts, assistantId: _assistant, ...visible } = session;
+    const documentId = session.savedId ?? session.sourceDocumentId;
     return CartographyEditSessionSchema.parse({ ...visible, initialAnalysisStarted: session.initialAnalysisStarted ?? session.messages.length > 0,
+      canOverwrite: documentId ? this.deps.canOverwriteDocument?.(documentId) ?? false : false,
       preview: { ...cartographyPreview(session.source), ...(session.sampleBindings ? { sampleBindings: session.sampleBindings } : {}) },
     });
   }

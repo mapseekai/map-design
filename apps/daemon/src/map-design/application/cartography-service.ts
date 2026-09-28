@@ -8,6 +8,7 @@ import {
 import type { MapDesignLocalStore } from '../storage/local-store.js';
 import { invalidInput, MapDraftError } from './errors.js';
 import { cartographyPreview } from './cartography-preview.js';
+import { renameCartographySource, type CartographyLibrarySave } from './cartography-library-save.js';
 
 /** Document bodies are immutable; names, descriptions and timestamps are editable library metadata. */
 export class CartographyService {
@@ -16,6 +17,9 @@ export class CartographyService {
       cartography_id TEXT PRIMARY KEY REFERENCES cartography_documents(id) ON DELETE CASCADE,
       file_name TEXT NOT NULL,
       content TEXT NOT NULL
+    ); CREATE TABLE IF NOT EXISTS cartography_archived_documents (
+      cartography_id TEXT PRIMARY KEY REFERENCES cartography_documents(id) ON DELETE CASCADE,
+      replacement_id TEXT REFERENCES cartography_documents(id) ON DELETE SET NULL
     )`));
   }
 
@@ -54,6 +58,7 @@ export class CartographyService {
           ON CONFLICT(cartography_id) DO UPDATE SET file_name = excluded.file_name, content = excluded.content`)
           .run(document.id, parsed.data.sourceFile.fileName, parsed.data.sourceFile.content);
       }
+      db.prepare('DELETE FROM cartography_archived_documents WHERE cartography_id = ?').run(document.id);
       return previewSummary(db.prepare('SELECT *, updated_at AS updatedAt FROM cartography_documents WHERE id = ?').get(document.id));
     });
   }
@@ -69,9 +74,51 @@ export class CartographyService {
     });
   }
 
+  canOverwrite(id: string): boolean {
+    return this.store.inTransaction((db) => Boolean(db.prepare(`SELECT 1 FROM cartography_documents d
+      WHERE d.id = ? AND d.origin = 'user' AND NOT EXISTS
+      (SELECT 1 FROM cartography_archived_documents a WHERE a.cartography_id = d.id)`).get(id)));
+  }
+
+  historyIds(id: string): string[] {
+    return this.store.inTransaction((db) => db.prepare(`WITH RECURSIVE history(id) AS (
+      SELECT ? UNION SELECT a.cartography_id FROM cartography_archived_documents a JOIN history h ON a.replacement_id = h.id
+    ) SELECT id FROM history`).all(id).map((row) => CartographySummarySchema.shape.id.parse(row && typeof row === 'object' && 'id' in row ? row.id : undefined)));
+  }
+
+  saveEdit(input: CartographyLibrarySave): CartographyDocument {
+    return this.store.inTransaction((db) => {
+      const source = input.mode === 'new' ? renameCartographySource(input.source, input.name) : input.source;
+      const id = createHash('sha256').update(source).digest('hex');
+      const target = input.targetId && (input.mode === 'overwrite' || db.prepare('SELECT 1 FROM cartography_documents WHERE id = ?').get(input.targetId)) ? this.get(input.targetId) : undefined;
+      switch (input.mode) {
+        case 'overwrite':
+          if (!target) throw invalidInput();
+          if (target.origin === 'preset') throw new MapDraftError('INVALID_INPUT', 'Bundled specifications cannot be overwritten.', { details: { reason: 'CARTOGRAPHY_PRESET' } });
+          if (!this.canOverwrite(target.id)) throw new MapDraftError('REVISION_CONFLICT', 'This specification has already been replaced. Reopen the current specification.', { details: { reason: 'CARTOGRAPHY_CHANGED' } });
+          break;
+        case 'new':
+          break;
+      }
+      if (id !== (input.mode === 'overwrite' ? target?.id : undefined) && db.prepare('SELECT 1 FROM cartography_documents WHERE id = ?').get(id)) {
+        throw new MapDraftError('INVALID_INPUT', 'An identical specification already exists. Choose a different name.', { details: { reason: 'CARTOGRAPHY_EXISTS' } });
+      }
+      const sourceFile = input.sourceFile ?? target?.sourceFile;
+      const saved = this.import({ source, description: input.description,
+        ...(sourceFile ? { sourceFile } : {}), ...(input.sampleBindings ? { sampleBindings: input.sampleBindings } : {}),
+      });
+      if (input.mode === 'overwrite' && target && target.id !== saved.id) {
+        db.prepare('INSERT INTO cartography_archived_documents (cartography_id, replacement_id) VALUES (?, ?)').run(target.id, saved.id);
+      }
+      if (input.mode === 'overwrite' && target && saved.name !== target.name) this.updateMetadata(saved.id, { name: target.name });
+      return this.get(saved.id);
+    });
+  }
+
   list(): { documents: CartographySummary[] } {
     return this.store.inTransaction((db) => ({ documents: db.prepare(
-      'SELECT id, name, description, version, source, sample_bindings_json, origin, updated_at AS updatedAt FROM cartography_documents ORDER BY updated_at DESC, name, id',
+      `SELECT id, name, description, version, source, sample_bindings_json, origin, updated_at AS updatedAt FROM cartography_documents d
+       WHERE NOT EXISTS (SELECT 1 FROM cartography_archived_documents a WHERE a.cartography_id = d.id) ORDER BY updated_at DESC, name, id`,
     ).all().map(previewSummary) }));
   }
 

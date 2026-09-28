@@ -4,6 +4,7 @@ import { Alert, AlertDescription, Button, MapLoading, type PanelImperativeHandle
 import type { CartographyEditSession } from '@mapseekai/map-design-contracts';
 import { useI18n } from '../i18n';
 import { cartographyEditorCopy } from '../i18n/locales/cartography-editor';
+import { cartographySaveCopy } from '../i18n/locales/cartography-save';
 import { cartographyLibraryCopy } from '../i18n/locales/cartography-library';
 import { cartographyPreviewCopy } from '../i18n/locales/cartography-preview';
 import { cartographyManagerCopy } from '../i18n/locales/cartography';
@@ -22,7 +23,8 @@ import { TitlebarProject } from './components/MapDesignTitlebar';
 import { useWorkspaceTabDraft } from './WorkspaceTabs';
 import { useMapDesignLayoutPreferences } from './hooks/useMapDesignLayoutPreferences';
 import { navigate } from '../router';
-import { cancelCartographyEdit, getCartographyEdit, saveCartographyEdit, sendCartographyEdit } from './cartography-edit-client';
+import { cancelCartographyEdit, getCartographyEdit, sendCartographyEdit } from './cartography-edit-client';
+import { CartographySaveActions } from './components/CartographySaveActions';
 import { CartographyDocumentPreview } from './components/CartographyDocumentPreview';
 import { CartographyEditHistory } from './components/CartographyEditHistory';
 import { rememberCartographyEdit } from './cartography-edit-client';
@@ -131,12 +133,6 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
     catch { if (alive.current) setNotice(true); }
     finally { if (alive.current) setBusy(false); }
   }
-  async function save() {
-    setBusy(true); setNotice(false);
-    try { const result = await saveCartographyEdit(sessionId, session.revision); if (alive.current) { setSession(result.session); setSaved(true); } }
-    catch { if (alive.current) setNotice(true); }
-    finally { if (alive.current) setBusy(false); }
-  }
   const retryPrompt = [...messages].reverse().find((message) => message.role === 'user')?.content ?? session.initialPrompt;
   return <section className="group/workspace flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
     <TitlebarProject title={session.name} />
@@ -170,13 +166,13 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
       studio={<div id="map-design-map-surface" hidden={mobile && mobileView !== 'map'} role={mobile ? 'tabpanel' : undefined} aria-labelledby={mobile ? 'map-design-mobile-map-tab' : undefined} className="[&[hidden]]:hidden flex h-full min-h-0 flex-col overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3" style={{ minHeight: 'var(--studio-header-height)' }}>
           <div className="flex min-w-0 items-center gap-2"><Button type="button" variant="ghost" size="icon" aria-label={cartographyLibraryCopy[locale].back} onClick={() => navigate({ kind: 'cartographies' })}><ArrowLeft aria-hidden="true" /></Button><h1 className="truncate text-base font-medium">{session.name}</h1><span className="text-xs text-muted-foreground">r{session.revision}</span></div>
-          <div className="flex items-center gap-2"><Button type="button" variant="ghost" onClick={() => navigate({ kind: 'settings' })}>{navigationCopy[locale].settings}</Button><Button type="button" disabled={documentRunning || busy || session.savedRevision === session.revision} onClick={() => { void save(); }}>{copy.saveNew}</Button></div>
+          <div className="flex min-w-0 flex-wrap items-center gap-2"><Button type="button" variant="ghost" onClick={() => navigate({ kind: 'settings' })}>{navigationCopy[locale].settings}</Button><CartographySaveActions session={session} disabled={documentRunning || busy} onBusyChange={value => { setBusy(value); if (value) setSaved(false); }} onSaved={next => { setSession(next); setSaved(true); }} /></div>
         </div>
         <div className="flex flex-wrap gap-2 border-b border-border p-3"><Button type="button" variant={view === 'document' ? 'secondary' : 'ghost'} aria-pressed={view === 'document'} onClick={() => setView('document')}>CARTOGRAPHY.md</Button><Button type="button" variant={view === 'map' ? 'secondary' : 'ghost'} aria-pressed={view === 'map'} onClick={() => setView('map')}>{cartographyPreviewCopy[locale].mapTitle}</Button>
           {view === 'map' ? <Button type="button" variant="outline" disabled={busy || documentRunning || !selectedId || !runtime.runtime} onClick={() => { void submit(copy.updateMap); }}>{copy.updateMap}</Button> : null}
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
-          <p className="text-xs text-muted-foreground">{saved ? cartographyManagerCopy[locale].saved : copy.draftHint}</p>
+          <p role={saved ? 'status' : undefined} className="text-xs text-muted-foreground">{saved ? cartographyManagerCopy[locale].saved : cartographySaveCopy[locale].hint}</p>
           {view === 'document' ? <CartographyDocumentPreview key={session.revision} source={session.source} />
             : <Suspense fallback={<MapLoading label={t('common.loading')} />}><SpecificationMap key={session.revision} elements={session.preview?.elements ?? []} sampleBindings={session.sampleBindings} /></Suspense>}
         </div>

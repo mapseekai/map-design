@@ -1,4 +1,4 @@
-import { CartographyEditHistorySchema, CartographyActiveEditsSchema, CartographyEditSessionSchema, CartographyEditSaveOutputSchema, type CartographyEditCreate, type CartographyEditTurn } from '@mapseekai/map-design-contracts';
+import { CartographyEditHistorySchema, CartographyActiveEditsSchema, CartographyEditSessionSchema, CartographyEditSaveOutputSchema, type CartographyEditCreate, type CartographyEditTurn, type CartographyEditSave } from '@mapseekai/map-design-contracts';
 import { request } from '../api/request';
 
 const base = '/api/map-design/cartography-tools/edit-sessions';
@@ -29,6 +29,6 @@ export async function sendCartographyEdit(id: string, input: CartographyEditTurn
 export async function cancelCartographyEdit(id: string) {
   return CartographyEditSessionSchema.parse(await request(`${sessionPath(id)}/turns`, { method: 'DELETE' }, (value) => CartographyEditSessionSchema.safeParse(value).success));
 }
-export async function saveCartographyEdit(id: string, expectedRevision: number) {
-  return CartographyEditSaveOutputSchema.parse(await request(`${sessionPath(id)}/save`, json({ expectedRevision }), (value) => CartographyEditSaveOutputSchema.safeParse(value).success));
+export async function saveCartographyEdit(id: string, input: CartographyEditSave) {
+  return CartographyEditSaveOutputSchema.parse(await request(`${sessionPath(id)}/save`, json(input), (value) => CartographyEditSaveOutputSchema.safeParse(value).success));
 }
