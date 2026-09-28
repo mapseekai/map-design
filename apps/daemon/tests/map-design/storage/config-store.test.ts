@@ -162,10 +162,19 @@ it('persists a bounded API response format without altering the saved secret', (
 it('persists valid API budgets and rejects unknown, fractional and excessive limits', () => {
   const root = tempRoot(); const store = createMapDesignConfigStore(root);
   expect(store.update({ apiExecution: { maxSteps: 64, maxOutputTokens: 32768 } }).apiExecution)
-    .toMatchObject({ maxSteps: 64, maxOutputTokens: 32768, maxToolCalls: 192 });
+    .toEqual({ maxSteps: 64, maxOutputTokens: 32768 });
   expect(createMapDesignConfigStore(root).read().apiExecution?.maxSteps).toBe(64);
   for (const apiExecution of [{ maxSteps: 0 }, { maxSteps: 3.5 }, { maxToolCalls: 9000 }, { maxOutputTokens: 999999 }, { unknown: 3 }]) {
     expect(() => store.update({ apiExecution } as never)).toThrow('API execution');
   }
   expect(store.read().apiExecution?.maxSteps).toBe(64);
+});
+
+it('preserves automatic budgets when saving other limits or clearing an override', () => {
+  const root = tempRoot(); const store = createMapDesignConfigStore(root);
+  store.update({ apiExecution: { maxOutputTokens: 1024 } });
+  store.update({ apiExecution: { maxSteps: 64 } });
+  expect(createMapDesignConfigStore(root).read().apiExecution).toEqual({ maxSteps: 64 });
+  store.update({ apiExecution: {} });
+  expect(createMapDesignConfigStore(root).read().apiExecution).toEqual({});
 });

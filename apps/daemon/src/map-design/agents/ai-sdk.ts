@@ -3,6 +3,7 @@ import { isStepCount, jsonSchema, streamText, tool, type LanguageModel, type Too
 import { resolveMapApiExecutionSettings, type MapDesignApiExecutionSettings, type ByokProviderSelection } from '@mapseekai/contracts';
 import { ApiToolOutcomes } from './api-tool-outcomes.js';
 import { apiProviderOptions } from './api-provider-options.js';
+import { apiOutputBudget } from './api-output-budget.js';
 import type { MapAgentAdapter, MapAgentEvent, MapRunTerminal } from './types.js';
 import { apiModelFailure, createApiModel } from './api-model.js';
 import { DESIGN_REFERENCES, readDesignReference } from './design-references.js';
@@ -38,15 +39,18 @@ export function createApiMapAgentAdapter(options: {
       const done: Promise<MapRunTerminal> = (async () => {
         try {
           let limits;
-          try { limits = resolveMapApiExecutionSettings(options.execution?.()); }
+          const execution = options.execution?.();
+          try { limits = resolveMapApiExecutionSettings(execution); }
           catch { return { status: 'failed', error: { code: 'API_CONFIGURATION_REQUIRED', message: 'The API execution budget is invalid. Update Settings.' } }; }
-          const maxOutputTokens = input.taskKind === 'cartography' ? limits.cartographyMaxOutputTokens : limits.maxOutputTokens;
           let steps = 0; let inputTokens = 0; let outputTokens = 0; let toolLimitHit = false;
           const saved = input.apiProviderSnapshot ?? options.provider(input.model);
           const modelId = apiProfileIdFromModel(input.model) ? saved?.model : input.model;
           // A run override must be complete; never send a saved key to an overridden host.
           const provider = input.byokProvider ? { ...input.byokProvider, model: modelId ?? saved?.model } : saved;
           const model = options.model ?? createApiModel(provider, modelId);
+          const budgetKey = input.taskKind === 'cartography' ? 'cartographyMaxOutputTokens' : 'maxOutputTokens';
+          const maxOutputTokens = apiOutputBudget(provider && { ...provider, ...(modelId && modelId !== 'default' ? { model: modelId } : {}) },
+            { configured: execution?.[budgetKey], fallback: limits[budgetKey] }, input.reasoning);
           const skillName = input.taskKind === 'cartography' ? 'cartography-md' : 'map-design';
           const skill = await readDesignReference(options.projectRoot, skillName);
           const tools: ToolSet = {};

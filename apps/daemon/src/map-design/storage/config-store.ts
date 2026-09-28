@@ -184,7 +184,11 @@ function validate(config: unknown): MapDesignAppConfig {
     sanitized.activeApiProfileId = record.activeApiProfileId as string | null;
   }
   if (Object.hasOwn(record, 'apiExecution')) {
-    try { sanitized.apiExecution = resolveMapApiExecutionSettings(requireRecord(record.apiExecution, 'apiExecution', 4)); }
+    try {
+      const supplied = requireRecord(record.apiExecution, 'apiExecution', 4);
+      const resolved = resolveMapApiExecutionSettings(supplied);
+      sanitized.apiExecution = Object.fromEntries(Object.entries(resolved).filter(([key]) => Object.hasOwn(supplied, key)));
+    }
     catch { throw new MapDesignConfigValidationError('Invalid API execution budget'); }
   }
   if (Object.hasOwn(record, 'agentId')) {

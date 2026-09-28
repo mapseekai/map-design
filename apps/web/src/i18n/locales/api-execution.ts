@@ -1,8 +1,9 @@
 import type { Locale } from '../types';
 
-export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string; maxToolCalls: string; maxOutputTokens: string; cartographyMaxOutputTokens: string; hint: string; invalid: string }> = {
+export const apiExecutionCopy: Record<Locale, { title: string; automatic: string; maxSteps: string; maxToolCalls: string; maxOutputTokens: string; cartographyMaxOutputTokens: string; hint: string; invalid: string }> = {
   "en": {
     "title": "API execution budget",
+    "automatic": "Leave blank for automatic budgeting",
     "maxSteps": "Maximum model steps",
     "maxToolCalls": "Maximum tool calls",
     "maxOutputTokens": "Output tokens per call",
@@ -12,6 +13,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "zh-CN": {
     "title": "API 执行预算",
+    "automatic": "留空时自动选择预算",
     "maxSteps": "最大模型调用步数",
     "maxToolCalls": "最大工具调用次数",
     "maxOutputTokens": "每次调用的输出 Token 上限",
@@ -21,6 +23,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "zh-TW": {
     "title": "API 執行預算",
+    "automatic": "留空時自動選擇預算",
     "maxSteps": "最大模型呼叫步數",
     "maxToolCalls": "最大工具呼叫次數",
     "maxOutputTokens": "每次呼叫的輸出 Token 上限",
@@ -30,6 +33,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "de": {
     "title": "API-Ausführungsbudget",
+    "automatic": "Für automatisches Budget leer lassen",
     "maxSteps": "Maximale Modellschritte",
     "maxToolCalls": "Maximale Werkzeugaufrufe",
     "maxOutputTokens": "Ausgabe-Tokens pro Aufruf",
@@ -39,6 +43,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "fr": {
     "title": "Budget API",
+    "automatic": "Laisser vide pour un budget automatique",
     "maxSteps": "Étapes maximales du modèle",
     "maxToolCalls": "Appels d’outils maximaux",
     "maxOutputTokens": "Tokens de sortie par appel",
@@ -48,6 +53,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "es-ES": {
     "title": "Presupuesto de API",
+    "automatic": "Dejar vacío para presupuesto automático",
     "maxSteps": "Pasos máximos del modelo",
     "maxToolCalls": "Llamadas máximas a herramientas",
     "maxOutputTokens": "Tokens de salida por llamada",
@@ -57,6 +63,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "pt-BR": {
     "title": "Orçamento de API",
+    "automatic": "Deixe vazio para orçamento automático",
     "maxSteps": "Máximo de etapas do modelo",
     "maxToolCalls": "Máximo de chamadas de ferramentas",
     "maxOutputTokens": "Tokens de saída por chamada",
@@ -66,6 +73,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "it": {
     "title": "Budget API",
+    "automatic": "Lascia vuoto per il budget automatico",
     "maxSteps": "Passi massimi del modello",
     "maxToolCalls": "Chiamate massime agli strumenti",
     "maxOutputTokens": "Token di output per chiamata",
@@ -75,6 +83,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "ja": {
     "title": "API 実行予算",
+    "automatic": "空欄の場合は予算を自動設定",
     "maxSteps": "モデルの最大ステップ数",
     "maxToolCalls": "ツールの最大呼び出し回数",
     "maxOutputTokens": "呼び出しごとの出力トークン上限",
@@ -84,6 +93,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "ko": {
     "title": "API 실행 예산",
+    "automatic": "비워 두면 예산 자동 설정",
     "maxSteps": "최대 모델 단계",
     "maxToolCalls": "최대 도구 호출",
     "maxOutputTokens": "호출당 출력 토큰",
@@ -93,6 +103,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "ru": {
     "title": "Бюджет API",
+    "automatic": "Оставьте пустым для автоматического бюджета",
     "maxSteps": "Максимум шагов модели",
     "maxToolCalls": "Максимум вызовов инструментов",
     "maxOutputTokens": "Токены вывода за вызов",
@@ -102,6 +113,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "uk": {
     "title": "Бюджет API",
+    "automatic": "Залиште порожнім для автоматичного бюджету",
     "maxSteps": "Максимум кроків моделі",
     "maxToolCalls": "Максимум викликів інструментів",
     "maxOutputTokens": "Токени виводу за виклик",
@@ -111,6 +123,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "pl": {
     "title": "Budżet API",
+    "automatic": "Pozostaw puste, aby dobrać budżet automatycznie",
     "maxSteps": "Maksymalna liczba kroków modelu",
     "maxToolCalls": "Maksymalna liczba wywołań narzędzi",
     "maxOutputTokens": "Tokeny wyjściowe na wywołanie",
@@ -120,6 +133,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "hu": {
     "title": "API-keret",
+    "automatic": "Automatikus kerethez hagyja üresen",
     "maxSteps": "Modelllépések maximuma",
     "maxToolCalls": "Eszközhívások maximuma",
     "maxOutputTokens": "Kimeneti tokenek hívásonként",
@@ -129,6 +143,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "id": {
     "title": "Anggaran API",
+    "automatic": "Kosongkan untuk anggaran otomatis",
     "maxSteps": "Langkah model maksimum",
     "maxToolCalls": "Panggilan alat maksimum",
     "maxOutputTokens": "Token keluaran per panggilan",
@@ -138,6 +153,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "tr": {
     "title": "API bütçesi",
+    "automatic": "Otomatik bütçe için boş bırakın",
     "maxSteps": "Azami model adımı",
     "maxToolCalls": "Azami araç çağrısı",
     "maxOutputTokens": "Çağrı başına çıktı tokeni",
@@ -147,6 +163,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "ar": {
     "title": "ميزانية API",
+    "automatic": "اتركه فارغاً لاختيار الميزانية تلقائياً",
     "maxSteps": "الحد الأقصى لخطوات النموذج",
     "maxToolCalls": "الحد الأقصى لاستدعاءات الأدوات",
     "maxOutputTokens": "رموز الإخراج لكل استدعاء",
@@ -156,6 +173,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "fa": {
     "title": "بودجه API",
+    "automatic": "برای بودجه خودکار خالی بگذارید",
     "maxSteps": "حداکثر مراحل مدل",
     "maxToolCalls": "حداکثر فراخوانی ابزار",
     "maxOutputTokens": "توکن خروجی هر فراخوانی",
@@ -165,6 +183,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; maxSteps: string;
   },
   "th": {
     "title": "งบประมาณ API",
+    "automatic": "เว้นว่างเพื่อเลือกงบประมาณอัตโนมัติ",
     "maxSteps": "ขั้นตอนโมเดลสูงสุด",
     "maxToolCalls": "การเรียกเครื่องมือสูงสุด",
     "maxOutputTokens": "โทเคนเอาต์พุตต่อครั้ง",

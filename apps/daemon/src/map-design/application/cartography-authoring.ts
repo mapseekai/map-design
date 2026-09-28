@@ -1,6 +1,7 @@
 import { resolveApiProfile } from './api-profile-service.js';
 import { resolveMapApiExecutionSettings } from '@mapseekai/contracts';
 import { apiProviderOptions } from '../agents/api-provider-options.js';
+import { apiOutputBudget } from '../agents/api-output-budget.js';
 import { randomUUID } from 'node:crypto';
 import { runCartographyAgent } from '../agents/cartography-runner.js';
 import type { MapDesignLocalAgentRegistry } from './local-agent-registry.js';
@@ -169,7 +170,7 @@ async function runCartographyModel(prompt: string, runtime: 'api' | 'codex', roo
       const provider = resolveApiProfile(config ?? {});
       const model = createApiModel(provider);
       const configuredLimit = config?.apiExecution?.cartographyMaxOutputTokens;
-      const outputLimit = configuredLimit === undefined ? maxOutputTokens : resolveMapApiExecutionSettings(config?.apiExecution).cartographyMaxOutputTokens;
+      const outputLimit = apiOutputBudget(provider, { configured: configuredLimit === undefined ? undefined : resolveMapApiExecutionSettings(config?.apiExecution).cartographyMaxOutputTokens, fallback: maxOutputTokens }, null);
       const result = await generateText({ model, prompt, maxOutputTokens: outputLimit, maxRetries: 1, abortSignal: signal, providerOptions: apiProviderOptions(provider, null, null) });
       if (result.finishReason === 'length') throw new MapDraftError('INVALID_INPUT', `The document output was truncated at the configured token limit (${outputLimit}). Increase the Cartography API output budget in Settings or shorten the brief.`);
       if (result.finishReason !== 'stop' || Buffer.byteLength(result.text) > maxBytes) throw new MapDraftError('INVALID_INPUT', 'The generated document failed validation. Refine the design brief and try again.');

@@ -26,6 +26,33 @@ const succeeded: MapRunInput['toolRuntime']['execute'] = async (call) => ({ ok: 
 const failed: MapRunInput['toolRuntime']['execute'] = async (call) => ({ ok: false, toolUseId: call.toolUseId, error: { code: 'REVISION_CONFLICT', message: 'Refresh revision', retryable: true } });
 
 describe('API execution outcomes and budgets', () => {
+  it.each([
+    { host: 'https://api.deepseek.com', modelId: 'deepseek-flash', reasoning: null, configured: undefined, expected: 65536 },
+    { host: 'https://api.deepseek.com/v1', modelId: 'deepseek-v4-pro', reasoning: 'max', configured: undefined, expected: 65536 },
+    { host: 'https://api.deepseek.com', modelId: 'deepseek-flash', reasoning: null, configured: 1024, expected: 1024 },
+    { host: 'https://api.deepseek.com', modelId: 'deepseek-flash', reasoning: 'none', configured: undefined, expected: 16384 },
+    { host: 'https://proxy.example.com', modelId: 'deepseek-flash', reasoning: null, configured: undefined, expected: 16384 },
+    { host: 'https://api.deepseek.com', modelId: 'unknown', reasoning: null, configured: undefined, expected: 16384 },
+  ])('selects a bounded output budget for $modelId at $host with $reasoning and override $configured', async ({ host, modelId, reasoning, configured, expected }) => {
+    const model = new MockLanguageModelV4({ doStream: end() });
+    const adapter = createApiMapAgentAdapter({ projectRoot: repo, model, report: vi.fn(),
+      provider: () => ({ protocol: 'openai', apiKey: 'test', baseUrl: host, model: modelId }),
+      execution: () => configured === undefined ? undefined : { maxOutputTokens: configured },
+    });
+    const handle = await adapter.startMapRun({ ...input(succeeded), model: modelId, reasoning }, [], () => {});
+    expect(await handle.done).toEqual({ status: 'succeeded' });
+    expect(model.doStreamCalls[0]?.maxOutputTokens).toBe(expected);
+  });
+  it.each([undefined, 2048])('preserves the separate cartography budget override %s', async (configured) => {
+    const model = new MockLanguageModelV4({ doStream: end() });
+    const adapter = createApiMapAgentAdapter({ projectRoot: repo, model, report: vi.fn(),
+      provider: () => ({ protocol: 'openai', apiKey: 'test', baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash' }),
+      execution: () => ({ maxOutputTokens: 512, ...(configured === undefined ? {} : { cartographyMaxOutputTokens: configured }) }),
+    });
+    const handle = await adapter.startMapRun({ ...input(succeeded), model: 'deepseek-flash', taskKind: 'cartography' }, [], () => {});
+    expect(await handle.done).toMatchObject({ status: 'succeeded' });
+    expect(model.doStreamCalls[0]?.maxOutputTokens).toBe(configured ?? 65536);
+  });
   it('never treats a different successful operation as repair of a failed call', async () => {
     const model = new MockLanguageModelV4({ doStream: [toolStep('a', { target: 'A' }), toolStep('b', { target: 'B' }), end()] });
     const adapter = createApiMapAgentAdapter({ projectRoot: repo, provider: () => undefined, model, report: vi.fn() });

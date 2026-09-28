@@ -17,8 +17,8 @@ import { getMapDesignHost } from '../platform/map-design-host';
 import { LOCALES, LOCALE_LABEL, useI18n } from '../i18n';
 
 const appearanceKey = 'map-design.appearance';
-interface Draft { apiExecution: Required<MapDesignApiExecutionSettings>; customInstructions: string }
-const makeDraft = (config: MapDesignAppConfig): Draft => ({ apiExecution: resolveMapApiExecutionSettings(config.apiExecution), customInstructions: config.customInstructions ?? '' });
+interface Draft { apiExecution: MapDesignApiExecutionSettings; customInstructions: string }
+const makeDraft = (config: MapDesignAppConfig): Draft => ({ apiExecution: { ...config.apiExecution }, customInstructions: config.customInstructions ?? '' });
 
 export function MapDesignSettings({ section = 'models' }: { section?: 'models' | 'appearance' }) {
   const { t, locale, setLocale } = useI18n();
