@@ -9,7 +9,7 @@ import { useMapDesignRun } from '../../../src/map-design/chat/useMapDesignRun';
 import { I18nProvider } from '../../../src/i18n';
 
 const run = { runId: 'run-1', projectId: 'map-1', conversationId: 'conversation-1', status: 'running' as const };
-const conversation = { id: 'conversation-1', projectId: 'map-1', createdAt: '2026-08-26T00:00:00Z', updatedAt: '2026-08-26T00:00:00Z', messages: [] };
+const conversation = { id: 'conversation-1', projectId: 'map-1', createdAt: '2026-08-26T00:00:00Z', updatedAt: '2026-08-26T00:00:00Z', messages: [], activeRun: null };
 
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
@@ -52,7 +52,7 @@ describe('useMapDesignRun', () => {
       if (String(input) === '/api/runs') { posted = JSON.parse(String(init?.body)); return Promise.resolve(json(run, 202)); }
       return Promise.resolve(sse([{ type: 'run_finished', run: { ...run, status: 'succeeded' } }]));
     });
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } }));
     await act(async () => { expect(await result.current.send('Explain this map', undefined, screenshots)).toBe(true); });
     expect(posted).toMatchObject({ screenshotIds: [screenshots[0]!.id] });
     expect(posted).not.toHaveProperty('images');
@@ -67,7 +67,7 @@ describe('useMapDesignRun', () => {
       if (String(input) === '/api/runs') { posted = JSON.parse(String(init?.body)); return Promise.resolve(json(run, 202)); }
       return Promise.resolve(sse([{ type: 'run_finished', run: { ...run, status: 'succeeded' } }]));
     });
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } }));
     await act(async () => { expect(await result.current.send('Analyze the file', undefined, undefined, attachments)).toBe(true); });
     expect(posted).toMatchObject({ attachmentIds: [attachments[0]!.id] });
     expect(posted).not.toHaveProperty('contentBase64');
@@ -81,7 +81,7 @@ describe('useMapDesignRun', () => {
   ])('localizes generic terminal run errors without replacing specific details: %s', async (message, expected) => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => String(input) === '/api/runs' ? Promise.resolve(json(run, 202))
       : Promise.resolve(sse([{ type: 'run_finished', run: { ...run, status: 'failed', error: { code: 'RUN_FAILED', message } } }])));
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } }),
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } }),
       { wrapper: ({ children }: { children: ReactNode }) => <I18nProvider initial="zh-CN">{children}</I18nProvider> });
     await act(async () => { await result.current.send('继续'); });
     await waitFor(() => expect(result.current.error).toBe(expected));
@@ -90,7 +90,7 @@ describe('useMapDesignRun', () => {
   it('localizes unsupported image failures from the stream', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => String(input) === '/api/runs' ? Promise.resolve(json(run, 202))
       : Promise.resolve(sse([{ type: 'run_finished', run: { ...run, status: 'failed', error: { code: 'IMAGE_INPUT_UNSUPPORTED', message: 'raw adapter failure' } } }])));
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'deepseek-harness' } }),
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'deepseek-harness' } }),
       { wrapper: ({ children }: { children: ReactNode }) => <I18nProvider initial="zh-CN">{children}</I18nProvider> });
     await act(async () => { await result.current.send('看这张图'); });
     await waitFor(() => expect(result.current.error).toBe('此智能体不支持读取图片，请选择支持截图的智能体。'));
@@ -102,7 +102,7 @@ describe('useMapDesignRun', () => {
       if (String(input) === '/api/runs') { posted = JSON.parse(String(init?.body)); return Promise.resolve(json(run, 202)); }
       return Promise.resolve(sse([{ type: 'run_finished', run: { ...run, status: 'succeeded' } }]));
     });
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 7, agentId: 'codex' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 7, agentId: 'codex' } }));
     const commentRefs = [{ id: 'comment-1', version: 2 }, { id: 'comment-2', version: 1 }];
     await act(async () => { expect(await result.current.send('Apply selected comments', commentRefs)).toBe(true); });
     expect(posted).toMatchObject({ conversationId: 'conversation-1', runtimeRevision: 7, commentRefs });
@@ -120,7 +120,7 @@ describe('useMapDesignRun', () => {
       }
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result } = renderHook(() => useMapDesignRun({
+    const { result } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1',
       conversationId: 'conversation-1',
       runtime: {
@@ -148,7 +148,7 @@ describe('useMapDesignRun', () => {
   it('keeps stale send callbacks from starting a run after the view becomes read-only', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('No run should start.'));
     const { result, rerender } = renderHook(
-      ({ readOnly }) => useMapDesignRun({
+      ({ readOnly }) => useMapDesignRun({ conversation,
         projectId: 'map-1',
         conversationId: 'conversation-1',
         runtime: { revision: 0, agentId: 'claude' },
@@ -175,7 +175,7 @@ describe('useMapDesignRun', () => {
       if (url === '/api/runs/run-1/events') return Promise.resolve(sse([{ type: 'run_finished', run: { ...run, status: 'succeeded' } }]));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result } = renderHook(() => useMapDesignRun({
+    const { result } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' }, onStartAccepted,
     }));
 
@@ -187,7 +187,7 @@ describe('useMapDesignRun', () => {
   it('does not notify the summary owner when the daemon rejects a run start', async () => {
     const onStartAccepted = vi.fn();
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
-    const { result } = renderHook(() => useMapDesignRun({
+    const { result } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' }, onStartAccepted,
     }));
 
@@ -204,7 +204,7 @@ describe('useMapDesignRun', () => {
       return Promise.reject(new Error(`Unexpected request ${String(input)}`));
     });
     const wrapper = ({ children }: { children: ReactNode }) => <I18nProvider initial="zh-CN">{children}</I18nProvider>;
-    const { result } = renderHook(() => useMapDesignRun({
+    const { result } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' },
     }), { wrapper });
 
@@ -235,7 +235,7 @@ describe('useMapDesignRun', () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <I18nProvider initial="zh-CN">{children}</I18nProvider>
     );
-    const { result } = renderHook(() => useMapDesignRun({
+    const { result } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1',
       conversationId: 'conversation-1',
       runtime: { revision: 0, agentId: 'codex' },
@@ -256,7 +256,7 @@ describe('useMapDesignRun', () => {
       if (url === '/api/map-design/projects/map-1/conversations/conversation-2') return Promise.resolve(json(conversation));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-2', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation: { ...conversation, id: 'conversation-2' }, projectId: 'map-1', conversationId: 'conversation-2', runtime: { revision: 0, agentId: 'claude' } }));
 
     await act(async () => { await result.current.send('Inspect stream'); });
 
@@ -279,7 +279,7 @@ describe('useMapDesignRun', () => {
       if (url === '/api/runs/run-1/events') return Promise.resolve(new Response(stream, { headers: { 'content-type': 'text/event-stream' } }));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result, unmount } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result, unmount } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
 
     await act(async () => { await result.current.send('Review hierarchy'); });
     await act(async () => {
@@ -325,7 +325,7 @@ describe('useMapDesignRun', () => {
       }
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result, unmount } = renderHook(() => useMapDesignRun({
+    const { result, unmount } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' },
     }));
 
@@ -375,7 +375,7 @@ describe('useMapDesignRun', () => {
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
 
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
     await act(async () => { await result.current.send('Adjust labels'); });
     await waitFor(() => expect(result.current.status).toBe('succeeded'));
     const assistant = result.current.messages.find((message) => message.id === 'assistant-1');
@@ -402,7 +402,7 @@ describe('useMapDesignRun', () => {
       ]));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
 
     await act(async () => { await result.current.send('Review bounded events'); });
     await waitFor(() => expect(result.current.status).toBe('succeeded'));
@@ -420,7 +420,7 @@ describe('useMapDesignRun', () => {
       if (url === '/api/runs/run-1/events') return Promise.resolve(new Response(new ReadableStream({ start() {} }), { headers: { 'content-type': 'text/event-stream' } }));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result, unmount } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result, unmount } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
 
     await act(async () => expect(await result.current.send('Adjust labels')).toBe(true));
     await act(async () => expect(await result.current.send('Another adjustment')).toBe(false));
@@ -429,7 +429,7 @@ describe('useMapDesignRun', () => {
 
   it('returns false and releases the form send lock when starting the run fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
     await act(async () => expect(await result.current.send('Adjust labels')).toBe(false));
     await act(async () => expect(await result.current.send('Try again')).toBe(false));
   });
@@ -442,7 +442,7 @@ describe('useMapDesignRun', () => {
       if (url === '/api/runs/run-1/events') return Promise.resolve(new Response(new ReadableStream({ start() {} }), { headers: { 'content-type': 'text/event-stream' } }));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result, unmount } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result, unmount } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
 
     let sent: Promise<boolean> | undefined;
     await act(async () => { sent = result.current.send('Adjust labels'); await Promise.resolve(); });
@@ -463,7 +463,7 @@ describe('useMapDesignRun', () => {
       if (String(input) === '/api/runs' && init?.method === 'POST') return new Promise<Response>((_resolve, reject) => { rejectStart = reject; });
       return Promise.reject(new Error(`Unexpected request ${String(input)}`));
     });
-    const { result } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
 
     let sent: Promise<boolean> | undefined;
     await act(async () => { sent = result.current.send('Adjust labels'); await Promise.resolve(); });
@@ -491,7 +491,7 @@ describe('useMapDesignRun', () => {
       }
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result } = renderHook(() => useMapDesignRun({
+    const { result } = renderHook(() => useMapDesignRun({ conversation,
       projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' },
     }));
 
@@ -541,7 +541,7 @@ describe('useMapDesignRun', () => {
       }));
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result, unmount } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result, unmount } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
     await act(async () => { await result.current.send('Adjust labels'); });
     expect(result.current.status).toBe('running');
     await act(async () => { await result.current.cancel(); });
@@ -568,7 +568,7 @@ describe('useMapDesignRun', () => {
       }
       return Promise.reject(new Error(`Unexpected request ${url}`));
     });
-    const { result, unmount } = renderHook(() => useMapDesignRun({ projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
+    const { result, unmount } = renderHook(() => useMapDesignRun({ conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'claude' } }));
     await act(async () => { void result.current.send('Adjust labels'); await Promise.resolve(); });
     await waitFor(() => expect(streamSignal).toBeDefined());
     unmount();

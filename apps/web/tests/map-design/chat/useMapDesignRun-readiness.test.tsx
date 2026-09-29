@@ -7,8 +7,8 @@ import { useMapDesignRun } from '../../../src/map-design/chat/useMapDesignRun';
 import { useQueuedMapMessages } from '../../../src/map-design/chat/useQueuedMapMessages';
 
 const run = { runId: 'run-1', projectId: 'map-1', conversationId: 'conversation-1', status: 'running' };
-const conversation = { id: 'conversation-1', projectId: 'map-1', createdAt: '2026-08-26T00:00:00Z', updatedAt: '2026-08-26T00:00:00Z', messages: [] };
-const options = { projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } };
+const conversation = { id: 'conversation-1', projectId: 'map-1', createdAt: '2026-08-26T00:00:00Z', updatedAt: '2026-08-26T00:00:00Z', messages: [], activeRun: null };
+const options = { conversation, projectId: 'map-1', conversationId: 'conversation-1', runtime: { revision: 0, agentId: 'codex' } };
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'content-type': 'application/json' } });
 
 afterEach(() => {
@@ -114,7 +114,7 @@ describe('run queue readiness', () => {
     });
     const { result, unmount } = renderHook(() => {
       const currentRun = useMapDesignRun(options);
-      const queue = useQueuedMapMessages({ ...currentRun, blocked: false, send: (message) => currentRun.send(message.prompt) });
+      const queue = useQueuedMapMessages({ projectId: options.projectId, conversationId: options.conversationId, ...currentRun, blocked: false, send: (message) => currentRun.send(message.prompt) });
       return { currentRun, queue };
     });
     try {

@@ -66,3 +66,9 @@ in memory. Inactive workspaces unmount to release their maps and subscriptions;
 this is not a promise that all component state or pending queues survive a tab
 switch. Closing a tab drops its draft cache, and reloading resets the tab list.
 Daemon-owned project data and accepted runs remain independent of the tab UI.
+
+## Specification document previews
+
+Formatted CARTOGRAPHY.md previews resolve `{colors.name}` references using the daemon-provided palette, including aliases already resolved by the daemon. Unknown references remain visible for diagnosis. Source view and downloads preserve the original document. Body content mounts on first expansion and is memoized independently from library polling; existing Markdown color swatches display resolved hex values.
+
+Queued map messages share the lifetime of an open workspace tab. Switching to another project, Home, or Settings preserves their text, attachment references, order, and paused state. Returning to a conversation first discovers the daemon-owned active run, then reconnects its event stream and cancellation control. Pending messages wait for that discovery; a failed or canceled task leaves the queue paused. Closing the workspace tab or reloading the browser ends its in-memory draft and queue cache.

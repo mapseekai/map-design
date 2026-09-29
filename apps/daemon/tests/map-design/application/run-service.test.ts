@@ -964,6 +964,8 @@ describe('MapDesignRunService', () => {
     });
 
     await service.start({ projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Improve labels.', agentId: 'opencode', clientRequestId: 'request-1', userMessageId: 'user-1', assistantMessageId: 'assistant-1' });
+    expect(service.getActiveConversationRun('conversation-1')).toMatchObject({ conversationId: 'conversation-1', status: 'running' });
+    expect(service.getActiveConversationRun('conversation-2')).toBeNull();
     expect(service.isConversationRunning('conversation-1')).toBe(true);
     expect(service.isConversationRunning('conversation-2')).toBe(false);
     expect(service.isProjectRunning('map-1')).toBe(true);
@@ -971,6 +973,7 @@ describe('MapDesignRunService', () => {
 
     child.emit('close', 0, null);
     await waitForNextTick();
+    expect(service.getActiveConversationRun('conversation-1')).toBeNull();
     expect(service.isConversationRunning('conversation-1')).toBe(false);
     expect(service.isProjectRunning('map-1')).toBe(false);
   });

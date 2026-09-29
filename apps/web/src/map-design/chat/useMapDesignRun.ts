@@ -31,13 +31,15 @@ function isTerminal(status: MapDesignRunResponse['status']): boolean {
   return status === 'succeeded' || status === 'failed' || status === 'canceled';
 }
 
-export function useMapDesignRun({ projectId, conversationId, runtime, readOnly = false, viewedRevision, readOnlyReason = null, onStartAccepted }: UseMapDesignRunOptions) {
+export function useMapDesignRun({ projectId, conversationId, runtime, conversation, readOnly = false, viewedRevision, readOnlyReason = null, onStartAccepted }: UseMapDesignRunOptions) {
   const { t, locale } = useI18n();
   const imageErrors = imageInputErrorCopy[locale];
   const toolLoopDetectedMessage = t('mapDesign.run.toolLoopDetected');
   const defaultReadOnlyReason = t('mapDesign.agent.mapEditingUnavailable');
   const [state, setState] = useState<RunState>(initialState);
-  const [ready, setReady] = useState(true);
+  const [ready, setReady] = useState(false);
+  const initializedScopeRef = useRef<string | null>(null);
+  const scope = JSON.stringify([projectId, conversationId]);
   const cancelingRef = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
   const activeRunRef = useRef<string | null>(null);
@@ -115,20 +117,54 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     }
   }, [conversationId, projectId, toolLoopDetectedMessage, imageErrors]);
 
-  const send = useCallback(async (prompt: string, commentRefs?: StartMapDesignRunRequest['commentRefs'], screenshots?: MapScreenshot[], attachments?: MapTextAttachment[]) => {
+  const monitor = useCallback(async (run: MapDesignRunResponse, controller: AbortController, startedAt: number) => {
+    try {
+      for await (const batch of streamRunEvents(run.runId, controller.signal)) {
+        if (controller.signal.aborted || controllerRef.current !== controller) break;
+        const accepted = batch.filter((event) => {
+          if (event.type !== 'run_finished') return true;
+          if (terminalRef.current) return false;
+          terminalRef.current = true;
+          return true;
+        });
+        if (accepted.length > 0) {
+          setState((current) => applyRunEventBatch(current, accepted, {
+            conversationId,
+            fallbackRun: run,
+            startedAt,
+            toolLoopDetectedMessage, imageErrors,
+          }));
+        }
+      }
+      if (!controller.signal.aborted && !terminalRef.current) await reconcile(run.runId, controller.signal);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        if (activeRunRef.current) await reconcile(activeRunRef.current, controller.signal);
+        else setState((current) => ({ ...current, status: 'failed', error: error instanceof Error ? error.message : 'The map run failed.' }));
+      }
+    } finally {
+      if (!cancelingRef.current && terminalRef.current && controllerRef.current === controller && activeRunRef.current === run.runId) {
+        controllerRef.current = null;
+        activeRunRef.current = null;
+        setReady(true);
+      }
+    }
+  }, [conversationId, reconcile, toolLoopDetectedMessage, imageErrors]);
+
+  const send = useCallback(async (prompt: string, commentRefs?: StartMapDesignRunRequest['commentRefs'], screenshots?: MapScreenshot[], attachments?: MapTextAttachment[], requestId?: string) => {
     if (readOnlyRef.current) {
       setState((current) => ({ ...current, error: readOnlyReasonRef.current }));
       return false;
     }
     const text = prompt.trim();
     const selectedRuntime = runtimeRef.current;
-    if (!text || !selectedRuntime || controllerRef.current || activeRunRef.current) return false;
+    if (initializedScopeRef.current !== scope || !text || !selectedRuntime || controllerRef.current || activeRunRef.current) return false;
     const controller = new AbortController();
     controllerRef.current = controller;
     setReady(false);
     cancelRequestedRef.current = false;
     terminalRef.current = false;
-    const nonce = randomUUID();
+    const nonce = requestId ?? randomUUID();
     const userMessageId = `map-user-${nonce}`;
     const assistantMessageId = `map-assistant-${nonce}`;
     const request: StartMapDesignRunRequest = {
@@ -148,6 +184,28 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     setState((current) => ({ ...current, status: 'queued', error: null, runId: null }));
     let run: MapDesignRunResponse;
     try {
+      if (requestId) {
+        const latest = await getMapDesignConversation(projectId, conversationId, controller.signal);
+        const accepted = latest.messages.some((message) => message.id === userMessageId && message.role === 'user');
+        if (controller.signal.aborted) return accepted;
+        if (accepted) {
+          const activeRun = latest.activeRun;
+          const answer = [...latest.messages].reverse().find((message) => message.role === 'assistant');
+          setState({ messages: latest.messages, runId: activeRun?.runId ?? null,
+            status: activeRun?.status ?? (answer && isTerminal(answer.runStatus) ? answer.runStatus : 'idle'),
+            error: localizedRunError(activeRun?.error, toolLoopDetectedMessage, imageErrors) });
+          if (activeRun) {
+            activeRunRef.current = activeRun.runId;
+            if (cancelRequestedRef.current) void cancelAcceptedRun(activeRun.runId, controller).finally(settleQueuedCancellation);
+            void monitor(activeRun, controller, activeRun.startedAt ? Date.parse(activeRun.startedAt) : Date.now());
+          } else {
+            controllerRef.current = null;
+            setReady(true);
+            settleQueuedCancellation();
+          }
+          return true;
+        }
+      }
       run = await startMapDesignRun(request, controller.signal);
     } catch (error) {
       if (!controller.signal.aborted) {
@@ -172,7 +230,7 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
         setReady(true);
       }
       settleQueuedCancellation();
-      return false;
+      return true;
     }
     void Promise.resolve(onStartAccepted?.()).catch(() => undefined);
     activeRunRef.current = run.runId;
@@ -182,7 +240,7 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
       runId: run.runId,
       error: localizedRunError(run.error, toolLoopDetectedMessage, imageErrors),
       messages: [
-        ...current.messages,
+        ...current.messages.filter((message) => message.id !== userMessageId && message.id !== assistantMessageId),
         {
           id: userMessageId,
           conversationId,
@@ -210,41 +268,9 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     if (cancelRequestedRef.current) {
       void cancelAcceptedRun(run.runId, controller).finally(settleQueuedCancellation);
     }
-    void (async () => {
-      try {
-        for await (const batch of streamRunEvents(run.runId, controller.signal)) {
-          if (controller.signal.aborted || controllerRef.current !== controller) break;
-          const accepted = batch.filter((event) => {
-            if (event.type !== 'run_finished') return true;
-            if (terminalRef.current) return false;
-            terminalRef.current = true;
-            return true;
-          });
-          if (accepted.length > 0) {
-            setState((current) => applyRunEventBatch(current, accepted, {
-              conversationId,
-              fallbackRun: run,
-              startedAt,
-              toolLoopDetectedMessage, imageErrors,
-            }));
-          }
-        }
-        if (!controller.signal.aborted && !terminalRef.current) await reconcile(run.runId, controller.signal);
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          if (activeRunRef.current) await reconcile(activeRunRef.current, controller.signal);
-          else setState((current) => ({ ...current, status: 'failed', error: error instanceof Error ? error.message : 'The map run failed.' }));
-        }
-      } finally {
-        if (!cancelingRef.current && terminalRef.current && controllerRef.current === controller && activeRunRef.current === run.runId) {
-          controllerRef.current = null;
-          activeRunRef.current = null;
-          setReady(true);
-        }
-      }
-    })();
+    void monitor(run, controller, startedAt);
     return true;
-  }, [cancelAcceptedRun, conversationId, onStartAccepted, projectId, reconcile, settleQueuedCancellation, t, toolLoopDetectedMessage, imageErrors]);
+  }, [cancelAcceptedRun, conversationId, onStartAccepted, projectId, monitor, scope, settleQueuedCancellation, t, toolLoopDetectedMessage, imageErrors]);
 
   const cancel = useCallback(async () => {
     const runId = activeRunRef.current;
@@ -258,11 +284,43 @@ export function useMapDesignRun({ projectId, conversationId, runtime, readOnly =
     await cancelAcceptedRun(runId, controller);
   }, [cancelAcceptedRun]);
 
-  useEffect(() => () => {
-    controllerRef.current?.abort();
-    settleQueuedCancellation();
-  }, [settleQueuedCancellation]);
+  useEffect(() => {
+    initializedScopeRef.current = null;
+    setState(initialState);
+    setReady(false);
+    return () => {
+      controllerRef.current?.abort();
+      controllerRef.current = null;
+      activeRunRef.current = null;
+      initializedScopeRef.current = null;
+      terminalRef.current = false;
+      cancelingRef.current = false;
+      settleQueuedCancellation();
+    };
+  }, [scope, settleQueuedCancellation]);
+
+  useEffect(() => {
+    if (initializedScopeRef.current === scope || !conversation
+      || conversation.id !== conversationId || conversation.projectId !== projectId) return;
+    initializedScopeRef.current = scope;
+    const run = conversation.activeRun;
+    if (!run) {
+      const latest = [...conversation.messages].reverse().find((message) => message.role === 'assistant');
+      setState({ ...initialState, messages: conversation.messages,
+        status: latest && isTerminal(latest.runStatus) ? latest.runStatus : 'idle' });
+      setReady(true);
+      return;
+    }
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    activeRunRef.current = run.runId;
+    terminalRef.current = false;
+    setReady(false);
+    setState({ status: run.status, runId: run.runId, messages: conversation.messages,
+      error: localizedRunError(run.error, toolLoopDetectedMessage, imageErrors) });
+    void monitor(run, controller, run.startedAt ? Date.parse(run.startedAt) : Date.now());
+  }, [conversation, conversationId, projectId, scope, monitor, toolLoopDetectedMessage, imageErrors]);
 
   const error = presentedRunError(state.error, locale);
-  return { ...state, error, send, cancel, ready, sending: state.status === 'queued' || state.status === 'running' || state.status === 'awaiting_input' };
+  return { ...state, error, send, cancel, ready: ready && initializedScopeRef.current === scope, sending: state.status === 'queued' || state.status === 'running' || state.status === 'awaiting_input' };
 }

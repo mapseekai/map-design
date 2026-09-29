@@ -1,4 +1,4 @@
-import { MapDesignRunEventSchema, type MapDesignMessage, type MapDesignRunEvent, type MapDesignRunResponse, type MapDesignRunStatus } from '@mapseekai/contracts';
+import { MapDesignRunEventSchema, type MapDesignMessage, type MapDesignConversationResponse, type MapDesignRunEvent, type MapDesignRunResponse, type MapDesignRunStatus } from '@mapseekai/contracts';
 import { runFailureCopy } from '../../i18n/locales/run-failures';
 
 export interface RunState {
@@ -124,6 +124,7 @@ export interface UseMapDesignRunOptions {
   projectId: string;
   conversationId: string;
   runtime: MapDesignRuntime | null;
+  conversation: MapDesignConversationResponse | null;
   readOnly?: boolean;
   viewedRevision?: number;
   readOnlyReason?: string | null;

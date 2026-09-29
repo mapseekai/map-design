@@ -91,7 +91,7 @@ describe('focused map chat rendering', () => {
   it('shows a return-to-bottom button after the reader scrolls away', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({ id: 'conversation-1', projectId: 'map-1',
       createdAt: '2026-09-09T00:00:00Z', updatedAt: '2026-09-09T00:00:00Z',
-      messages: [persistedAssistant('a1', 'conversation-1', 'Ready to inspect')] }));
+      activeRun: null, messages: [persistedAssistant('a1', 'conversation-1', 'Ready to inspect')] }));
     render(<MapDesignChatPane projectId="map-1" conversationId="conversation-1" />);
     const message = await screen.findByRole('article', { name: 'Assistant message' });
     const scroller = message.parentElement!.parentElement!;
@@ -109,7 +109,7 @@ describe('focused map chat rendering', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
       const url = String(input);
       const conversationId = /\/conversations\/(conversation-[ab])$/u.exec(url)?.[1];
-      if (conversationId) return Promise.resolve(json({ id: conversationId, projectId: 'map-1', createdAt: '2026-09-08T00:00:00Z', updatedAt: '2026-09-08T00:00:00Z', messages: [] }));
+      if (conversationId) return Promise.resolve(json({ id: conversationId, projectId: 'map-1', createdAt: '2026-09-08T00:00:00Z', updatedAt: '2026-09-08T00:00:00Z', activeRun: null, messages: [] }));
       if (url === '/api/runs') {
         starts.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
         return Promise.resolve(json({ runId: 'run-b', projectId: 'map-1', conversationId: 'conversation-b', status: 'succeeded' }, 202));
@@ -146,7 +146,7 @@ describe('focused map chat rendering', () => {
       const url = String(input);
       if (url.endsWith('/conversations/conversation-1')) return Promise.resolve(json({
         id: 'conversation-1', projectId: 'map-1', createdAt: '2026-09-02T00:00:00.000Z',
-        updatedAt: '2026-09-02T00:00:00.000Z', messages: [],
+        updatedAt: '2026-09-02T00:00:00.000Z', activeRun: null, messages: [],
       }));
       if (url === '/api/runs' && init?.method === 'POST') return Promise.resolve(json({
         runId: 'run-1', projectId: 'map-1', conversationId: 'conversation-1', status: 'running',
@@ -194,7 +194,7 @@ describe('focused map chat rendering', () => {
       const conversationMatch = /\/conversations\/(conversation-[ab])$/u.exec(url);
       if (conversationMatch?.[1]) return Promise.resolve(json({
         id: conversationMatch[1], projectId: 'map-1', createdAt: '2026-09-02T00:00:00.000Z',
-        updatedAt: '2026-09-02T00:00:00.000Z', messages: [],
+        updatedAt: '2026-09-02T00:00:00.000Z', activeRun: null, messages: [],
       }));
       if (url === '/api/runs' && init?.method === 'POST') {
         starts.push(JSON.parse(String(init.body)) as Record<string, unknown>);
@@ -277,7 +277,7 @@ describe('focused map chat rendering', () => {
       if (url === '/api/map-design/projects/map-1/conversations/conversation-1') {
         return Promise.resolve(json({
           id: 'conversation-1', projectId: 'map-1',
-          createdAt: '2026-08-30T00:00:00.000Z', updatedAt: '2026-08-30T00:00:00.000Z', messages: [],
+          createdAt: '2026-08-30T00:00:00.000Z', updatedAt: '2026-08-30T00:00:00.000Z', activeRun: null, messages: [],
         }));
       }
       return Promise.reject(new Error(`Unexpected request ${url}`));
@@ -300,7 +300,7 @@ describe('focused map chat rendering', () => {
       if (String(input) === '/api/map-design/projects/map-1/conversations/conversation-1') {
         return Promise.resolve(json({
           id: 'conversation-1', projectId: 'map-1',
-          createdAt: '2026-08-30T00:00:00.000Z', updatedAt: '2026-08-30T00:00:00.000Z', messages: [],
+          createdAt: '2026-08-30T00:00:00.000Z', updatedAt: '2026-08-30T00:00:00.000Z', activeRun: null, messages: [],
         }));
       }
       return Promise.reject(new Error(`Unexpected request ${String(input)}`));
@@ -328,7 +328,7 @@ describe('focused map chat rendering', () => {
           projectId: 'map-1',
           createdAt: '2026-08-30T00:00:00.000Z',
           updatedAt: '2026-08-30T00:00:00.000Z',
-          messages: [],
+          activeRun: null, messages: [],
         }));
       }
       if (url === '/api/runs' && init?.method === 'POST') {
@@ -366,7 +366,7 @@ describe('focused map chat rendering', () => {
         projectId: 'map-1',
         createdAt: '2026-08-30T00:00:00.000Z',
         updatedAt: '2026-08-30T00:00:00.000Z',
-        messages: [{
+        activeRun: null, messages: [{
           ...persistedAssistant('assistant-running', 'conversation-1', ''),
           runStatus: 'running',
           endedAt: 0,
@@ -415,7 +415,7 @@ describe('focused map chat rendering', () => {
         projectId: 'map-1',
         createdAt: '2026-08-30T00:00:00.000Z',
         updatedAt: '2026-08-30T00:00:00.000Z',
-        messages: [persistedAssistant('assistant-history', 'conversation-1', 'Historical answer.')],
+        activeRun: null, messages: [persistedAssistant('assistant-history', 'conversation-1', 'Historical answer.')],
       }));
       if (url === '/api/runs' && init?.method === 'POST') {
         assistantMessageId = (nativeParse(String(init.body)) as { assistantMessageId: string }).assistantMessageId;
@@ -462,7 +462,7 @@ describe('focused map chat rendering', () => {
     const starts: Array<Record<string, unknown>> = [];
     const conversation = (id: string) => ({
       id, projectId: 'map-1', createdAt: '2026-08-28T00:00:00.000Z', updatedAt: '2026-08-28T00:00:00.000Z',
-      messages: id === 'conversation-b' ? [persistedAssistant(
+      activeRun: null, messages: id === 'conversation-b' ? [persistedAssistant(
         'assistant-question-b',
         id,
         '<question-form id="style" title="Style">{"questions":[{"id":"style","label":"Style","type":"text"}]}</question-form>',
@@ -531,7 +531,7 @@ describe('focused map chat rendering', () => {
 
   it('preserves pruned conversation drafts and retains rejected sends in the editable queue', async () => {
     const conversation = (id: string) => ({
-      id, projectId: 'map-1', createdAt: '2026-08-28T00:00:00.000Z', updatedAt: '2026-08-28T00:00:00.000Z', messages: [],
+      id, projectId: 'map-1', createdAt: '2026-08-28T00:00:00.000Z', updatedAt: '2026-08-28T00:00:00.000Z', activeRun: null, messages: [],
     });
     vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
       const url = String(input);
@@ -568,6 +568,7 @@ describe('focused map chat rendering', () => {
     view.rerender(<MapDesignChatPane projectId="map-1" conversationId="conversation-b" />);
     const restoredB = await screen.findByRole('textbox', { name: 'Message map agent' });
     expect(restoredB).toHaveValue('Rejected B draft');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     await screen.findByRole('alert');
     expect(restoredB).toHaveValue('');
@@ -585,7 +586,7 @@ describe('focused map chat rendering', () => {
       const match = /\/conversations\/(conversation-\d+)$/u.exec(url);
       if (!match?.[1]) return Promise.reject(new Error(`Unexpected request ${url}`));
       return Promise.resolve(json({
-        id: match[1], projectId: 'map-1', createdAt: '2026-08-28T00:00:00.000Z', updatedAt: '2026-08-28T00:00:00.000Z', messages: [],
+        id: match[1], projectId: 'map-1', createdAt: '2026-08-28T00:00:00.000Z', updatedAt: '2026-08-28T00:00:00.000Z', activeRun: null, messages: [],
       }));
     });
     const view = render(<MapDesignChatPane projectId="map-1" conversationId="conversation-0" />);
@@ -684,7 +685,7 @@ describe('focused map chat rendering', () => {
           projectId: 'map-1',
           createdAt: '2026-08-26T00:00:00Z',
           updatedAt: '2026-08-26T00:00:00Z',
-          messages: [persistedAssistant(
+          activeRun: null, messages: [persistedAssistant(
             'assistant-question',
             'conversation-1',
             '<question-form id="style" title="Style">{"questions":[{"id":"style","label":"Style","type":"text"}]}</question-form>',
@@ -722,7 +723,7 @@ describe('focused map chat rendering', () => {
           projectId: 'map-1',
           createdAt: '2026-08-26T00:00:00Z',
           updatedAt: '2026-08-26T00:00:00Z',
-          messages: [persistedAssistant(
+          activeRun: null, messages: [persistedAssistant(
             'assistant-question',
             'conversation-1',
             '<question-form id="style" title="Style">{"questions":[{"id":"style","label":"Style","type":"text"}]}</question-form>',

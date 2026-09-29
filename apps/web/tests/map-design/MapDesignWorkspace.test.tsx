@@ -103,7 +103,7 @@ const project = (projectId: string, title: string, lifecycle: 'importing' | 'rea
   title,
   runtime: { agentId: 'project-agent', model: 'project-model', reasoning: 'project-reasoning', serviceTier: 'project-tier' },
 });
-const conversation = (projectId: string) => ({ id: `conversation-${projectId}`, projectId, messages: [] });
+const conversation = (projectId: string) => ({ id: `conversation-${projectId}`, projectId, activeRun: null, messages: [] });
 const conversationSummary = (projectId: string, conversationId = `conversation-${projectId}`, title = 'Project conversation') => ({
   conversationId,
   projectId,

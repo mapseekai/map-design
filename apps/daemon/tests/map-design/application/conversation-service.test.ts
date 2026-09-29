@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import type { MapDesignRunResponse } from '@mapseekai/contracts';
 import type Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -11,13 +12,14 @@ import { createMapDesignLocalStore } from '../../../src/map-design/storage/local
 
 const serviceRoots: Array<{ db: Database.Database; root: string }> = [];
 
-function openService(options: { ids: string[]; running?: Set<string> }) {
+function openService(options: { ids: string[]; running?: Set<string>; activeRun?: MapDesignRunResponse }) {
   const root = mkdtempSync(join(tmpdir(), 'map-conversation-service-'));
   const db = openMapDesignDatabase(root);
   const store = createMapDesignLocalStore(db);
   createProject(db, store, 'project-1', 'conversation-1', 'project-key-1');
   const ids = [...options.ids];
   const service = new MapDesignConversationService({
+    getActiveConversationRun: (id) => options.activeRun?.conversationId === id ? options.activeRun : null,
     store,
     isConversationRunning: (id) => options.running?.has(id) ?? false,
     randomId: () => ids.shift() ?? 'unexpected-id',
@@ -61,6 +63,16 @@ afterEach(() => {
 });
 
 describe('MapDesignConversationService', () => {
+  it('exposes the active run only through its owning project conversation', () => {
+    const activeRun: MapDesignRunResponse = { runId: 'active-1', projectId: 'project-1', conversationId: 'conversation-1', status: 'running' };
+    const { db, store, service } = openService({ ids: ['conversation-2'], activeRun });
+    expect(service.get('project-1', 'conversation-1').activeRun).toEqual(activeRun);
+    service.create('project-1', { idempotencyKey: 'new-conversation' });
+    expect(service.get('project-1', 'conversation-2').activeRun).toBeNull();
+    createProject(db, store, 'project-2', 'conversation-3', 'project-key-2');
+    expect(() => service.get('project-2', 'conversation-1')).toThrow('not found');
+  });
+
   it('migrates legacy map conversation receipts without creating duplicate conversations', () => {
     const { db, service } = openService({ ids: ['conversation-2'] });
     const request = { idempotencyKey: 'legacy-receipt' };
@@ -105,6 +117,7 @@ describe('MapDesignConversationService', () => {
       createdAt: expect.any(String),
       updatedAt: expect.any(String),
       messages: [],
+      activeRun: null,
     });
     expect(() => service.get('project-1', 'missing-conversation')).toThrow(
       expect.objectContaining({ code: 'NOT_FOUND', message: 'The map conversation was not found.' }),

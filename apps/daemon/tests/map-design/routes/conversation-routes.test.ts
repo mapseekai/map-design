@@ -32,6 +32,7 @@ function setup(options: { requireLocalDaemonRequest?: express.RequestHandler; pr
   createProject(db, store, 'project-1', 'conversation-1');
   const ids = ['conversation-2'];
   const service = new MapDesignConversationService({
+    getActiveConversationRun: () => null,
     store,
     isConversationRunning: () => options.projectRunning ?? false,
     randomId: () => ids.shift() ?? 'unexpected-conversation',

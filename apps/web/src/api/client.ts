@@ -2,6 +2,7 @@ import type {
   LocalAgentInfo,
   MapDesignAppConfigResponse,
   MapDesignConversation,
+  MapDesignConversationResponse,
   MapDesignConversationRuntimeResponse,
   CreateMapDesignConversationInput,
   CreateMapDesignConversationResponse,
@@ -101,7 +102,7 @@ export function createMapDesignConversation(
   }, isConversationCreate) as Promise<CreateMapDesignConversationResponse>;
 }
 
-export function getMapDesignConversation(projectId: string, conversationId: string, signal?: AbortSignal): Promise<MapDesignConversation>;
+export function getMapDesignConversation(projectId: string, conversationId: string, signal?: AbortSignal): Promise<MapDesignConversationResponse>;
 /** @deprecated Use the explicit project-scoped conversation identity. */
 export function getMapDesignConversation(projectId: string, signal?: AbortSignal): Promise<MapDesignConversation>;
 export async function getMapDesignConversation(
@@ -115,6 +116,10 @@ export async function getMapDesignConversation(
     ? `/api/map-design/projects/${encodeURIComponent(projectId)}/conversation`
     : `/api/map-design/projects/${encodeURIComponent(projectId)}/conversations/${encodeURIComponent(conversationId)}`;
   const value = await request(path, { signal: requestSignal }, isConversation);
+  const activeRun = record(value)?.activeRun;
+  if (conversationId !== null && activeRun !== null && (!isRun(activeRun) || activeRun.projectId !== projectId || activeRun.conversationId !== conversationId)) {
+    throw new ApiClientError('The local daemon returned an invalid conversation run.', 200);
+  }
   if (!isConversation(value)) throw new ApiClientError('The local daemon returned an invalid conversation.', 200);
   return value;
 }

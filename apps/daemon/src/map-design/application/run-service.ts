@@ -84,6 +84,7 @@ export interface CreateMapDesignRunServiceDeps {
 export interface MapDesignRunService {
   start(request: StartMapDesignRunRequest): Promise<MapDesignRunResponse>;
   get(runId: string): MapDesignRunResponse | null;
+  getActiveConversationRun(conversationId: string): MapDesignRunResponse | null;
   isConversationRunning(conversationId: string): boolean;
   isProjectRunning(projectId: string): boolean;
   getTrustedRun(runId: string): MapTrustedRunRecord | null;
@@ -538,6 +539,8 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
       return active.response;
     },
     get: (runId) => { pruneFinished(); return runs.get(runId)?.response ?? deps.runHistory?.get(runId)?.response ?? null; },
+    getActiveConversationRun: (conversationId) => [...runs.values()].find((run) =>
+      run.response.conversationId === conversationId && isRunBusy(run))?.response ?? null,
     isConversationRunning: (conversationId) => [...runs.values()].some((run) =>
       run.response.conversationId === conversationId && isRunBusy(run)),
     isProjectRunning: (projectId) => [...runs.values()].some((run) =>

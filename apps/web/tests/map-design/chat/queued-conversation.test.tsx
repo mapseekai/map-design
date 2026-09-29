@@ -16,11 +16,12 @@ it('retains the first rejected request ahead of messages queued while it was sub
   vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
     if (String(input) === '/api/runs') return starts();
     return new Response(JSON.stringify({ id: 'a', projectId: 'p', createdAt: '2026-09-22T00:00:00Z',
-      updatedAt: '2026-09-22T00:00:00Z', messages: [] }), { headers: { 'content-type': 'application/json' } });
+      updatedAt: '2026-09-22T00:00:00Z', activeRun: null, messages: [] }), { headers: { 'content-type': 'application/json' } });
   });
   render(<MapDesignChatPane projectId="p" conversationId="a" />);
   const composer = screen.getByRole('textbox', { name: 'Message map agent' });
   fireEvent.change(composer, { target: { value: 'First request must survive' } });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Send' }));
   await waitFor(() => expect(starts).toHaveBeenCalledOnce());
   await waitFor(() => expect(composer).toHaveValue(''));
@@ -54,12 +55,13 @@ it('retains queued messages and an edit when switching away as the active run fi
     if (url.endsWith('/run-1/events')) return new Response(new ReadableStream<Uint8Array>({ start(value) { stream = value; } }));
     if (url.endsWith('/run-2/events')) return new Response('data: {"type":"run_finished","run":{"runId":"run-2","projectId":"p","conversationId":"a","status":"succeeded"}}\n\n');
     if (url.includes('/conversations/')) return json({ id: url.endsWith('/b') ? 'b' : 'a', projectId: 'p',
-      createdAt: '2026-09-22T00:00:00Z', updatedAt: '2026-09-22T00:00:00Z', messages: [] });
+      createdAt: '2026-09-22T00:00:00Z', updatedAt: '2026-09-22T00:00:00Z', activeRun: null, messages: [] });
     throw new Error(`Unexpected request ${url}`);
   });
   const view = render(<MapDesignChatPane projectId="p" conversationId="a" />);
   const composer = screen.getByRole('textbox', { name: 'Message map agent' });
   fireEvent.change(composer, { target: { value: 'First run' } });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Send' }));
   await waitFor(() => expect(stream).toBeDefined());
   await waitFor(() => expect(composer).toHaveValue(''));

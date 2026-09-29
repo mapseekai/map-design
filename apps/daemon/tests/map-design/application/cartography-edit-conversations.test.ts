@@ -29,7 +29,8 @@ async function setup() {
   const saveDocument = vi.fn(() => ({ id: 'a'.repeat(64), name: 'Atlas', description: '', version: '0.4.0' }));
   const deps = { dataRoot: root, projectRoot: '/unused', generate, saveDocument, store, agents: { runtimeCatalog: catalog, getMapAgent: () => null } };
   const edits = new CartographyEditService(deps);
-  const conversations = new MapDesignConversationService({ store, randomId: randomUUID, now: () => new Date().toISOString(), isConversationRunning: (id) => edits.isConversationRunning(id) });
+  const conversations = new MapDesignConversationService({
+    getActiveConversationRun: () => null, store, randomId: randomUUID, now: () => new Date().toISOString(), isConversationRunning: (id) => edits.isConversationRunning(id) });
   const runtimes = new MapDesignConversationRuntimeService({ store, now: () => new Date().toISOString(), policy: catalog, isProjectRunning: (id) => edits.isProjectRunning(id) });
   cleanups.push(async () => { await edits.shutdown(); closeMapDesignDatabase(db); await rm(root, { recursive: true, force: true }); });
   return { db, store, deps, edits, conversations, runtimes, generate };

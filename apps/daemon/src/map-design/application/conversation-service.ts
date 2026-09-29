@@ -2,7 +2,8 @@ import type Database from 'better-sqlite3';
 import type {
   CreateMapDesignConversationInput,
   CreateMapDesignConversationResponse,
-  MapDesignConversation,
+  MapDesignConversationResponse,
+  MapDesignRunResponse,
   MapDesignConversationListResponse,
   MapDesignConversationSummary,
 } from '@mapseekai/contracts';
@@ -25,6 +26,7 @@ export class MapDesignConversationService {
   constructor(private readonly deps: {
     store: MapDesignLocalStore;
     isConversationRunning(conversationId: string): boolean;
+    getActiveConversationRun(conversationId: string): MapDesignRunResponse | null;
     randomId(): string;
     now(): string;
   }) {}
@@ -37,13 +39,13 @@ export class MapDesignConversationService {
     };
   }
 
-  get(projectId: string, conversationId: string): MapDesignConversation {
+  get(projectId: string, conversationId: string): MapDesignConversationResponse {
     this.requireProject(projectId);
     const conversation = this.deps.store.getConversation(conversationId);
     if (!conversation || conversation.projectId !== projectId) {
       throw new MapDraftError('NOT_FOUND', 'The map conversation was not found.');
     }
-    return conversation;
+    return { ...conversation, activeRun: this.deps.getActiveConversationRun(conversationId) };
   }
 
   create(projectId: string, input: CreateMapDesignConversationInput): CreateMapDesignConversationResponse {

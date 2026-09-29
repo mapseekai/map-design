@@ -78,8 +78,7 @@ export function MapDesignChatPane({
   const [activeSessionIds, setActiveSessionIds] = useState<ReadonlySet<string>>(new Set());
   const runtimeMutationDisabled = readOnly || activeSessionIds.size > 0;
   // Drafts live above prunable sessions and use access-ordered LRU retention.
-  const [attachmentsByConversation, setAttachmentsByConversation] = useState<ReadonlyMap<string, MapTextAttachment[]>>(new Map());
-  useEffect(() => setAttachmentsByConversation(new Map()), [projectId]);
+  const [attachmentsByConversation, setAttachmentsByConversation] = useWorkspaceTabDraft<ReadonlyMap<string, MapTextAttachment[]>>('project-attachments', () => new Map());
   const setConversationAttachments = useCallback((id: string, files: MapTextAttachment[]) => {
     setAttachmentsByConversation((current) => {
       const next = new Map(current);

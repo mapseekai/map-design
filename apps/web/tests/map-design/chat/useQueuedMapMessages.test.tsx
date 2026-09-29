@@ -5,7 +5,7 @@ import type { MapDesignRunStatus } from '@mapseekai/contracts';
 import { useQueuedMapMessages, type PendingMapMessage } from '../../../src/map-design/chat/useQueuedMapMessages';
 
 afterEach(cleanup);
-const running = { sending: true, ready: false, status: 'running' as MapDesignRunStatus | 'idle', blocked: false };
+const running = { projectId: 'project', conversationId: 'conversation', sending: true, ready: false, status: 'running' as MapDesignRunStatus | 'idle', blocked: false };
 
 describe('pending map messages', () => {
   it('queues during a run, preserves order, and waits for run cleanup before dispatch', async () => {

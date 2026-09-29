@@ -182,6 +182,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     });
     const conversationService = new MapDesignConversationService({
       store,
+      getActiveConversationRun: (id) => activeRunService!.getActiveConversationRun(id),
       isConversationRunning: (conversationId) => activeRunService!.isConversationRunning(conversationId) || cartographyEdits!.isConversationRunning(conversationId),
       randomId: randomUUID,
       now: () => new Date().toISOString(),

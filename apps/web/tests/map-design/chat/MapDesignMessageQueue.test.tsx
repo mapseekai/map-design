@@ -10,8 +10,8 @@ import type { PendingMapMessage } from '../../../src/map-design/chat/useQueuedMa
 
 afterEach(cleanup);
 
-const first: PendingMapMessage = { id: 'first', prompt: 'Make the water blue', screenshots: [], attachments: [] };
-const second: PendingMapMessage = { id: 'second', prompt: '然后检查中文图层名称', screenshots: [], attachments: [
+const first: PendingMapMessage = { id: 'first', requestId: 'request-first', prompt: 'Make the water blue', screenshots: [], attachments: [] };
+const second: PendingMapMessage = { id: 'second', requestId: 'request-second', prompt: '然后检查中文图层名称', screenshots: [], attachments: [
   { id: 'a'.repeat(64), projectId: 'p', fileName: 'notes.txt', mediaType: 'text/plain', byteLength: 5, createdAt: '2026-09-22T00:00:00.000Z' },
 ] };
 

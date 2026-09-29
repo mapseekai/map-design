@@ -1,4 +1,5 @@
 import { MAP_TEXT_ATTACHMENT_MAX_COUNT, MapTextAttachmentSchema, type MapTextAttachment } from './map-text-attachments.js';
+import type { MapDesignRunResponse } from './runs.js';
 import { z } from 'zod';
 
 import type { MapRunStage, MapRunStatus, SafeToolSummary } from './agents.js';
@@ -252,6 +253,10 @@ export interface MapDesignConversation {
   createdAt: string;
   updatedAt: string;
   messages: MapDesignMessage[];
+}
+
+export interface MapDesignConversationResponse extends MapDesignConversation {
+  activeRun: MapDesignRunResponse | null;
 }
 
 export interface MapDesignConversationSummary {

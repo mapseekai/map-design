@@ -38,7 +38,7 @@ export function ConversationSession({ projectId, conversationId, cartographyLabe
   const conversationRuntime = useConversationRuntime({ projectId, conversationId, disabled: runtimeDisabled });
   const runtime = conversationRuntime.runtime;
   const conversation = useMapDesignConversation(projectId, conversationId);
-  const run = useMapDesignRun({ projectId, conversationId, runtime, readOnly, viewedRevision, readOnlyReason, onStartAccepted });
+  const run = useMapDesignRun({ projectId, conversationId, runtime, conversation: conversation.conversation, readOnly, viewedRevision, readOnlyReason, onStartAccepted });
   const selectedAgent = runtime ? runtimeAgents.find((agent) => agent.id === runtime.agentId) : undefined;
   const catalogChecksEnabled = runtimeAgents.length > 0 || agentsLoading || Boolean(agentsError);
   const apiProfileUnavailable = selectedAgent?.id === 'api' && selectedAgent.modelCatalogSource === 'configured'
@@ -63,8 +63,8 @@ export function ConversationSession({ projectId, conversationId, cartographyLabe
           ? t('mapDesign.agent.mapEditingUnavailable')
           : conversationRuntime.error);
   const queueBlocked = composerBlocked || effectiveAgentBlocked || conversationRuntime.saving;
-  const dispatch = useCallback((message: PendingMapMessage) => run.send(message.prompt, undefined, message.screenshots, message.attachments), [run.send]);
-  const queue = useQueuedMapMessages({ sending: run.sending, ready: run.ready, status: run.status, blocked: queueBlocked, readOnly, send: dispatch });
+  const dispatch = useCallback((message: PendingMapMessage) => run.send(message.prompt, undefined, message.screenshots, message.attachments, message.requestId), [run.send]);
+  const queue = useQueuedMapMessages({ projectId, conversationId, sending: run.sending, ready: run.ready, status: run.status, blocked: queueBlocked, readOnly, send: dispatch });
   useLayoutEffect(() => { onRunActivityChange(conversationId, run.sending, selected, queue.items.length > 0); }, [conversationId, onRunActivityChange, run.sending, selected, queue.items.length]);
   const runtimeDisabledReason = readOnly
     ? readOnlyReason
@@ -98,7 +98,7 @@ export function ConversationSession({ projectId, conversationId, cartographyLabe
     () => [...occurrences].reverse().find((occurrence) => !answered[occurrence.key]),
     [answered, occurrences],
   );
-  const submitBlocked = run.sending || composerBlocked || effectiveAgentBlocked || conversationRuntime.saving;
+  const submitBlocked = !run.ready || run.sending || composerBlocked || effectiveAgentBlocked || conversationRuntime.saving;
   const commentContext = useRef({ selected, blocked: submitBlocked, send: run.send });
   commentContext.current = { selected, blocked: submitBlocked, send: run.send };
   const sendComments = useCallback(async (comments: MapComment[]) => {
@@ -210,7 +210,7 @@ export function ConversationSession({ projectId, conversationId, cartographyLabe
       <MapDesignComposer queueEnabled cartographyLabel={cartographyLabel} cartographyHref={cartographyHref} projectId={projectId} runtime={runtime} runtimeAgents={runtimeAgents} runtimeSaving={conversationRuntime.saving}
       runtimeNotice={conversationRuntime.notice} runtimeDisabled={runtimeDisabled || run.sending}
       runtimeDisabledReason={runtimeDisabledReason} onRuntimeChange={conversationRuntime.update}
-      sending={run.sending} disabled={composerBlocked || effectiveAgentBlocked}
+      sending={run.sending} disabled={composerBlocked || effectiveAgentBlocked || (!run.ready && !run.sending)}
       disabledReason={readOnly ? readOnlyReason : conversationRuntime.error} draft={draft} onCancel={() => { queue.pause(); return run.cancel(); }}
       onDraftChange={onDraftChange} screenshots={screenshots} onRemoveScreenshot={onRemoveScreenshot} onScreenshotsSent={onScreenshotsSent}
       attachments={attachments} onAttachmentsChange={onAttachmentsChange}

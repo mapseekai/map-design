@@ -172,6 +172,7 @@ describe('MapDesignProjectService', () => {
         conversationId: null,
       });
       const conversations = new MapDesignConversationService({
+    getActiveConversationRun: () => null,
         store,
         isConversationRunning: () => false,
         randomId: () => 'conversation-reset-replacement',

@@ -1,9 +1,11 @@
 import type { MapDesignRunStatus, MapScreenshot, MapTextAttachment } from '@mapseekai/contracts';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useWorkspaceTabDraft } from '../WorkspaceTabs';
 import { randomUUID } from '../../utils/uuid';
 
 export interface PendingMapMessage {
   readonly id: string;
+  readonly requestId: string;
   readonly prompt: string;
   readonly screenshots: MapScreenshot[];
   readonly attachments: MapTextAttachment[];
@@ -17,6 +19,8 @@ interface QueueState {
 }
 
 interface QueueOptions {
+  readonly projectId: string;
+  readonly conversationId: string;
   readonly sending: boolean;
   readonly ready: boolean;
   readonly status: MapDesignRunStatus | 'idle';
@@ -25,59 +29,68 @@ interface QueueOptions {
   send(message: PendingMapMessage): Promise<boolean>;
 }
 
+function createQueueStore(previousStatus: QueueOptions['status'] = 'idle') {
+  let state: QueueState = { items: [], submittingId: null, editingId: null, paused: false };
+  const listeners = new Set<() => void>();
+  return {
+    previousStatus,
+    getSnapshot: () => state,
+    subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    update(next: QueueState) { state = next; listeners.forEach(listener => listener()); },
+  };
+}
+
 export function useQueuedMapMessages(options: QueueOptions) {
-  const [state, setState] = useState<QueueState>({ items: [], submittingId: null, editingId: null, paused: false });
-  const current = useRef(state);
+  const [store] = useWorkspaceTabDraft(`message-queue:${options.projectId}:${options.conversationId}`, createQueueStore);
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const update = store.update;
   const latest = useRef(options);
   latest.current = options;
   const mounted = useRef(true);
-  const previousStatus = useRef(options.status);
-  const update = useCallback((next: QueueState) => { current.current = next; setState(next); }, []);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   useEffect(() => {
-    const failed = previousStatus.current !== options.status && (options.status === 'failed' || options.status === 'canceled');
-    previousStatus.current = options.status;
-    if (failed && current.current.items.length) update({ ...current.current, paused: true });
-    const queue = current.current;
+    const failed = store.previousStatus !== options.status && (options.status === 'failed' || options.status === 'canceled');
+    store.previousStatus = options.status;
+    if (failed && store.getSnapshot().items.length) update({ ...store.getSnapshot(), paused: true });
+    const queue = store.getSnapshot();
     const item = queue.items[0];
     if (!item || options.blocked || options.sending || !options.ready || queue.paused || queue.editingId || queue.submittingId) return;
     update({ ...queue, submittingId: item.id });
     const finish = (accepted: boolean) => {
-      if (!mounted.current) return;
-      const pending = current.current;
+      const pending = store.getSnapshot();
       update({ ...pending, submittingId: null, paused: pending.paused || !accepted,
         items: accepted ? pending.items.filter((entry) => entry.id !== item.id) : pending.items });
     };
-    void Promise.resolve().then(() => latest.current.send(item)).then(finish, () => finish(false));
-  }, [options.blocked, options.ready, options.sending, options.status, state, update]);
+    void Promise.resolve().then(() => mounted.current ? latest.current.send(item) : false).then(finish, () => finish(false));
+  }, [options.blocked, options.ready, options.sending, options.status, state, store, update]);
 
   const enqueue = useCallback((prompt: string, screenshots: MapScreenshot[] = [], attachments: MapTextAttachment[] = []) => {
     if (latest.current.blocked || !prompt.trim() || prompt.length > 16_384) return false;
-    const queue = current.current;
-    update({ ...queue, items: [...queue.items, { id: randomUUID(), prompt, screenshots: [...screenshots], attachments: [...attachments] }],
+    const queue = store.getSnapshot();
+    update({ ...queue, items: [...queue.items, { id: randomUUID(), requestId: randomUUID(), prompt, screenshots: [...screenshots], attachments: [...attachments] }],
       paused: queue.items.length ? queue.paused : false });
     return true;
-  }, [update]);
+  }, [store, update]);
   const edit = useCallback((id: string) => {
-    const queue = current.current;
+    const queue = store.getSnapshot();
     if (latest.current.readOnly || queue.submittingId === id || !queue.items.some((entry) => entry.id === id)) return;
     update({ ...queue, editingId: id });
-  }, [update]);
+  }, [store, update]);
   const save = useCallback((id: string, prompt: string) => {
-    const queue = current.current;
+    const queue = store.getSnapshot();
     if (latest.current.readOnly || queue.editingId !== id || queue.submittingId === id || !prompt.trim() || prompt.length > 16_384) return;
-    update({ ...queue, items: queue.items.map((entry) => entry.id === id ? { ...entry, prompt } : entry), editingId: null });
-  }, [update]);
+    update({ ...queue, items: queue.items.map((entry) => entry.id === id ? { ...entry, prompt, requestId: entry.prompt.trim() === prompt.trim() ? entry.requestId : randomUUID() } : entry), editingId: null });
+  }, [store, update]);
   const remove = useCallback((id: string) => {
-    const queue = current.current;
+    const queue = store.getSnapshot();
     if (latest.current.readOnly || queue.submittingId === id) return;
     update({ ...queue, items: queue.items.filter((entry) => entry.id !== id), editingId: queue.editingId === id ? null : queue.editingId });
-  }, [update]);
-  const cancelEdit = useCallback(() => update({ ...current.current, editingId: null }), [update]);
-  const pause = useCallback(() => update({ ...current.current, paused: true }), [update]);
+  }, [store, update]);
+  const cancelEdit = useCallback(() => update({ ...store.getSnapshot(), editingId: null }), [store, update]);
+  const pause = useCallback(() => update({ ...store.getSnapshot(), paused: true }), [store, update]);
   const resume = useCallback(() => {
-    if (!latest.current.blocked) update({ ...current.current, paused: false });
-  }, [update]);
+    if (!latest.current.blocked) update({ ...store.getSnapshot(), paused: false });
+  }, [store, update]);
   return { ...state, enqueue, edit, save, remove, cancelEdit, pause, resume };
 }

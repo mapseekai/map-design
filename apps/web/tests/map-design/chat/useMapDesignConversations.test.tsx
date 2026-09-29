@@ -652,7 +652,7 @@ describe('useMapDesignConversations', () => {
       if (String(input) === '/api/map-design/projects/project-1/conversations/conversation-1') {
         firstSignal = init?.signal ?? undefined;
         return Promise.resolve(json({
-          id: 'conversation-1', projectId: 'project-1', createdAt: '2026-08-27T00:00:00.000Z', updatedAt: '2026-08-27T00:00:00.000Z', messages: [],
+          id: 'conversation-1', projectId: 'project-1', createdAt: '2026-08-27T00:00:00.000Z', updatedAt: '2026-08-27T00:00:00.000Z', activeRun: null, messages: [],
         }));
       }
       if (String(input) === '/api/map-design/projects/project-1/conversations/conversation-2') {
