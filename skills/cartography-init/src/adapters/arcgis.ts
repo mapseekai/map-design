@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
-import { cimSymbolToStyle } from './cim.js';
+import { cimColorToCss, cimSymbolToStyle } from './cim.js';
 import { emptyExtracted, type ExtractedElement, type ExtractedStyle } from '../ir.js';
 
 type CimNode = Record<string, unknown>;
@@ -58,16 +58,28 @@ type StylxItem = {
 function extractStylxItem(item: StylxItem, extracted: ExtractedStyle): void {
   const name = stringOf(item.name) ?? 'Unnamed symbol';
   const category = stringOf(item.category);
-  if (!category || !['Symbols', 'Colors', 'Labels'].includes(category)) {
-    extracted.skipped.push({ source: 'stylx', layer: name, reason: `Unsupported .stylx category: ${category ?? 'unknown'}` });
-    return;
-  }
-
   let symbol: unknown;
   try {
-    symbol = JSON.parse(Buffer.isBuffer(item.content) ? item.content.toString('utf8') : String(item.content));
-  } catch {
+    const text = Buffer.isBuffer(item.content) ? item.content.toString('utf8') : String(item.content);
+    symbol = JSON.parse(text.replace(/\u0000+$/, ''));
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
     extracted.skipped.push({ source: 'stylx', layer: name, reason: 'Invalid .stylx item JSON' });
+    return;
+  }
+  const color = cimColorToCss(symbol);
+  if (color) {
+    extracted.colors.push({ value: color, nameHint: name, usedBy: [] });
+    return;
+  }
+  const ramp = node(symbol);
+  if (ramp?.type === 'CIMFixedColorRamp' && Array.isArray(ramp.colors)) {
+    for (const [index, entry] of ramp.colors.entries()) {
+      const value = cimColorToCss(entry);
+      const colorName = `${name} ${index + 1}`;
+      if (value) extracted.colors.push({ value, nameHint: colorName, usedBy: [] });
+      else extracted.skipped.push({ source: 'stylx', layer: colorName, reason: 'Unsupported CIM ramp color' });
+    }
     return;
   }
   extractElement(node(symbol), name, category, undefined, extracted, 'stylx');

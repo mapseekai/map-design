@@ -45,15 +45,20 @@ function extractRule(rule: XmlNode, extracted: ExtractedStyle): void {
 
   for (const [tag, geometry] of symbolizers) {
     for (const symbolizer of nodesOf(rule[tag])) {
+      extractExpressions(symbolizer, name, extracted);
       const unit = unitFor(symbolizer, name, extracted);
       if (!unit) continue;
       const style: CoreStyleProps = {};
       let rawTypography: ExtractedType | undefined;
-      if (tag === 'LineSymbolizer') extractLine(symbolizer, style, unit, name, extracted);
+      if (tag === 'LineSymbolizer') extractStroke(firstNode(symbolizer.Stroke), style, unit, name, extracted);
       else if (tag === 'PolygonSymbolizer') extractPolygon(symbolizer, style, unit, name, extracted);
       else if (tag === 'PointSymbolizer') extractPoint(symbolizer, style, unit, name, extracted);
       else rawTypography = extractText(symbolizer, unit, name);
 
+      if (Object.keys(style).length === 0 && !rawTypography) {
+        extracted.skipped.push({ source: 'sld', layer: name, reason: `${tag} 未包含可提取的静态样式或完整字体定义` });
+        continue;
+      }
       const element: ExtractedElement = { name, geometry, style, scaleHints: [...scaleHints] };
       if (rawTypography) {
         element.rawTypography = rawTypography;
@@ -62,10 +67,6 @@ function extractRule(rule: XmlNode, extracted: ExtractedStyle): void {
       extracted.elements.push(element);
     }
   }
-}
-
-function extractLine(symbolizer: XmlNode, style: CoreStyleProps, unit: DimensionUnit, name: string, extracted: ExtractedStyle): void {
-  extractStroke(firstNode(symbolizer.Stroke), style, unit, name, extracted);
 }
 
 function extractPolygon(symbolizer: XmlNode, style: CoreStyleProps, unit: DimensionUnit, name: string, extracted: ExtractedStyle): void {
@@ -169,11 +170,33 @@ function parameters(node: XmlNode | undefined): Map<string, string> {
   for (const tag of ['CssParameter', 'SvgParameter']) {
     for (const parameter of nodesOf(node[tag])) {
       const name = stringOf(parameter['@_name']);
-      const value = textOf(parameter);
+      const value = textOf(parameter) ?? textOf(parameter.Literal);
       if (name && value) result.set(name, value);
     }
   }
   return result;
+}
+
+function extractExpressions(symbolizer: XmlNode, name: string, extracted: ExtractedStyle): void {
+  for (const tag of ['CssParameter', 'SvgParameter']) {
+    for (const parameter of findNodes(symbolizer, tag)) {
+      if (!Object.keys(parameter).some((key) => !key.startsWith('@_') && !['#text', '__text', 'Literal'].includes(key))) continue;
+      const expression = serialize(parameter);
+      extracted.bindings.push({ source: 'sld', layer: name, kind: 'field-override', expression });
+      extracted.skipped.push({ source: 'sld', layer: name, reason: '数据驱动样式表达式无法转换为静态样式，仅保留颜色字面量', detail: expression.slice(0, 200) });
+      if (!['fill', 'stroke'].includes(stringOf(parameter['@_name']) ?? '')) continue;
+      const visit = (node: XmlNode): void => {
+        for (const [key, child] of Object.entries(node)) {
+          for (const value of Array.isArray(child) ? child : [child]) {
+            const literal = key === 'Literal' ? textOf(value) : undefined;
+            if (literal && /^#[\da-f]{6}$/i.test(literal)) extracted.colors.push({ value: literal, nameHint: name, usedBy: [name] });
+            if (isNode(value)) visit(value);
+          }
+        }
+      };
+      visit(parameter);
+    }
+  }
 }
 
 function findNodes(node: unknown, key: string): XmlNode[] {

@@ -11,6 +11,17 @@ export interface CimSymbolStyle {
 export function cimColorToCss(color: unknown): string | null {
   if (!isNode(color)) return null;
   const values = numbers(color.values);
+  const [hue, saturation, lightness] = values;
+  if (color.type === 'CIMHSLColor' && hue !== undefined && saturation !== undefined && lightness !== undefined) {
+    const normalizedHue = ((hue % 360) + 360) % 360;
+    const luminance = lightness / 100;
+    const amplitude = saturation / 100 * Math.min(luminance, 1 - luminance);
+    const channel = (offset: number): number => {
+      const phase = (offset + normalizedHue / 30) % 12;
+      return 255 * (luminance - amplitude * Math.max(-1, Math.min(phase - 3, 9 - phase, 1)));
+    };
+    return hex(channel(0), channel(8), channel(4));
+  }
   if (color.type === 'CIMRGBColor' && values.length >= 3) return hex(values[0]!, values[1]!, values[2]!);
   if (color.type === 'CIMGrayColor' && values.length >= 1) return hex(values[0]!, values[0]!, values[0]!);
   if (color.type === 'CIMHSVColor' && values.length >= 3) return hsvToHex(values[0]!, values[1]!, values[2]!);
