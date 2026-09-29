@@ -302,7 +302,7 @@ export function CartographyManager() {
     </section> : null}
     </div> : null}
     {createOpen ? <section className="flex flex-col gap-6 rounded-xl border border-border bg-card p-6">
-        <Tabs value={mode} onValueChange={(value) => { if (typeof value !== "string") return; setMode(value as Mode); setFile(null); setDraft(null); setError(false); setSaved(false); }}><TabsList className="max-w-full flex-wrap gap-1 group-data-horizontal/tabs:h-auto" aria-label={copy.manage}>{modes.map(([value, label]) => <TabsTrigger key={value} value={value} className="h-8" disabled={busy}>{label}</TabsTrigger>)}</TabsList><TabsContent value={mode}>
+        <Tabs value={mode} onValueChange={(value) => { if (typeof value !== "string") return; setMode(value as Mode); setFile(null); setDraft(null); setError(false); setSaved(false); }}><TabsList className="max-w-full flex-wrap group-data-horizontal/tabs:h-auto" aria-label={copy.manage}>{modes.map(([value, label]) => <TabsTrigger key={value} value={value} className="h-8" disabled={busy}>{label}</TabsTrigger>)}</TabsList><TabsContent value={mode}>
         <form onSubmit={submit} className="flex flex-col gap-5" aria-busy={busy}>
           <FieldSet disabled={busy}>
             {mode === 'style' || mode === 'ai' ? <Field><FieldLabel htmlFor="cartographymanager-3">{text.name}</FieldLabel><Input id="cartographymanager-3" value={name} onChange={(event) => setName(event.target.value)} maxLength={256} required /></Field> : null}

@@ -1,3 +1,4 @@
+import { eventConnectionCopy } from '../i18n/locales/event-connection';
 import { resourceErrorCopy } from '../i18n/locales/resource-error';
 import { MapLoading } from '@mapseekai/components';
 import { Button, Alert, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@mapseekai/components';
@@ -102,7 +103,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
   const [editingStyle, setEditingStyle] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [codeOpened, setCodeOpened] = useState(false);
-  useProjectThumbnail(projectId, map, editingStyle || mapEditingDisabled);
+  useProjectThumbnail(projectId, map, editingStyle || mapEditingDisabled || view.kind === 'historical');
   const editTriggerRef = useRef<HTMLButtonElement>(null);
   const [preview, setPreview] = useState<MapRenderPreviewOutput | null>(previewSeed ?? seed?.preview ?? null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -464,7 +465,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
         onOpenList={() => { setInspectorTab('comments'); setInspectorOpen(true); }} onCountChange={setCommentCount}
         onSubmit={onSubmitComments ?? unavailableCommentSubmission} />
       <MapDesignStyleEditor projectId={projectId} map={map} draftRevision={data.context.draftRevision} styleHash={displayedStyleHash}
-        active={editingStyle} disabled={view.kind === 'historical' || mapEditingDisabled}
+        finalFocus={editTriggerRef} active={editingStyle} disabled={view.kind === 'historical' || mapEditingDisabled}
         onSaved={state.reload} />
       {map && view.kind === 'current' ? <StudioRuntime map={map} projectId={projectId} data={data}
         onPreview={async (output) => { setPreview(output); await state.reload(); }} onReload={state.reload} /> : null}
@@ -524,6 +525,7 @@ function StudioRuntime({ map, projectId, data, onPreview, onReload }: {
   map: MapLibreMap; projectId: string; data: MapDesignProjectData;
   onPreview(output: MapRenderPreviewOutput): Promise<void>; onReload(): Promise<void>;
 }) {
+  const { locale, t } = useI18n();
   const liveRef = useRef<LiveDraftController | null>(null);
   useEffect(() => {
     const live = new LiveDraftController({
@@ -563,8 +565,13 @@ function StudioRuntime({ map, projectId, data, onPreview, onReload }: {
     handleGap: (gap: { oldestAvailableSequence?: number | null; latestSequence?: number | null }) => getLive().handleGap(gap),
     reload: async (reason: string) => { await getLive().reload(reason); await onReload(); },
   }), [getLive, onReload, previews.handleRecord]);
-  useMapDesignEvents({ projectId, controller });
-  return null;
+  const events = useMapDesignEvents({ projectId, controller });
+  if (events.status !== 'recovering' && events.status !== 'recovery-failed') return null;
+  return <Alert variant={events.status === 'recovery-failed' ? 'destructive' : 'default'} appearance="floating"
+    className="absolute inset-x-3.5 bottom-3 z-10 w-auto" role={events.status === 'recovering' ? 'status' : 'alert'}>
+    <span>{eventConnectionCopy[locale][events.status]}</span>
+    {events.status === 'recovery-failed' ? <Button type="button" onClick={events.retry}>{t('mapDesign.conversation.retry')}</Button> : null}
+  </Alert>;
 }
 
 function isPreviewOutput(value: unknown): value is MapRenderPreviewOutput {

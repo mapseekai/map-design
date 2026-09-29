@@ -189,3 +189,37 @@ describe('useMapDesignEvents', () => {
     expect(controller.reload).toHaveBeenCalledTimes(calls);
   });
 });
+
+it('successful recovery must allow later event cursors to advance', async () => {
+  const retries: Array<() => void> = [];
+  const controller = { handleRecord: vi.fn(async () => {}).mockRejectedValueOnce(new Error('transient')), handleGap: vi.fn(async () => {}), reload: vi.fn(async () => {}) };
+  const hook = renderHook(() => useMapDesignEvents({ projectId: 'audit', controller, EventSource: FakeEventSource as any,
+    scheduleRetry: callback => { retries.push(callback); return vi.fn(); } }));
+  const first = FakeEventSource.instances.at(-1)!;
+  const event = { type: 'project.lifecycle.updated', occurredAt: '2026-08-15T00:00:00.000Z', payload: { lifecycle: 'ready', failure: null } };
+  await act(async () => first.emit('map-design-event', { sequence: 1, event }));
+  expect(controller.reload).toHaveBeenCalled();
+  expect(hook.result.current.status).toBe('listening');
+  await act(async () => first.emit('map-design-event', { sequence: 2, event }));
+  act(() => first.emit('error', {}));
+  act(() => retries.shift()?.());
+  expect(FakeEventSource.instances.at(-1)!.url).toContain('after=2');
+  hook.unmount();
+});
+
+it('allows explicit reconnection after transport recovery is exhausted', async () => {
+  const callbacks: Array<() => void> = [];
+  const controller = { handleRecord: vi.fn(), handleGap: vi.fn(), reload: vi.fn() };
+  const view = renderHook(() => useMapDesignEvents({ projectId: 'retry', controller, EventSource: FakeEventSource as any,
+    recovery: { maxAttempts: 1, initialDelayMs: 1, maxDelayMs: 1 },
+    scheduleRetry: callback => { callbacks.push(callback); return vi.fn(); } }));
+  act(() => FakeEventSource.instances.at(-1)!.emit('error', {}));
+  act(() => callbacks.shift()?.());
+  act(() => FakeEventSource.instances.at(-1)!.emit('error', {}));
+  expect(view.result.current.status).toBe('recovery-failed');
+  const old = FakeEventSource.instances.at(-1)!;
+  act(() => view.result.current.retry());
+  expect(FakeEventSource.instances.at(-1)).not.toBe(old);
+  expect(view.result.current.status).toBe('listening');
+  view.unmount();
+});

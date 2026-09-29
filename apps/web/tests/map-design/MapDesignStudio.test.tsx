@@ -23,11 +23,11 @@ const mapCanvasMock = vi.hoisted(() => ({
   onMapReady: undefined as undefined | ((map: unknown) => void),
   canvas: null as HTMLDivElement | null,
 }));
-const eventChannel = vi.hoisted(() => ({ controller: null as { handleRecord(record: unknown): Promise<void> } | null }));
+const eventChannel = vi.hoisted(() => ({ status: 'listening', retry: vi.fn(), controller: null as { handleRecord(record: unknown): Promise<void> } | null }));
 vi.mock('../../src/map-design/hooks/useMapDesignEvents', () => ({
   useMapDesignEvents: ({ controller }: { controller: { handleRecord(record: unknown): Promise<void> } }) => {
     eventChannel.controller = controller;
-    return { status: 'listening' };
+    return { status: eventChannel.status, retry: eventChannel.retry };
   },
 }));
 const commentTool = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }));
@@ -137,6 +137,7 @@ describe('MapDesignStudio', () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    eventChannel.status = 'listening';
     vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
     mapCanvasMock.mounts = 0;
     mapCanvasMock.onMapError = undefined;
@@ -157,6 +158,24 @@ describe('MapDesignStudio', () => {
       validationSummary: project.validation.summary,
     });
   });
+  it('shows connection recovery and exposes a retry after failure', () => {
+    eventChannel.status = 'recovering';
+    const view = render(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} />);
+    act(() => mapCanvasMock.onMapReady?.({ triggerRepaint: vi.fn(), getCanvas: () => mapCanvasMock.canvas!,
+      getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 3, getBearing: () => 0, getPitch: () => 0,
+      jumpTo: vi.fn(), on: vi.fn(), off: vi.fn() }));
+    expect(screen.getByText('Reconnecting to live map updates…').closest('[role=status]')).not.toBeNull();
+    eventChannel.status = 'recovery-failed';
+    view.rerender(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} />);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Live map updates are disconnected');
+    fireEvent.click(within(alert).getByRole('button'));
+    expect(eventChannel.retry).toHaveBeenCalledOnce();
+    eventChannel.status = 'listening';
+    view.rerender(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('uses a stable schema-safe digest when preview identity would exceed the receipt key limit', async () => {
     const key = await mapDesignPreviewCommitKey('p'.repeat(128), 'v'.repeat(128));
     expect(key).toMatch(/^mapdesign-preview-commit:[a-f0-9]{64}$/u);

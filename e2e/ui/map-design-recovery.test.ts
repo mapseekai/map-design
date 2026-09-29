@@ -51,3 +51,18 @@ test('[P1] retries failed map resources and renders the recovered map', async ({
   await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
   expect(errors).toEqual([]);
 });
+
+test('[P1] exposes exhausted live updates and reconnects on retry', async ({ page, toolsDev }) => {
+  test.setTimeout(120_000);
+  const id = await createAndOpenReadyMapProject(page, toolsDev.daemonUrl!);
+  const matches = (url: URL) => url.pathname === `/api/map-design/projects/${id}/events`;
+  await page.route(matches, route => route.abort());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const alert = page.getByRole('alert').filter({ hasText: 'Live map updates are disconnected' });
+  await expect(alert).toBeVisible();
+  await page.unroute(matches);
+  const connected = page.waitForResponse(response => matches(new URL(response.url())) && response.ok());
+  await alert.getByRole('button', { name: 'Retry', exact: true }).click();
+  await connected;
+  await expect(alert).toHaveCount(0);
+});

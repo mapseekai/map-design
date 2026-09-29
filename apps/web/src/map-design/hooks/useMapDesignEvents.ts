@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapStudioEventRecordSchema } from '@mapseekai/map-design-contracts';
 
 interface EventController {
@@ -23,7 +23,9 @@ export interface UseMapDesignEventsOptions {
 
 export type MapDesignEventsStatus = 'idle' | 'listening' | 'recovering' | 'recovery-failed';
 
-export function useMapDesignEvents(options: UseMapDesignEventsOptions): { status: MapDesignEventsStatus } {
+export function useMapDesignEvents(options: UseMapDesignEventsOptions): { status: MapDesignEventsStatus; retry(): void } {
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt(value => value + 1), []);
   const [status, setStatus] = useState<MapDesignEventsStatus>('idle');
   const recoveryPolicy = normalizeRecovery(options.recovery);
   const scheduleRetryRef = useRef(options.scheduleRetry ?? defaultScheduleRetry);
@@ -56,6 +58,7 @@ export function useMapDesignEvents(options: UseMapDesignEventsOptions): { status
       void Promise.resolve().then(() => current(owner) ? controller.reload('event-recovery') : undefined).then(
         () => {
           if (!current(owner)) return;
+          cursorTail = cursorTail.catch(() => {});
           recovering = false;
           reconnectAttempts = 0;
           setStatus('listening');
@@ -154,6 +157,7 @@ export function useMapDesignEvents(options: UseMapDesignEventsOptions): { status
     };
   }, [
     url,
+    attempt,
     options.EventSource,
     options.controller,
     recoveryPolicy.maxAttempts,
@@ -161,7 +165,7 @@ export function useMapDesignEvents(options: UseMapDesignEventsOptions): { status
     recoveryPolicy.maxDelayMs,
   ]);
 
-  return { status };
+  return { status, retry };
 }
 
 function optionalSequence(value: unknown): number | null | undefined {

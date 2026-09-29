@@ -76,12 +76,14 @@ export async function renderMapDesignPreview(options: RenderMapDesignPreviewOpti
       }
       assertActive(signal);
       assertBeforeDeadline(deadline);
+      assertSnapshot(options);
       failureStage = 'viewport';
       applyViewport(map, viewport);
       failureStage = 'render';
       await waitForIdle(map, signal, deadline);
       failureStage = 'capture';
       const pngBase64 = await capturePng(map, viewport, signal, deadline);
+      assertSnapshot(options);
       fulfillment = MapPreviewFulfillRequestSchema.parse({
         status: 'succeeded', previewId: options.request.previewId,
         draftRevision: options.request.draftRevision, styleHash: options.request.styleHash,
@@ -268,4 +270,11 @@ function deadlineError(): DOMException {
 
 function isDeadlineError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'TimeoutError';
+}
+
+function assertSnapshot(options: RenderMapDesignPreviewOptions): void {
+  const snapshot = options.snapshot();
+  if (snapshot.draftRevision !== options.request.draftRevision || snapshot.styleHash !== options.request.styleHash) {
+    throw new Error('Map changed during preview capture.');
+  }
 }

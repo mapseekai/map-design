@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode, type RefObject } from 're
 
 export function MapCommentPopover({ map, anchor, open, onClose, initialFocus, finalFocus, label, children }: {
   map: MapLibreMap | null; anchor: [number, number] | null; open: boolean; onClose(): void;
-  initialFocus?: RefObject<HTMLTextAreaElement>; finalFocus: RefObject<HTMLButtonElement>; label: string; children: ReactNode;
+  initialFocus?: RefObject<HTMLTextAreaElement>; finalFocus?: RefObject<HTMLButtonElement>; label: string; children: ReactNode;
 }) {
   const [revision, setRevision] = useState(0);
   useEffect(() => {

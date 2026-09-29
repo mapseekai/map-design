@@ -37,7 +37,7 @@ const HASH_1 = '1'.repeat(64);
 const HASH_2 = '2'.repeat(64);
 const success = { draftRevision: 4, styleHash: HASH_2, changedLayers: [], changedSources: [], diff: [], warnings: [], validationSummary: { valid: true, errors: [], warnings: [] } };
 
-beforeEach(() => client.save.mockReset());
+beforeEach(() => { client.save.mockReset(); });
 afterEach(() => { cleanup(); document.body.innerHTML = ''; });
 
 describe('MapDesignStyleEditor', () => {
@@ -80,7 +80,7 @@ describe('MapDesignStyleEditor', () => {
     expect(screen.queryByRole('heading')).not.toBeInTheDocument();
     expect(map.listenerCount('click')).toBe(1);
     act(() => map.emit('click', { point: { x: 10, y: 20 }, lngLat: { lng: 10, lat: 20 } }));
-    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
     map.queryRenderedFeatures.mockReturnValue([road(1, 'Main Street')]);
     act(() => map.emit('click', { point: { x: 10, y: 20 }, lngLat: { lng: 10, lat: 20 } }));
     expect(screen.getByRole('heading')).toBeInTheDocument();
@@ -240,4 +240,43 @@ describe('MapDesignStyleEditor', () => {
     await act(async () => resolveSave(success));
     expect(onSaved).toHaveBeenCalledTimes(1);
   });
+});
+
+it('blank map click must expose the existing empty-hit feedback', () => {
+  const map = mapMock([]);
+  render(<MapDesignStyleEditor projectId="p1" map={map as never} draftRevision={3} styleHash={HASH_1} active disabled={false} onSaved={vi.fn()} />);
+  act(() => map.emit('click', { point: { x: 10, y: 20 }, lngLat: { lng: 10, lat: 20 } }));
+  expect(screen.queryByRole('alert')).not.toBeNull();
+});
+it('picking another feature during save must preserve the pending editor', async () => {
+  const map = mapMock([road(1, 'Main Street')]);
+  let resolveSave!: (value: unknown) => void;
+  client.save.mockImplementation(() => new Promise(resolve => { resolveSave = resolve; }));
+  render(<MapDesignStyleEditor projectId="p1" map={map as never} draftRevision={3} styleHash={HASH_1} active disabled={false} onSaved={vi.fn()} />);
+  act(() => map.emit('click', { point: { x: 10, y: 20 }, lngLat: { lng: 10, lat: 20 } }));
+  fireEvent.change(await screen.findByLabelText('Color'), { target: { value: '#ff0000' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save style' }));
+  expect(client.save).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText(/Main Street/)).not.toBeNull();
+  map.queryRenderedFeatures.mockReturnValue([road(2, 'Broadway')]);
+  act(() => map.emit('click', { point: { x: 11, y: 21 }, lngLat: { lng: 11, lat: 21 } }));
+  const switchedWhileSaving = screen.queryByText(/Broadway/) !== null;
+  await act(async () => resolveSave(success));
+  expect(switchedWhileSaving).toBe(false);
+});
+
+it('reuses feature eligibility during input and restores focus to the edit trigger', async () => {
+  const map = mapMock([road(1, 'Main Street')]);
+  const trigger = document.createElement('button'); document.body.append(trigger);
+  const props = { projectId: 'p1', map: map as never, draftRevision: 3, styleHash: HASH_1, active: true, disabled: false, onSaved: vi.fn(), finalFocus: { current: trigger } };
+  const view = render(<MapDesignStyleEditor {...props} />);
+  act(() => map.emit('click', { point: { x: 10, y: 20 }, lngLat: { lng: 10, lat: 20 } }));
+  await screen.findByLabelText('Width');
+  map.getStyle.mockClear();
+  fireEvent.change(screen.getByLabelText('Width'), { target: { value: '6' } });
+  fireEvent.change(screen.getByLabelText('Width'), { target: { value: '7' } });
+  expect(map.getStyle).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => expect(trigger).toHaveFocus());
+  view.unmount();
 });

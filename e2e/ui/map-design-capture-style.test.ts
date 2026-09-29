@@ -12,6 +12,12 @@ test('[P1] screenshots reach chat and direct styles preview, cancel and persist'
   const styleUrl = `${toolsDev.daemonUrl}/api/map-design/projects/${projectId}/style`;
   const readStyle = async () => await fetch(styleUrl).then((response) => response.json()) as { layers: Array<{ id: string; paint?: Record<string, unknown> }> };
   const original = await readStyle();
+  const thumbnailUrl = `${toolsDev.daemonUrl}/api/map-design/projects/${projectId}/thumbnail`;
+  await expect.poll(async () => (await fetch(thumbnailUrl)).status).toBe(200);
+  const projectThumbnail = PNG.sync.read(Buffer.from(await (await fetch(thumbnailUrl)).arrayBuffer()));
+  expect(projectThumbnail.width).toBeGreaterThan(100);
+  expect(projectThumbnail.height).toBeGreaterThan(100);
+  expect(new Set(projectThumbnail.data).size).toBeGreaterThan(4);
 
   await page.getByRole('button', { name: 'Screenshot to chat', exact: true }).click();
   const thumbnail = page.getByRole('img', { name: 'Map screenshot', exact: true });
@@ -34,6 +40,7 @@ test('[P1] screenshots reach chat and direct styles preview, cancel and persist'
   await editor.getByRole('textbox', { name: /^(Color|Text color)$/ }).fill('#123456');
   await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
   expect(await readStyle()).toEqual(original);
+  await expect(page.getByRole('button', { name: 'Edit style', exact: true })).toBeFocused();
 
   await expect(page.getByRole('button', { name: 'Edit style', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await pickStyleFeature(page);

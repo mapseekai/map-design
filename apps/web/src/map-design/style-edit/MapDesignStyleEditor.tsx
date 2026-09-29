@@ -17,7 +17,7 @@ import {
 } from '@mapseekai/map-design-contracts';
 import { ArrowLeft, ChevronRight, X } from 'lucide-react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 
 import { useI18n } from '../../i18n';
 import { styleControlLabel, styleEditCopy } from '../../i18n/locales/style-edit';
@@ -38,17 +38,17 @@ export interface MapDesignStyleEditorProps {
   active: boolean;
   disabled: boolean;
   onSaved(): void | Promise<void>;
+  finalFocus?: RefObject<HTMLButtonElement>;
 }
 
 type Control = ReturnType<typeof getMapStyleControls>[number];
 
 export function MapDesignStyleEditor({
-  projectId, map, draftRevision, styleHash, active, disabled, onSaved,
+  projectId, map, draftRevision, styleHash, active, disabled, onSaved, finalFocus,
 }: MapDesignStyleEditorProps) {
   const { locale } = useI18n();
   const copy = styleEditCopy[locale];
   const propertyId = useId();
-  const returnFocus = useRef<HTMLButtonElement>(null);
   const [pickedCandidates, setPickedCandidates] = useState<FeatureCandidate[]>([]);
   const [candidates, setCandidates] = useState<FeatureCandidate[]>([]);
   const [candidate, setCandidate] = useState<FeatureCandidate | null>(null);
@@ -75,7 +75,7 @@ export function MapDesignStyleEditor({
   const layer = useMemo(() => {
     if (!candidate || !map) return null;
     return map.getStyle()?.layers?.find((item) => item.id === candidate.feature.layer.id) ?? null;
-  }, [candidate, map]);
+  }, [candidate, map, draftRevision, styleHash]);
   const controls = useMemo(() => {
     if (!layer) return [];
     return getMapStyleControls(layer.type).filter(control => {
@@ -86,7 +86,11 @@ export function MapDesignStyleEditor({
     });
   }, [layer]);
   const target = useMemo(() => candidate && anchor ? buildCommentTarget(candidate.feature, anchor) : null, [anchor, candidate]);
-  const featureAvailable = candidate ? featureScopeAvailable(candidate.feature, generatedSourceIds(map?.getStyle()), map?.getStyle()) : false;
+  const featureAvailable = useMemo(() => {
+    if (!candidate || !map) return false;
+    const style = map.getStyle();
+    return featureScopeAvailable(candidate.feature, generatedSourceIds(style), style);
+  }, [candidate, map, draftRevision, styleHash]);
   const invalidScope = scope === 'feature' && !featureAvailable;
   const stale = Boolean(snapshot && (snapshot.draftRevision !== draftRevision || snapshot.styleHash !== styleHash));
 
@@ -125,10 +129,12 @@ export function MapDesignStyleEditor({
     if (!active || disabled || !map) return;
     const canvas = map.getCanvas();
     const pick = (event: { point: { x: number; y: number }; lngLat: { lng: number; lat: number } }) => {
+      if (savingRef.current) return;
       const hits = deduplicateFeatureCandidates(map.queryRenderedFeatures(queryBox(event.point)) as PickedFeature[])
         .filter((item) => getMapStyleControls((map.getLayer(item.feature.layer.id) as { type?: string } | undefined)?.type ?? '').length > 0);
       preview.current?.restore(); preview.current = null;
       setCandidate(null); setValues({}); setChanges({}); setPickedCandidates(hits);
+      setAnchor(normalizeAnchor([event.lngLat.lng, event.lngLat.lat]));
       setEmptyHit(hits.length === 0); setCandidates(hits.length > 1 ? hits : []);
       if (hits.length === 1) chooseCandidate(hits[0]!, [event.lngLat.lng, event.lngLat.lat]);
       else if (hits.length > 1) { setPendingSnapshot({ draftRevision, styleHash }); setAnchor(normalizeAnchor([event.lngLat.lng, event.lngLat.lat])); }
@@ -201,8 +207,8 @@ export function MapDesignStyleEditor({
     finally { if (saveController.current === controller) { saveController.current = null; savingRef.current = false; if (currentGeneration === generation.current) setSaving(false); } }
   };
 
-  if (!active || (!target && !candidates.length)) return null;
-  return <MapCommentPopover map={map} anchor={anchor} open={active} onClose={cancel} finalFocus={returnFocus} label={copy.title}>
+  if (!active || (!target && !candidates.length && !emptyHit)) return null;
+  return <MapCommentPopover map={map} anchor={anchor} open={active} onClose={cancel} finalFocus={finalFocus} label={copy.title}>
       <PopoverHeader>
         <div className="flex items-center justify-between gap-2">
           <PopoverTitle>{copy.title}</PopoverTitle>

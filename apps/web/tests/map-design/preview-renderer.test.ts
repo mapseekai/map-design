@@ -65,7 +65,7 @@ describe('renderMapDesignPreview', () => {
         previewId: 'preview-1', draftRevision: 5, styleHash: HASH, expiresAt: new Date(Date.now() + 60_000).toISOString(),
         viewport: { center: [1, 2], zoom: 3, bearing: 4, pitch: 5, width: 640, height: 480, pixelRatio: 2 },
       },
-      snapshot: () => ({ draftRevision: 4, styleHash: 'a'.repeat(64) }),
+      snapshot: vi.fn().mockReturnValueOnce({ draftRevision: 4, styleHash: 'a'.repeat(64) }).mockReturnValue({ draftRevision: 5, styleHash: HASH }),
       loadCanonical,
       validationDigest: DIGEST,
       fulfill,
@@ -338,3 +338,34 @@ function withRenderFrame<T extends { once: (...args: any[]) => unknown }>(map: T
     return map.once(name, listener);
   }) as T['once'] };
 }
+
+it('mismatched canonical state must not be fulfilled as requested pixels', async () => {
+  const map = {
+    getCenter: () => ({ lng: 0, lat: 0 }), getZoom: () => 1, getBearing: () => 0, getPitch: () => 0,
+    jumpTo: vi.fn(), resize: vi.fn(), isStyleLoaded: () => true, areTilesLoaded: () => true, isMoving: () => false,
+    once: vi.fn(), off: vi.fn(), getCanvas: () => ({ toDataURL: () => 'data:image/png;base64,iVBORw0KGgo=' }),
+  };
+  const fulfill = vi.fn(async body => body);
+  await renderMapDesignPreview({ map: withRenderFrame(map),
+    request: { previewId: 'audit-mismatch', draftRevision: 1, styleHash: HASH, expiresAt: new Date(Date.now() + 60000).toISOString(),
+      viewport: { center: [0, 0], zoom: 1, bearing: 0, pitch: 0, width: 320, height: 240, pixelRatio: 1 } },
+    snapshot: () => ({ draftRevision: 2, styleHash: 'c'.repeat(64) }), loadCanonical: vi.fn(async () => {}), validationDigest: DIGEST, fulfill,
+  });
+  expect(fulfill).not.toHaveBeenCalledWith(expect.objectContaining({ status: 'succeeded' }), expect.anything());
+});
+
+it('rejects pixels when the live snapshot changes during capture', async () => {
+  let revision = 1;
+  const map = {
+    getCenter: () => ({ lng: 0, lat: 0 }), getZoom: () => 1, getBearing: () => 0, getPitch: () => 0,
+    jumpTo: vi.fn(), resize: vi.fn(), isStyleLoaded: () => true, areTilesLoaded: () => true, isMoving: () => false,
+    once: vi.fn(), off: vi.fn(), getCanvas: () => ({ toDataURL: () => { revision = 2; return 'data:image/png;base64,iVBORw0KGgo='; } }),
+  };
+  const fulfill = vi.fn(async body => body);
+  await renderMapDesignPreview({ map: withRenderFrame(map),
+    request: { previewId: 'capture-drift', draftRevision: 1, styleHash: HASH, expiresAt: new Date(Date.now() + 60000).toISOString(),
+      viewport: { center: [0, 0], zoom: 1, bearing: 0, pitch: 0, width: 320, height: 240, pixelRatio: 1 } },
+    snapshot: () => ({ draftRevision: revision, styleHash: HASH }), loadCanonical: vi.fn(), validationDigest: DIGEST, fulfill,
+  });
+  expect(fulfill).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed', pngBase64: null }), expect.anything());
+});
