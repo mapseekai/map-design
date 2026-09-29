@@ -1,13 +1,16 @@
-import { useCallback, useState } from 'react';
-import { CartographyManager } from './map-design/CartographyManager';
-import { CartographyEditor } from './map-design/CartographyEditor';
-import { MapDesignProjects } from './map-design/MapDesignProjects';
-import { MapDesignHome } from './map-design/MapDesignHome';
-import { MapDesignSettings } from './map-design/MapDesignSettings';
+import { MapLoading } from '@mapseekai/components';
+import { lazy, Suspense, useCallback, useState } from 'react';
+import { useT } from './i18n';
 import { MapDesignShell } from './map-design/MapDesignShell';
-import { MapDesignWorkspace } from './map-design/MapDesignWorkspace';
 import { navigate, useRoute, type MapDesignRoute } from './router';
 import { WorkspaceTabs, WorkspaceTabsProvider } from './map-design/WorkspaceTabs';
+
+const CartographyManager = lazy(() => import('./map-design/CartographyManager').then((module) => ({ default: module.CartographyManager })));
+const CartographyEditor = lazy(() => import('./map-design/CartographyEditor').then((module) => ({ default: module.CartographyEditor })));
+const MapDesignProjects = lazy(() => import('./map-design/MapDesignProjects').then((module) => ({ default: module.MapDesignProjects })));
+const MapDesignHome = lazy(() => import('./map-design/MapDesignHome').then((module) => ({ default: module.MapDesignHome })));
+const MapDesignSettings = lazy(() => import('./map-design/MapDesignSettings').then((module) => ({ default: module.MapDesignSettings })));
+const MapDesignWorkspace = lazy(() => import('./map-design/MapDesignWorkspace').then((module) => ({ default: module.MapDesignWorkspace })));
 
 export function App() {
   const route = useRoute();
@@ -15,6 +18,7 @@ export function App() {
 }
 
 function AppContent({ route }: { route: MapDesignRoute }) {
+  const t = useT();
   const [notice, setNotice] = useState<string | null>(null);
   const returnHome = useCallback((message: string) => {
     setNotice(message);
@@ -41,5 +45,5 @@ function AppContent({ route }: { route: MapDesignRoute }) {
       surface = <><MapDesignHome onOpenProject={(projectId) => navigate({ kind: 'project', projectId })} />{notice ? <p role="status">{notice}</p> : null}</>;
       break;
   }
-  return <MapDesignShell tabs={<WorkspaceTabs />}>{surface}</MapDesignShell>;
+  return <MapDesignShell tabs={<WorkspaceTabs />}><Suspense fallback={<MapLoading label={t('common.loading')} />}>{surface}</Suspense></MapDesignShell>;
 }

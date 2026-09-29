@@ -27,14 +27,15 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe('workspace titlebar tabs', () => {
-  it('opens map and specification tabs once, preserving drafts and conversation/revision URLs across switches', () => {
+  it('opens map and specification tabs once, preserving drafts and conversation/revision URLs across switches', async () => {
     render(<App />);
     act(() => navigate({ kind: 'project', projectId: 'a' }));
-    expect(screen.getByRole('tab', { name: 'Map a' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('tab', { name: 'Map a' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), { target: { value: 'Map draft' } });
     window.history.replaceState({}, '', '/projects/a?conversation=chat-a&revision=4');
     const previousInstance = screen.getByTestId('instance').textContent;
     act(() => navigate({ kind: 'cartography-editor', sessionId: 'b' }));
+    await screen.findByRole('tab', { name: 'Specification b' });
     expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('');
     fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), { target: { value: 'Specification draft' } });
     fireEvent.click(screen.getByRole('tab', { name: 'Map a' }));
@@ -48,11 +49,14 @@ describe('workspace titlebar tabs', () => {
     expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('Specification draft');
   });
 
-  it('keeps tabs on home/settings, closes inactive tabs without navigating, and closes the last tab to home', () => {
+  it('keeps tabs on home/settings, closes inactive tabs without navigating, and closes the last tab to home', async () => {
     render(<App />);
     act(() => navigate({ kind: 'project', projectId: 'a' }));
+    await screen.findByRole('tab', { name: 'Map a' });
     act(() => navigate({ kind: 'cartography-editor', sessionId: 'b' }));
+    await screen.findByRole('tab', { name: 'Specification b' });
     act(() => navigate({ kind: 'settings' }));
+    await screen.findByText('Settings content');
     expect(screen.getAllByRole('tab')).toHaveLength(2);
     expect(screen.getAllByRole('tab').every(tab => tab.getAttribute('aria-selected') === 'false')).toBe(true);
     fireEvent.click(screen.getByRole('tab', { name: 'Specification b' }));
@@ -62,14 +66,17 @@ describe('workspace titlebar tabs', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close: Specification b' }));
     expect(window.location.pathname).toBe('/');
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
-    expect(screen.getByText('Map home')).toBeInTheDocument();
+    expect(await screen.findByText('Map home')).toBeInTheDocument();
   });
 
   it('closes the active tab to its neighbor and restores keyboard focus', async () => {
     render(<App />);
     act(() => navigate({ kind: 'project', projectId: 'a' }));
+    await screen.findByRole('tab', { name: 'Map a' });
     act(() => navigate({ kind: 'cartography-editor', sessionId: 'b' }));
+    await screen.findByRole('tab', { name: 'Specification b' });
     act(() => navigate({ kind: 'project', projectId: 'c' }));
+    await screen.findByRole('tab', { name: 'Map c' });
     fireEvent.click(screen.getByRole('tab', { name: 'Specification b' }));
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Specification b' }), { key: 'Delete' });
     expect(window.location.pathname).toBe('/projects/c');
@@ -78,10 +85,10 @@ describe('workspace titlebar tabs', () => {
     expect(window.location.pathname).toBe('/projects/a');
   });
 
-  it('opens deep links and restores a closed tab when browser history revisits it', () => {
+  it('opens deep links and restores a closed tab when browser history revisits it', async () => {
     window.history.replaceState({}, '', '/cartographies/edit/b?conversation=chat-b');
     render(<App />);
-    expect(screen.getByRole('tab', { name: 'Specification b' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('tab', { name: 'Specification b' })).toHaveAttribute('aria-selected', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'Close: Specification b' }));
     act(() => { window.history.replaceState({}, '', '/cartographies/edit/b?conversation=chat-b'); window.dispatchEvent(new PopStateEvent('popstate')); });
     expect(screen.getAllByRole('tab')).toHaveLength(1);

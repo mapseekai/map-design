@@ -154,7 +154,7 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
           status={<>
             {(running || busy) ? <p role="status" className="text-sm text-muted-foreground">{running ? copy.analyzing : t('common.loading')}</p> : null}
             {session.status === 'canceled' && ownerId === selectedId ? <p role="status" className="text-sm text-muted-foreground">{copy.canceled}</p> : null}
-            {(notice || (session.error && ownerId === selectedId)) ? <Alert variant="destructive"><AlertDescription>{copy.failed}</AlertDescription>{!documentRunning && !busy ? <Button type="button" variant="outline" onClick={() => { void submit(retryPrompt); }}>{copy.retry}</Button> : null}</Alert> : null}
+            {(notice || (session.error && ownerId === selectedId)) ? <Alert variant="destructive"><AlertDescription>{copy.failed}</AlertDescription>{!documentRunning && !busy ? <Button type="button" variant="outline" disabled={!runtime.runtime || !selectedId} onClick={() => { void submit(retryPrompt); }}>{copy.retry}</Button> : null}</Alert> : null}
             {conversation.error || agents.error ? <Alert variant="destructive">{conversation.error ?? agents.error}</Alert> : null}
           </>}
           composer={<MapDesignComposer projectId={sessionId} runtime={runtime.runtime} runtimeAgents={agents.agents} onRuntimeChange={runtime.update}
@@ -173,7 +173,7 @@ function CartographyEditorWorkspace({ initial }: { initial: CartographyEditSessi
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
           <p role={saved ? 'status' : undefined} className="text-xs text-muted-foreground">{saved ? cartographyManagerCopy[locale].saved : cartographySaveCopy[locale].hint}</p>
-          {view === 'document' ? <CartographyDocumentPreview key={session.revision} source={session.source} />
+          {view === 'document' ? <CartographyDocumentPreview key={session.revision} source={session.source} palette={session.preview?.palette} />
             : <Suspense fallback={<MapLoading label={t('common.loading')} />}><SpecificationMap key={session.revision} elements={session.preview?.elements ?? []} sampleBindings={session.sampleBindings} /></Suspense>}
         </div>
       </div>}

@@ -298,7 +298,7 @@ export function CartographyManager() {
       <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" aria-label={library.description}>{selectedDocument.description || library.noDescription}</p>
       <CartographyVisualPreview preview={selectedDocument.preview} name={selectedDocument.name} />
 
-      <CartographyDocumentPreview key={selected} source={source} initiallyOpen={false} />
+      <CartographyDocumentPreview key={selected} source={source} palette={selectedDocument.preview?.palette} initiallyOpen={false} />
     </section> : null}
     </div> : null}
     {createOpen ? <section className="flex flex-col gap-6 rounded-xl border border-border bg-card p-6">

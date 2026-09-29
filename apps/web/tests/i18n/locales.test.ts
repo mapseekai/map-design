@@ -63,6 +63,13 @@ function retainedSourceKeys(): string[] {
         const imported = resolveImport(path, node.moduleSpecifier.text);
         if (imported) pending.push(imported);
       }
+      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        const specifier = node.arguments[0];
+        if (specifier && ts.isStringLiteral(specifier)) {
+          const imported = resolveImport(path, specifier.text);
+          if (imported) pending.push(imported);
+        }
+      }
       if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && ['t', 'uiT'].includes(node.expression.text)) {
         const argument = node.arguments[0];
         const collectStringLiterals = (candidate: ts.Node): void => {

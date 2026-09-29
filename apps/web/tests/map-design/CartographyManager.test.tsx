@@ -99,7 +99,8 @@ it('explains project references and clears the selected deep link after deletion
   vi.mocked(client.listCartographies).mockResolvedValue({ documents: [document] });
   vi.mocked(client.deleteCartography).mockRejectedValueOnce(new ApiClientError('In use', 400, 'INVALID_INPUT', { reason: 'CARTOGRAPHY_IN_USE' }));
   render(<I18nProvider><CartographyManager /></I18nProvider>);
-  await screen.findByLabelText('Preview specification');
+  fireEvent.click(await screen.findByRole('button', { name: 'Preview specification' }));
+  expect(screen.getByLabelText('Preview specification')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Delete: Quiet Atlas' }));
   fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('This specification is used by a project and cannot be deleted.');
@@ -210,7 +211,8 @@ it('opens the requested specification preview from the conversation deep link', 
   window.history.replaceState(null, '', `/cartographies?cartography=${document.id}`);
   vi.mocked(client.listCartographies).mockResolvedValueOnce({ documents: [document] });
   render(<I18nProvider><CartographyManager /></I18nProvider>);
-  expect(await screen.findByLabelText('Preview specification')).toHaveTextContent('Warm paper');
+  fireEvent.click(await screen.findByRole('button', { name: 'Preview specification' }));
+  expect(screen.getByLabelText('Preview specification')).toHaveTextContent('Warm paper');
   expect(client.getCartography).toHaveBeenCalledWith(document.id, expect.any(AbortSignal));
 });
 
@@ -221,7 +223,8 @@ it('keeps the specification selector beside details and collapses the original d
   render(<I18nProvider><CartographyManager /></I18nProvider>);
   expect(await screen.findByRole('heading', { name: 'Quiet Atlas' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Preview specification: Quiet Atlas' })).toHaveAttribute('aria-current', 'true');
-  expect(screen.getByLabelText('Preview specification').closest('details')).not.toHaveAttribute('open');
+  expect(screen.getByText('▸ CARTOGRAPHY.md').closest('details')).not.toHaveAttribute('open');
+  expect(screen.queryByLabelText('Preview specification')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Preview specification: Second Atlas' }));
   expect(await screen.findByRole('heading', { name: 'Second Atlas' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Preview specification: Quiet Atlas' })).toBeInTheDocument();

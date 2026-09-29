@@ -55,10 +55,10 @@ describe('retired MapDesign web pages', () => {
     ['/settings', 'map-settings'],
     ['/projects/transit', 'map-project'],
     ['/workspace', 'map-home'],
-  ] as const)('renders only the mapped dedicated shell for %s', (pathname, testId) => {
+  ] as const)('renders only the mapped dedicated shell for %s', async (pathname, testId) => {
     window.history.replaceState({}, '', pathname);
     render(createElement(App));
-    expect(screen.getByTestId(testId)).toBeInTheDocument();
+    expect(await screen.findByTestId(testId)).toBeInTheDocument();
     expect(screen.queryByText(/workspace switcher|message center|library/i)).not.toBeInTheDocument();
   });
 });

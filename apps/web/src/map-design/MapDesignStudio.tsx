@@ -24,7 +24,8 @@ import { MapDesignInspectorPanel, type MapDesignInspectorPlacement, type MapDesi
 import { MapDesignHistoricalBanner } from './components/MapDesignHistoricalBanner';
 import { MapNavigationControls } from './components/MapNavigationControls';
 import { MapDesignRestoreRevisionDialog } from './components/MapDesignRestoreRevisionDialog';
-import { MapDesignStatusBar } from './components/MapDesignStatusBar';
+import { MapDesignLiveStatus } from './components/MapDesignLiveStatus';
+export { mapScaleDenominator } from './components/MapDesignLiveStatus';
 import { MapDesignStudioHeader, type MapDesignStudioMode } from './components/MapDesignStudioHeader';
 import { useMapDesignEvents } from './hooks/useMapDesignEvents';
 import { type MapDesignProjectData, type MapDesignProjectView, useMapDesignProject } from './hooks/useMapDesignProject';
@@ -67,18 +68,6 @@ export interface MapDesignStudioProps {
   mapEditingDisabled?: boolean;
 }
 
-interface MapStatus {
-  scaleDenominator: number;
-  coordinates: { lat: number; lng: number } | null;
-}
-
-const MAP_KEYBOARD_NAVIGATION_KEYS = new Set(['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp', '-', '+', '=']);
-
-export function mapScaleDenominator(latitude: number, zoom: number): number {
-  const metresPerCssPixel = 40075016.68557849 * Math.cos(latitude * Math.PI / 180) / 512 / 2 ** zoom;
-  return Math.max(1, Math.round(metresPerCssPixel * 96 * 39.37));
-}
-
 export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, viewError = false, onViewChange, project: seed, preview: previewSeed = null,
   onFullscreenChange, onHeaderHeightChange, inspectorPlacement, inspectorWidth, onInspectorOpenChange, onInspectorPinnedChange,
   onInspectorWidthChange, onDrawerModalChange, layoutRevision = 0, commentSubmissionDisabled = true, onSubmitComments,
@@ -119,10 +108,6 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
   const [drawerClosing, setDrawerClosing] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [inspectorTab, setInspectorTab] = useState<MapDesignInspectorTab>('layers');
-  const [keyboardNavigationActive, setKeyboardNavigationActive] = useState(false);
-  const keyboardNavigationRef = useRef(false);
-  const liveRegionClearTimerRef = useRef<number | null>(null);
-  const [mapStatus, setMapStatus] = useState<MapStatus>({ scaleDenominator: 25000, coordinates: null });
   const [committing, setCommitting] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<{ revision: number; expectedDraftRevision: number } | null>(null);
   const [restoreAnnouncement, setRestoreAnnouncement] = useState<string | null>(null);
@@ -159,29 +144,11 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
     fullscreenRef.current = false;
     fullscreenChangeRef.current?.(false);
   }, []);
-  const clearKeyboardNavigation = useCallback(() => {
-    keyboardNavigationRef.current = false;
-    if (liveRegionClearTimerRef.current !== null) window.clearTimeout(liveRegionClearTimerRef.current);
-    liveRegionClearTimerRef.current = null;
-    setKeyboardNavigationActive(false);
-  }, []);
-  const scheduleKeyboardNavigationClear = useCallback(() => {
-    if (liveRegionClearTimerRef.current !== null) window.clearTimeout(liveRegionClearTimerRef.current);
-    liveRegionClearTimerRef.current = window.setTimeout(() => {
-      keyboardNavigationRef.current = false;
-      liveRegionClearTimerRef.current = null;
-      setKeyboardNavigationActive(false);
-    }, 300);
-  }, []);
-  const updateMapScale = useCallback((nextMap: MapLibreMap) => {
+  const rememberCamera = useCallback((nextMap: MapLibreMap) => {
     const center = nextMap.getCenter();
     cameraRef.current = { projectId, center: [center.lng, center.lat], zoom: nextMap.getZoom(),
       bearing: nextMap.getBearing(), pitch: nextMap.getPitch() };
-    setMapStatus((current) => ({ ...current, scaleDenominator: mapScaleDenominator(center.lat, nextMap.getZoom()) }));
   }, [projectId]);
-  const updateCoordinates = useCallback((coordinates: { lat: number; lng: number }) => {
-    setMapStatus((current) => ({ ...current, coordinates }));
-  }, []);
   const resolvedInspectorWidth = inspectorWidth ?? uncontrolledInspectorWidth;
   const setInspectorOpen = useCallback((open: boolean) => {
     onInspectorOpenChange?.(open);
@@ -280,44 +247,6 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
     setCurrentReloadPending(false);
     void state.reload().catch(() => undefined);
   }, [currentReloadPending, state, view.kind]);
-  useEffect(() => {
-    if (!map) return;
-    const onMove = () => updateMapScale(map);
-    const onPointerMove = (event: { lngLat?: { lat: number; lng: number } }) => {
-      if (!event.lngLat) return;
-      clearKeyboardNavigation();
-      updateCoordinates(event.lngLat);
-    };
-    const onMoveEnd = () => {
-      if (!keyboardNavigationRef.current) return;
-      updateCoordinates(map.getCenter());
-      scheduleKeyboardNavigationClear();
-    };
-    const onCanvasKeyDown = (event: KeyboardEvent) => {
-      if (!MAP_KEYBOARD_NAVIGATION_KEYS.has(event.key)) return;
-      if (liveRegionClearTimerRef.current !== null) window.clearTimeout(liveRegionClearTimerRef.current);
-      liveRegionClearTimerRef.current = null;
-      keyboardNavigationRef.current = true;
-      setKeyboardNavigationActive(true);
-    };
-    const onCanvasBlur = () => clearKeyboardNavigation();
-    const canvas = map.getCanvas();
-    map.on('move', onMove);
-    map.on('mousemove', onPointerMove as never);
-    map.on('moveend', onMoveEnd);
-    canvas.addEventListener('keydown', onCanvasKeyDown);
-    canvas.addEventListener('blur', onCanvasBlur);
-    return () => {
-      map.off('move', onMove);
-      map.off('mousemove', onPointerMove as never);
-      map.off('moveend', onMoveEnd);
-      canvas.removeEventListener('keydown', onCanvasKeyDown);
-      canvas.removeEventListener('blur', onCanvasBlur);
-      keyboardNavigationRef.current = false;
-      if (liveRegionClearTimerRef.current !== null) window.clearTimeout(liveRegionClearTimerRef.current);
-      liveRegionClearTimerRef.current = null;
-    };
-  }, [clearKeyboardNavigation, map, scheduleKeyboardNavigationClear, updateCoordinates, updateMapScale]);
   const selectMode = useCallback((next: MapDesignStudioMode) => {
     const nextTab = next === 'map' ? 'layers' : next === 'style' ? 'revisions' : 'comments';
     if (nextTab === inspectorTab && resolvedInspectorPlacement !== 'closed' && !drawerClosing) {
@@ -448,7 +377,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
             nextMap.jumpTo({ center, zoom, bearing, pitch });
           }
           setMap(nextMap);
-          updateMapScale(nextMap);
+          rememberCamera(nextMap);
         }} />
       {viewMode === 'preview' ? <MapNavigationControls map={map} /> : null}
       {codeOpened ? <div className={`z-1 col-start-1 row-start-3 min-h-0 min-w-0 overflow-hidden ${viewMode === 'code' ? '' : 'hidden'}`}>
@@ -469,10 +398,8 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
         onSaved={state.reload} />
       {map && view.kind === 'current' ? <StudioRuntime map={map} projectId={projectId} data={data}
         onPreview={async (output) => { setPreview(output); await state.reload(); }} onReload={state.reload} /> : null}
-      <MapDesignStatusBar projection="EPSG:3857" scale={`1:${new Intl.NumberFormat(locale).format(mapStatus.scaleDenominator)}`}
-        draftRevision={data.context.draftRevision} synced={data.context.previewStatus === 'current'}
-        coordinates={formatMapCoordinates(mapStatus.coordinates, t)}
-        keyboardNavigationActive={keyboardNavigationActive} />
+      <MapDesignLiveStatus map={map} onCameraChange={rememberCamera}
+        draftRevision={data.context.draftRevision} synced={data.context.previewStatus === 'current'} />
     </section>
     </ResizablePanel>
     {presentedInspectorPlacement === 'docked' && !fullscreen ? <>
@@ -497,17 +424,6 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
 }
 
 async function unavailableCommentSubmission(): Promise<boolean> { return false; }
-
-function formatMapCoordinates(coordinates: MapStatus['coordinates'], t: ReturnType<typeof useI18n>['t']): string {
-  if (!coordinates) return '—';
-  const formatCoordinate = (value: number, positive: 'north' | 'east', negative: 'south' | 'west') => {
-    const direction = value >= 0
-      ? positive === 'north' ? t('mapDesign.studio.north') : t('mapDesign.studio.east')
-      : negative === 'south' ? t('mapDesign.studio.south') : t('mapDesign.studio.west');
-    return `${Math.abs(value).toFixed(3)}°${direction}`;
-  };
-  return `${formatCoordinate(coordinates.lat, 'north', 'south')}, ${formatCoordinate(coordinates.lng, 'east', 'west')}`;
-}
 
 export async function mapDesignPreviewCommitKey(projectId: string, previewId: string): Promise<string> {
   const identity = `mapdesign-preview-commit:${projectId}:${previewId}`;

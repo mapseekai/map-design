@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { ReactNode } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { CartographyEditSession } from '@mapseekai/map-design-contracts';
 import { CartographyEditor } from '../../src/map-design/CartographyEditor';
@@ -32,7 +32,8 @@ beforeEach(() => {
   localStorage.clear();
   vi.mocked(api.listMapDesignConversations).mockResolvedValue({ conversations: [summary] });
   vi.mocked(api.getMapDesignConversationRuntime).mockResolvedValue({ runtime, effectiveRuntime: runtime });
-  vi.mocked(api.getMapDesignConversation).mockResolvedValue({ id: session.id, projectId: session.id, createdAt: session.createdAt, updatedAt: session.updatedAt, messages: [] });
+  const conversation = { id: session.id, projectId: session.id, createdAt: session.createdAt, updatedAt: session.updatedAt, activeRun: null, messages: [] };
+  vi.mocked(api.getMapDesignConversation).mockResolvedValue(conversation);
   vi.mocked(api.getLocalAgents).mockResolvedValue({ agents: ['opencode', 'pi'].map((id) => ({ id, label: id === 'opencode' ? 'OpenCode' : 'Pi', available: true, modelCatalogSource: 'live', mapDesign: { nativeMapTools: true, publicReasoningSummary: true }, models: [{ id: 'provider/model', label: 'Provider model', enabled: true, default: true, reasoningOptions: [], serviceTierOptions: [] }] })) });
   vi.mocked(client.getCartographyEdit).mockResolvedValue(session);
   vi.mocked(client.sendCartographyEdit).mockResolvedValue(running);
@@ -118,9 +119,29 @@ it('retains the valid document on failure and lets the author retry deliberately
   expect(await screen.findByRole('alert')).toHaveTextContent('Your last valid draft is safe');
   expect(screen.getByText('Original guidance.')).toBeInTheDocument();
   expect(client.sendCartographyEdit).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+  const retry = screen.getByRole('button', { name: 'Retry' });
+  await waitFor(() => expect(retry).toBeEnabled());
+  fireEvent.click(retry);
   await waitFor(() => expect(client.sendCartographyEdit).toHaveBeenCalledTimes(1));
   expect(vi.mocked(client.sendCartographyEdit).mock.calls[0]?.[1].requestId).not.toBe(session.id);
+});
+
+it('waits for the conversation runtime before enabling a failed generation retry', async () => {
+  vi.mocked(client.getCartographyEdit).mockResolvedValue({ ...running, status: 'failed', error: 'generation-failed' });
+  let resolveRuntime: ((value: Awaited<ReturnType<typeof api.getMapDesignConversationRuntime>>) => void) | undefined;
+  vi.mocked(api.getMapDesignConversationRuntime).mockReturnValue(new Promise((resolve) => { resolveRuntime = resolve; }));
+  render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
+  const retry = await screen.findByRole('button', { name: 'Retry' });
+  expect(retry).toBeDisabled();
+  fireEvent.click(retry);
+  expect(client.sendCartographyEdit).not.toHaveBeenCalled();
+
+  await act(async () => { resolveRuntime?.({ runtime, effectiveRuntime: runtime }); });
+  await waitFor(() => expect(retry).toBeEnabled());
+  fireEvent.click(retry);
+  await waitFor(() => expect(client.sendCartographyEdit).toHaveBeenCalledWith(session.id, expect.objectContaining({
+    conversationId: session.id, runtimeRevision: 3, prompt: session.initialPrompt,
+  })));
 });
 
 it('uses the shared Agent picker and sends the map update to the selected conversation', async () => {

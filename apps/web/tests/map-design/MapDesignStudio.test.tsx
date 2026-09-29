@@ -18,6 +18,7 @@ const clientMocks = vi.hoisted(() => ({
 }));
 const mapCanvasMock = vi.hoisted(() => ({
   mounts: 0,
+  renders: 0,
   onMapError: undefined as undefined | (() => void),
   onMapIdle: undefined as undefined | (() => void),
   onMapReady: undefined as undefined | ((map: unknown) => void),
@@ -52,6 +53,7 @@ vi.mock('../../src/map-design/client', async (importOriginal) => ({
 
 vi.mock('../../src/map-design/map/MapCanvas', () => ({
   MapCanvas: ({ projectId, initialStyle, onMapError, onMapIdle, onMapReady }: { projectId: string; initialStyle: { name?: string }; onMapError?(): void; onMapIdle?(): void; onMapReady?(map: unknown): void }) => {
+    mapCanvasMock.renders += 1;
     useLayoutEffect(() => { mapCanvasMock.mounts += 1; }, []);
     mapCanvasMock.onMapError = onMapError;
     mapCanvasMock.onMapIdle = onMapIdle;
@@ -627,25 +629,67 @@ describe('MapDesignStudio', () => {
     expect(mapScaleDenominator(0, 0)).toBe(295828764);
   });
 
+  it('updates pointer coordinates and scale without rerendering the map workspace', () => {
+    // Given a loaded map with its inspector open.
+    render(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} inspectorPlacement="docked" />);
+    type MapHandler = (event?: { lngLat?: { lat: number; lng: number } }) => void;
+    const handlers = new Map<string, Set<MapHandler>>();
+    const emit = (event: string, payload?: Parameters<MapHandler>[0]) => { handlers.get(event)?.forEach(handler => handler(payload)); };
+    const map = {
+      getCenter: () => ({ lat: 0, lng: 0 }),
+      getZoom: () => 1, getBearing: () => 0, getPitch: () => 0, jumpTo: vi.fn(),
+      triggerRepaint: vi.fn(), getCanvas: () => screen.getByTestId('map-canvas'),
+      on: (event: string, handler: MapHandler) => {
+        const listeners = handlers.get(event) ?? new Set<MapHandler>();
+        listeners.add(handler);
+        handlers.set(event, listeners);
+      },
+      off: (event: string, handler: MapHandler) => { handlers.get(event)?.delete(handler); },
+    };
+    act(() => { mapCanvasMock.onMapReady?.(map); });
+    const rendersBefore = mapCanvasMock.renders;
+    const commentsBefore = commentTool.props;
+
+    // When MapLibre emits frequent pointer and camera events.
+    for (let index = 0; index < 10; index += 1) {
+      act(() => {
+        emit('mousemove', { lngLat: { lat: 38.889, lng: -77.035 } });
+        emit('move');
+      });
+    }
+
+    // Then only the status leaf updates, with no sibling renders.
+    expect(screen.getByText('38.889°N, 77.035°W')).toHaveAttribute('aria-live', 'off');
+    expect(screen.getByText('1:147,914,382')).toBeInTheDocument();
+    expect(mapCanvasMock.renders).toBe(rendersBefore);
+    expect(commentTool.props).toBe(commentsBefore);
+  });
+
   it('coalesces keyboard map navigation into one final announcement before clearing the live state', () => {
     vi.useFakeTimers();
     render(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} />);
-    const handlers = new Map<string, (event?: { lngLat?: { lat: number; lng: number } }) => void>();
+    type MapHandler = (event?: { lngLat?: { lat: number; lng: number } }) => void;
+    const handlers = new Map<string, Set<MapHandler>>();
+    const emit = (event: string, payload?: Parameters<MapHandler>[0]) => { handlers.get(event)?.forEach(handler => handler(payload)); };
     let center = { lat: 0, lng: 0 };
     const map = {
       getCenter: () => center,
       getZoom: () => 0, getBearing: () => 0, getPitch: () => 0, jumpTo: vi.fn(),
       triggerRepaint: vi.fn(), getCanvas: () => mapCanvasMock.canvas!,
-      on: (event: string, handler: (event?: { lngLat?: { lat: number; lng: number } }) => void) => { handlers.set(event, handler); },
-      off: (event: string) => { handlers.delete(event); },
+      on: (event: string, handler: MapHandler) => {
+        const listeners = handlers.get(event) ?? new Set<MapHandler>();
+        listeners.add(handler);
+        handlers.set(event, listeners);
+      },
+      off: (event: string, handler: MapHandler) => { handlers.get(event)?.delete(handler); },
     };
     act(() => { mapCanvasMock.onMapReady?.(map); });
 
-    act(() => { handlers.get('mousemove')?.({ lngLat: { lat: 38.889, lng: -77.035 } }); });
+    act(() => { emit('mousemove', { lngLat: { lat: 38.889, lng: -77.035 } }); });
     expect(screen.getByText('38.889°N, 77.035°W')).toHaveAttribute('aria-live', 'off');
 
     center = { lat: 40, lng: -74 };
-    act(() => { handlers.get('move')?.(); });
+    act(() => { emit('move'); });
     expect(screen.getByText('38.889°N, 77.035°W')).toBeInTheDocument();
 
     fireEvent.keyDown(screen.getByRole('button', { name: 'Layers' }), { key: 'ArrowRight' });
@@ -653,15 +697,15 @@ describe('MapDesignStudio', () => {
 
     fireEvent.keyDown(mapCanvasMock.canvas!, { key: 'ArrowUp' });
     expect(screen.getByText('38.889°N, 77.035°W')).toHaveAttribute('aria-live', 'polite');
-    act(() => { handlers.get('move')?.(); handlers.get('move')?.(); });
+    act(() => { emit('move'); emit('move'); });
     expect(screen.getByText('38.889°N, 77.035°W')).toBeInTheDocument();
-    act(() => { handlers.get('moveend')?.(); });
+    act(() => { emit('moveend'); });
     expect(screen.getByText('40.000°N, 74.000°W')).toHaveAttribute('aria-live', 'polite');
     act(() => { vi.runOnlyPendingTimers(); });
     expect(screen.getByText('40.000°N, 74.000°W')).toHaveAttribute('aria-live', 'off');
 
     center = { lat: 41, lng: -73 };
-    act(() => { handlers.get('move')?.(); handlers.get('moveend')?.(); });
+    act(() => { emit('move'); emit('moveend'); });
     expect(screen.getByText('40.000°N, 74.000°W')).toHaveAttribute('aria-live', 'off');
 
     fireEvent.keyDown(mapCanvasMock.canvas!, { key: 'ArrowUp' });
