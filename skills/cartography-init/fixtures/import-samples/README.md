@@ -63,11 +63,11 @@ dba313854f65a8d41b1777cf9d6cb5ddf692792be04d808b82c86c63909fbdf0  QGIS-Training-
 
 ### 离线回归与手动验证
 
-工程和许可均已包含在仓库中，正常测试不需要网络、QGIS 安装或下载脚本。
+工程和许可均已包含在仓库中，正常测试不需要网络、QGIS 安装或下载脚本。从仓库根目录运行：
 
 ```sh
 pnpm --filter @cartographymd/init-skill exec vitest run tests/import-samples.test.ts tests/adapter-qgis.test.ts
-pnpm --filter @cartographymd/init-skill init --input fixtures/import-samples/network.qgz --output /tmp/QGIS-CARTOGRAPHY.md --report /tmp/QGIS-INIT_REPORT.md --report-json /tmp/QGIS-INIT_REPORT.json
+pnpm --filter @cartographymd/init-skill run init -- --input skills/cartography-init/fixtures/import-samples/network.qgz --output /tmp/QGIS-CARTOGRAPHY.md --report /tmp/QGIS-INIT_REPORT.md --report-json /tmp/QGIS-INIT_REPORT.json
 ```
 
 Windows 上请把 `/tmp/` 改为已存在的临时目录。替换样例时需一起核对固定提交、许可、原始 hash、属性断言和统计，不能只更新数量使测试通过。

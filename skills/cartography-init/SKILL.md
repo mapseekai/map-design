@@ -18,12 +18,14 @@ description: Use when the user wants to convert an existing map style (style.jso
 从仓库根目录运行。显式写出全部产物，便于审阅和复现：
 
 ```bash
-pnpm --filter @cartographymd/init-skill init -- \
+pnpm --filter @cartographymd/init-skill run init -- \
   --input path/to/style.json \
   --output CARTOGRAPHY.md \
   --report INIT_REPORT.md \
   --report-json INIT_REPORT.json
 ```
+
+相对路径均以运行 pnpm 的目录（`INIT_CWD`）为基准；直接执行脚本时以当前目录为基准。输入、输出、两份报告和报告检查均可使用绝对路径。使用 `run init` 调用包脚本，避免与 pnpm 内置的 `init` 命令冲突。
 
 可用 `--name "地图名称"` 覆盖草稿名称。支持的输入格式由文件内容和扩展名识别：`style.json`、`.qgs`、`.qgz`、`.lyrx`、`.stylx`、`.sld`。
 
@@ -32,7 +34,7 @@ pnpm --filter @cartographymd/init-skill init -- \
 检查已完成分诊的报告：
 
 ```bash
-pnpm --filter @cartographymd/init-skill init -- \
+pnpm --filter @cartographymd/init-skill run init -- \
   --check-report INIT_REPORT.json
 ```
 
@@ -44,7 +46,7 @@ pnpm --filter @cartographymd/init-skill init -- \
 2. **读报告**：把转换器提取的内容视为证据而非最终设计。确认每个元素是否具有稳定、面向设计的意义；检查 `skipped` 是否需要人工重建，`unresolved` 是否阻塞使用。
 3. **补写草稿**：在 CARTOGRAPHY.md 中补全语义命名、设计意图和必要的 `TODO(agent)` 段落。描述视觉角色、层级、缩放行为和可访问的设计选择，而不是样式源的数据实现。
 4. **bindings 分诊**：逐条编辑 `INIT_REPORT.json` 的 `bindings`，在对应项写入 `triage` 决定。每个 binding 必须选择下表三者之一；不要删除原始证据，也不要把 binding 复制进文档。
-5. **检查报告**：运行 `init -- --check-report INIT_REPORT.json`。若退出码为 1，回到分诊步骤；报告没有未决定项前不得继续宣称完成。
+5. **检查报告**：运行 `pnpm --filter @cartographymd/init-skill run init -- --check-report INIT_REPORT.json`。若退出码为 1，回到分诊步骤；报告没有未决定项前不得继续宣称完成。
 6. **验证文档**：运行 `cartographymd lint CARTOGRAPHY.md`。仅在报告分诊通过且 lint 通过后，交付该草稿及其已知未决项。
 
 ## bindings 分诊决策表
