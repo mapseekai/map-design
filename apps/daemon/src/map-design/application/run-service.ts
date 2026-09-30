@@ -489,7 +489,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
             projectId: request.projectId,
             conversationId: request.conversationId,
             prompt,
-            resumePrompt: [cartography, scopedPrompt].filter(Boolean).join('\n'),
+            resumePrompt: composeMapPrompt(scopedPrompt, [], mapContext, request.projectId, runId, request.locale, config?.customInstructions, cartography),
             ...(captured ? { images: captured.images } : {}),
             cwd,
             model: resolved.model,

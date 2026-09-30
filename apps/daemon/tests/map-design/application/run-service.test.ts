@@ -1571,6 +1571,8 @@ describe('MapDesign native Map Agent selection', () => {
     sdkToolRuntime?: SdkMapToolRuntime;
     appendMessage?: ReturnType<typeof vi.fn>;
     config?: CreateMapDesignRunServiceDeps['config'];
+    mapContext?: CreateMapDesignRunServiceDeps['mapContext'];
+    messages?: readonly string[];
     inactivityTimeoutMs?: number;
   }) {
     const spawn = vi.fn(() => {
@@ -1625,7 +1627,7 @@ describe('MapDesign native Map Agent selection', () => {
           projectId: 'map-1',
           createdAt: '',
           updatedAt: '',
-          messages: [],
+          messages: (options.messages ?? []).map((content) => ({ role: 'user', content })),
         }),
         appendMessage,
         updateRunMessage,
@@ -1643,7 +1645,7 @@ describe('MapDesign native Map Agent selection', () => {
       dataDir: '/tmp/data',
       projectRoot: '/tmp/projects',
       daemonUrl: () => 'http://127.0.0.1:8787',
-      mapContext: { getContext: async () => ({ draftRevision: 4 }) },
+      mapContext: options.mapContext ?? { getContext: async () => ({ draftRevision: 4 }) },
       randomId: options.randomId ?? (() => 'run-1'),
       ...(options.runHistory ? { runHistory: options.runHistory } : {}),
       ...(options.config ? { config: options.config } : {}),
@@ -1679,6 +1681,48 @@ describe('MapDesign native Map Agent selection', () => {
         prompt: expect.stringContaining('FINAL_COLOR: #123456'),
         resumePrompt: expect.stringContaining('FINAL_COLOR: #123456'),
       }), expect.any(Array), expect.any(Function));
+    } finally { await state.service.shutdown(); }
+  });
+
+  it('refreshes resume state when instructions and canonical context change between turns', async () => {
+    // Given: a prior conversation and mutable daemon settings/map state.
+    const inputs: MapRunInput[] = [];
+    const adapter: MapAgentAdapter = {
+      id: 'codex', capabilities: { nativeMapTools: true, publicReasoningSummary: true },
+      startMapRun: async (input) => {
+        inputs.push(input);
+        return { done: Promise.resolve({ status: 'succeeded' as const }), cancel: async () => undefined };
+      },
+    };
+    let customInstructions = 'instruction_token_1';
+    let draftRevision = 41;
+    let runNumber = 0;
+    const state = nativeRunFixture({ adapter, nativeToolRegistry: fixtureNativeToolRegistry,
+      config: { read: () => ({ customInstructions }) },
+      mapContext: { getContext: async () => ({ draftRevision }) },
+      messages: ['history_token_1'], randomId: () => `run-refresh-${++runNumber}` });
+    try {
+      await state.service.start({ projectId: 'map-1', conversationId: 'conversation-1', prompt: 'request_token_1',
+        runtimeRevision: 0, clientRequestId: 'refresh-1', userMessageId: 'refresh-user-1', assistantMessageId: 'refresh-assistant-1' });
+      await waitForNextTick();
+      customInstructions = 'instruction_token_2';
+      draftRevision = 42;
+      // When: the next turn starts after the external changes.
+      await state.service.start({ projectId: 'map-1', conversationId: 'conversation-1', prompt: 'request_token_2',
+        runtimeRevision: 0, clientRequestId: 'refresh-2', userMessageId: 'refresh-user-2', assistantMessageId: 'refresh-assistant-2' });
+      // Then: both prompt paths carry fresh data, and resume leaves native history intact.
+      const input = inputs.at(-1);
+      if (!input) throw new Error('Expected a second run input');
+      for (const prompt of [input.prompt, input.resumePrompt]) {
+        expect(prompt).toContain(customInstructions);
+        expect(prompt).toContain(JSON.stringify({ draftRevision }));
+        expect(prompt).toContain(input.runId);
+        expect(prompt).toContain(input.projectId);
+        expect(prompt).toContain('request_token_2');
+        expect(prompt).not.toContain('instruction_token_1');
+      }
+      expect(input.prompt).toContain('history_token_1');
+      expect(input.resumePrompt).not.toContain('history_token_1');
     } finally { await state.service.shutdown(); }
   });
 
@@ -1927,7 +1971,7 @@ describe('MapDesign native Map Agent selection', () => {
         model: 'resolved-model',
         reasoning: 'xhigh',
         serviceTier: 'priority',
-        resumePrompt: 'Use the saved runtime.',
+        resumePrompt: expect.stringContaining('run-1'),
         byokProvider: { protocol: 'openai', apiKey: 'request-only-secret' },
         toolRuntime: expect.any(Object),
         toolCallback: expect.objectContaining({
