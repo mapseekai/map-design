@@ -140,7 +140,7 @@ export function ApiProfileManager({ initialConfig, initialData, onChange, onDirt
     </CardContent></Card> : null}
     <p className="text-xs text-muted-foreground">{dirty ? `${copy.saveFirst} ` : ''}{copy.cost}</p>
     <DialogRoot open={pendingDelete !== null} onOpenChange={(open) => { if (!open && !locked) setPendingDelete(null); }}>
-      <DialogContent><DialogHeader><DialogTitle>{t('common.delete')} · {pendingDelete?.name}</DialogTitle>
+      <DialogContent closeLabel={t('common.close')}><DialogHeader><DialogTitle>{t('common.delete')} · {pendingDelete?.name}</DialogTitle>
         <DialogDescription>{copy.removeHint}</DialogDescription></DialogHeader>
         <DialogFooter><Button type="button" variant="outline" disabled={locked} onClick={() => setPendingDelete(null)}>{copy.cancel}</Button>
           <Button type="button" variant="destructive" disabled={locked} onClick={() => { if (pendingDelete) remove(pendingDelete); }}>{t('common.delete')}</Button></DialogFooter>

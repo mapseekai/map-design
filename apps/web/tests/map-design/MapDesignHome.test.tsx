@@ -148,6 +148,7 @@ describe('MapDesignHome', () => {
     const betaCard = screen.getByText('Beta map').closest('li');
     expect(alphaCard).not.toBeNull();
     expect(betaCard).not.toBeNull();
+    if (!alphaCard || !betaCard) throw new Error('Missing project cards');
     fireEvent.click(screen.getByRole('button', { name: 'More actions: Alpha map' }));
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     fireEvent.click(screen.getByRole('button', { name: 'More actions: Beta map' }));
@@ -155,8 +156,9 @@ describe('MapDesignHome', () => {
     await waitFor(() => expect(alphaAttempts).toBe(1));
 
     alphaRetry.reject(new Error('Alpha import failed'));
-    expect(await screen.findByText('Alpha import failed')).toBeVisible();
-    expect(within(betaCard!).queryByRole('alert')).toBeNull();
+    expect(await within(alphaCard).findByRole('alert')).toHaveTextContent('Unable to retry import. Please try again.');
+    expect(screen.queryByText('Alpha import failed')).toBeNull();
+    expect(within(betaCard).queryByRole('alert')).toBeNull();
     expect(screen.getByText('Alpha map')).toBeVisible();
     expect(screen.getByText('Beta map')).toBeVisible();
 
@@ -164,13 +166,13 @@ describe('MapDesignHome', () => {
       ...project('beta-map', 'Beta map'), lifecycle: 'importing', designSystemId: 'quiet-atlas',
       designSystemDigest: 'a'.repeat(64), failure: null, createdAt: '2026-08-26T00:00:00.000Z',
     }));
-    await waitFor(() => expect(within(betaCard!).queryByRole('alert')).toBeNull());
-    expect(screen.getByText('Alpha import failed')).toBeVisible();
+    await waitFor(() => expect(within(betaCard).queryByRole('alert')).toBeNull());
+    expect(within(alphaCard).getByRole('alert')).toHaveTextContent('Unable to retry import. Please try again.');
 
     fireEvent.click(screen.getByRole('button', { name: 'More actions: Alpha map' }));
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(alphaAttempts).toBe(2));
-    expect(screen.queryByText('Alpha import failed')).toBeNull();
+    expect(within(alphaCard).queryByRole('alert')).toBeNull();
     expect(screen.getByText('Beta map')).toBeVisible();
   });
 
