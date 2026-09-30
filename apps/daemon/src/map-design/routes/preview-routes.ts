@@ -1,9 +1,9 @@
 import { Router, json as expressJson, type NextFunction, type Request, type RequestHandler, type Response } from 'express';
-import { MapCurrentPreviewOutputSchema, MapIdentifierSchema, MapPreviewFulfillRequestSchema, type MapToolErrorCode } from '@mapseekai/map-design-contracts';
+import { MapCurrentPreviewOutputSchema, MapIdentifierSchema, MapPreviewFulfillRequestSchema } from '@mapseekai/map-design-contracts';
 
 import type { MapPreviewFulfillmentService } from '../application/preview-fulfillment-service.js';
 import { invalidInput, isMapDraftError } from '../application/errors.js';
-import { route, requireJson, sendError, bodyErrorStatus } from './route-helpers.js';
+import { route, requireJson, sendError, bodyErrorStatus, mapDraftErrorStatus } from './route-helpers.js';
 
 export interface CreateMapDesignPreviewRouterDependencies {
   previewFulfillmentService: Pick<MapPreviewFulfillmentService, 'fulfill' | 'getCurrent'>;
@@ -57,11 +57,9 @@ function parseInput(value: unknown) { try { return MapPreviewFulfillRequestSchem
 function errorHandler(fallback: string) {
   return (error: unknown, _request: Request, response: Response, next: NextFunction) => {
     if (response.headersSent) { next(error); return; }
-    if (isMapDraftError(error)) { sendError(response, statusFor(error.code), error.code, error.message, error.retryable, error.details); return; }
+    if (isMapDraftError(error)) { sendError(response, mapDraftErrorStatus(error.code), error.code, error.message, error.retryable, error.details); return; }
     const status = bodyErrorStatus(error);
     if (status) { sendError(response, status, 'INVALID_INPUT', 'The map preview request is invalid.'); return; }
     sendError(response, 500, 'INTERNAL', fallback);
   };
 }
-function statusFor(code: MapToolErrorCode) { if (code === 'INVALID_INPUT') return 400; if (code === 'NOT_FOUND') return 404;
-  if (code === 'RUN_NOT_AUTHORIZED') return 403; if (code === 'IDEMPOTENCY_CONFLICT' || code === 'PREVIEW_STALE' || code === 'REVISION_CONFLICT') return 409; return 500; }

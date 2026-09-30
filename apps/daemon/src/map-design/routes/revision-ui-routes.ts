@@ -4,12 +4,11 @@ import {
   MapIdentifierSchema,
   MapRestoreRevisionInputSchema,
   MapSafeRevisionSchema,
-  type MapToolErrorCode,
 } from '@mapseekai/map-design-contracts';
 
 import type { MapRevisionService } from '../application/revision-service.js';
 import { MapDraftError, invalidInput, isMapDraftError } from '../application/errors.js';
-import { route, requireJson, sendError, bodyErrorStatus } from './route-helpers.js';
+import { route, requireJson, sendError, bodyErrorStatus, mapDraftErrorStatus } from './route-helpers.js';
 
 export interface CreateMapDesignRevisionUiRouterDependencies {
   revisionService: Pick<MapRevisionService, 'commit' | 'getSnapshot' | 'restore'>;
@@ -66,7 +65,7 @@ export function createMapDesignRevisionUiRouter(deps: CreateMapDesignRevisionUiR
   }));
   router.use([COMMIT_ROUTE, SNAPSHOT_ROUTE, RESTORE_ROUTE], (error: unknown, _request: Request, response: Response, next: NextFunction) => {
     if (response.headersSent) { next(error); return; }
-    if (isMapDraftError(error)) { sendError(response, statusFor(error.code), error.code, error.message, error.retryable, error.details); return; }
+    if (isMapDraftError(error)) { sendError(response, mapDraftErrorStatus(error.code), error.code, error.message, error.retryable, error.details); return; }
     const status = bodyErrorStatus(error); if (status) { sendError(response, status, 'INVALID_INPUT', 'The revision request is invalid.'); return; }
     sendError(response, 500, 'INTERNAL', 'The revision request failed.');
   });
@@ -97,5 +96,3 @@ function parseUiRequestId(value: unknown): string {
   if (!requestId.success || requestId.data !== value) throw invalidInput();
   return requestId.data;
 }
-function statusFor(code: MapToolErrorCode) { if (code === 'INVALID_INPUT') return 400; if (code === 'NOT_FOUND') return 404;
-  if (code === 'RUN_NOT_AUTHORIZED') return 403; if (code === 'IDEMPOTENCY_CONFLICT' || code === 'PREVIEW_STALE' || code === 'REVISION_CONFLICT') return 409; return 500; }

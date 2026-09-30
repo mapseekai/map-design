@@ -1,6 +1,20 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { MapToolErrorSchema, type MapToolErrorCode } from '@mapseekai/map-design-contracts';
 
+const DOMAIN_ERROR_STATUS: Readonly<Partial<Record<MapToolErrorCode, number>>> = {
+  INVALID_INPUT: 400,
+  NOT_FOUND: 404,
+  RUN_NOT_AUTHORIZED: 403,
+  IDEMPOTENCY_CONFLICT: 409,
+  PREVIEW_STALE: 409,
+  REVISION_CONFLICT: 409,
+  PROJECT_NOT_READY: 409,
+};
+
+export function mapDraftErrorStatus(code: MapToolErrorCode): number {
+  return DOMAIN_ERROR_STATUS[code] ?? 500;
+}
+
 export function route(handler: (request: Request, response: Response) => Promise<void>): RequestHandler {
   return (request, response, next) => { void handler(request, response).catch(next); };
 }
