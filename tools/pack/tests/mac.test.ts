@@ -1,4 +1,4 @@
-import { access, chmod, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, chmod, mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os, { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
@@ -87,11 +87,12 @@ describe("resolveSeededAppConfigPaths", () => {
     expect(source).not.toContain(["open", "design"].join(""));
   });
 
-  it("uses workspace .md by default", () => {
+  it("uses workspace .map-design by default", () => {
+    delete process.env.MAP_DESIGN_DATA_DIR;
     const config = makeConfig("/work");
     expect(resolveSeededAppConfigPaths(config)).toEqual({
-      sourcePath: join("/work", ".md", "app-config.json"),
-      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "app-config.json"),
+      sourcePath: join("/work", ".map-design", "map-design-config.json"),
+      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "map-design-config.json"),
     });
   });
 
@@ -99,8 +100,8 @@ describe("resolveSeededAppConfigPaths", () => {
     process.env.MAP_DESIGN_DATA_DIR = "/custom/data";
     const config = makeConfig("/work");
     expect(resolveSeededAppConfigPaths(config)).toEqual({
-      sourcePath: join("/custom/data", "app-config.json"),
-      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "app-config.json"),
+      sourcePath: join("/custom/data", "map-design-config.json"),
+      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "map-design-config.json"),
     });
   });
 
@@ -108,8 +109,8 @@ describe("resolveSeededAppConfigPaths", () => {
     process.env.MAP_DESIGN_DATA_DIR = "e2e/ui/.map-design-data";
     const config = makeConfig("/work");
     expect(resolveSeededAppConfigPaths(config)).toEqual({
-      sourcePath: resolve("/work", "e2e", "ui", ".map-design-data", "app-config.json"),
-      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "app-config.json"),
+      sourcePath: resolve("/work", "e2e", "ui", ".map-design-data", "map-design-config.json"),
+      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "map-design-config.json"),
     });
   });
 
@@ -117,29 +118,42 @@ describe("resolveSeededAppConfigPaths", () => {
     process.env.MAP_DESIGN_DATA_DIR = "$HOME/.map-design";
     const config = makeConfig("/work");
     expect(resolveSeededAppConfigPaths(config)).toEqual({
-      sourcePath: join(os.homedir(), ".map-design", "app-config.json"),
-      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "app-config.json"),
+      sourcePath: join(os.homedir(), ".map-design", "map-design-config.json"),
+      targetPath: join("/work", ".tmp", "tools-pack", "runtime", "mac", "namespaces", "local-test", "data", "map-design-config.json"),
     });
   });
 });
 
 describe("seedPackagedAppConfig", () => {
-  it("copies the current app-config into the packaged runtime namespace", async () => {
+  it.each([false, true])("seeds credentials with private permissions when a target exists: %s", async (existingTarget) => {
     const root = await mkdtemp(join(tmpdir(), "map-design-tools-pack-mac-"));
     try {
       const config = makeConfig(root);
-      const sourceDir = join(root, ".md");
+      delete process.env.MAP_DESIGN_DATA_DIR;
+      const sourceDir = join(root, ".map-design");
       await mkdir(sourceDir, { recursive: true });
       await writeFile(
-        join(sourceDir, "app-config.json"),
-        `${JSON.stringify({ onboardingCompleted: true, agentId: "codex", agentCliEnv: { codex: { CODEX_BIN: "/Applications/Codex.app/Contents/Resources/codex" } } }, null, 2)}\n`,
+        join(sourceDir, "map-design-config.json"),
+        `${JSON.stringify({ onboardingCompleted: true, agentId: "codex", apiProvider: { apiKey: "test-key" }, agentCliEnv: { codex: { CODEX_BIN: "/Applications/Codex.app/Contents/Resources/codex" } } }, null, 2)}\n`,
         "utf8",
       );
 
+      const targetPath = join(config.roots.runtime.namespaceRoot, "data", "map-design-config.json");
+      if (existingTarget) {
+        await mkdir(dirname(targetPath), { recursive: true });
+        await writeFile(targetPath, "{}", "utf8");
+        await chmod(targetPath, 0o644);
+      }
+
       await seedPackagedAppConfig(config);
 
+      expect(JSON.parse(await readFile(targetPath, "utf8"))).toEqual(
+        JSON.parse(await readFile(join(sourceDir, "map-design-config.json"), "utf8")),
+      );
+      expect((await stat(targetPath)).mode & 0o777).toBe(0o600);
+
       await expect(
-        readFile(join(config.roots.runtime.namespaceRoot, "data", "app-config.json"), "utf8"),
+        readFile(targetPath, "utf8"),
       ).resolves.toContain('"agentId": "codex"');
     } finally {
       await rm(root, { force: true, recursive: true });
@@ -150,14 +164,15 @@ describe("seedPackagedAppConfig", () => {
     const root = await mkdtemp(join(tmpdir(), "map-design-tools-pack-mac-"));
     try {
       const config = makeConfig(root, { portable: true });
-      const sourceDir = join(root, ".md");
+      delete process.env.MAP_DESIGN_DATA_DIR;
+      const sourceDir = join(root, ".map-design");
       await mkdir(sourceDir, { recursive: true });
-      await writeFile(join(sourceDir, "app-config.json"), "{\n  \"agentId\": \"codex\"\n}\n", "utf8");
+      await writeFile(join(sourceDir, "map-design-config.json"), "{\n  \"agentId\": \"codex\"\n}\n", "utf8");
 
       await seedPackagedAppConfig(config);
 
       await expect(
-        readFile(join(config.roots.runtime.namespaceRoot, "data", "app-config.json"), "utf8"),
+        readFile(join(config.roots.runtime.namespaceRoot, "data", "map-design-config.json"), "utf8"),
       ).rejects.toMatchObject({ code: "ENOENT" });
     } finally {
       await rm(root, { force: true, recursive: true });
