@@ -2,7 +2,7 @@ import { resolveApiProfile } from './api-profile-service.js';
 import { API_AGENT_ID } from '../../runtimes/defs/api.js';
 import { createApiMapAgentAdapter } from '../agents/ai-sdk.js';
 import { spawnAgentProcess } from '../../runtimes/spawn.js';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import type {
   ByokProviderSelection,
@@ -50,6 +50,7 @@ export interface LocalAgentRegistryOptions {
   definitions?: readonly RuntimeAgentDef[];
   stageSkill?: (skillId: 'map-design', cwd: string) => Promise<void>;
   projectRoot?: string;
+  dataDir?: string;
   config?: { read(): MapDesignAppConfig };
   mapAgentAdapters?: MapAgentAdapterRegistry;
   nativeToolRegistry?: MapDesignNativeToolRegistry;
@@ -88,6 +89,8 @@ export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}
   const nativeMapToolSupport = new Map<string, boolean>();
   const nativeMapToolProbes = new Map<string, Promise<boolean>>();
   const sessionBroker = options.sessionBroker ?? createMemoryMapAgentSessionBroker();
+  const stagingRoot = resolve(options.dataDir ?? process.env.MAP_DESIGN_DATA_DIR
+    ?? join(options.projectRoot ?? process.cwd(), '.map-design'), 'agent-staging');
   const deepSeekProfileHome = resolveDeepSeekProfileHome(options.deepSeekProfileRoot);
   const launchEnvironment = (
     agentId: string,
@@ -155,6 +158,7 @@ export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}
           'pi-sdk': (definition) => definition.id === 'pi'
             ? createPiMapAgentAdapter({
                 definition,
+                extensionRoot: join(stagingRoot, 'pi'),
                 toolDefinitions: () => nativeToolRegistry.definitions(),
                 spawn: spawnAgent,
                 environment: () => launchEnvironment(definition.id, { model: null }),
@@ -169,6 +173,7 @@ export function createLocalAgentRegistry(options: LocalAgentRegistryOptions = {}
           'opencode-plugin': (definition) => definition.id === 'opencode'
             ? createOpenCodeMapAgentAdapter({
                 definition,
+                pluginRoot: join(stagingRoot, 'opencode'),
                 toolDefinitions: () => nativeToolRegistry.definitions(),
                 spawn: spawnAgent,
                 environment: () => launchEnvironment(definition.id, { model: null }),

@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { spawnAgentProcess } from '../../runtimes/spawn.js';
-import { mkdtemp, rmdir, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -648,6 +648,7 @@ async function stageExtension(
   source: string,
   root = tmpdir(),
 ): Promise<PiExtensionLease> {
+  await mkdir(root, { recursive: true, mode: 0o700 });
   const directory = await mkdtemp(join(root, 'map-design-pi-'));
   const path = join(directory, 'map-design-extension.mjs');
   try {

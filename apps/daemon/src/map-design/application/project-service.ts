@@ -20,6 +20,7 @@ import { CartographyService } from './cartography-service.js';
 import type { CartographyLibrarySave } from './cartography-library-save.js';
 import { requestDigest } from './request-digest.js';
 import type { MapDesignQueryService } from './query-service.js';
+import type { MapDesignRuntimeCatalog } from './runtime-catalog.js';
 import type { MapImportJobRunner } from '../ingestion/import-job-runner.js';
 import type { MapSourceImportService } from '../ingestion/source-import-service.js';
 import { canonicalJson } from '../storage/canonical-json.js';
@@ -51,6 +52,7 @@ export class MapDesignProjectService {
     sourceImportService: MapSourceImportService;
     importJobRunner: Pick<MapImportJobRunner, 'enqueue'>;
     queryService: Pick<MapDesignQueryService, 'getProject'>;
+    runtimeCatalog?: Pick<MapDesignRuntimeCatalog, 'validate'>;
     verifyWorkingDirectoryGrant(grant: NonNullable<MapDesignProjectCreateInput['workingDirectory']>): Promise<string>;
     ensureInitialRun?(projectId: string): Promise<void>;
     randomId?(): string;
@@ -64,6 +66,22 @@ export class MapDesignProjectService {
     const witnessDigest = requestDigest(witnessRequest);
     const replay = this.findWitness(parsed.idempotencyKey);
     if (replay) return this.replay(replay, witnessDigest, witnessJson);
+    if (parsed.runtime.agentId === 'api' && !this.deps.runtimeCatalog) throw invalidInput();
+    const requestedRuntime = {
+      agentId: parsed.runtime.agentId,
+      ...(parsed.runtime.model === undefined ? {} : { model: parsed.runtime.model }),
+      ...(parsed.runtime.reasoning === undefined ? {} : { reasoning: parsed.runtime.reasoning }),
+      ...(parsed.runtime.serviceTier === undefined ? {} : { serviceTier: parsed.runtime.serviceTier }),
+    };
+    const validatedRuntime = requestedRuntime.agentId === 'api'
+      ? this.deps.runtimeCatalog?.validate(requestedRuntime) ?? requestedRuntime
+      : requestedRuntime;
+    const runtime: MapDesignProjectCreateInput['runtime'] = {
+      agentId: validatedRuntime.agentId,
+      ...(validatedRuntime.model === undefined ? {} : { model: validatedRuntime.model }),
+      ...(validatedRuntime.reasoning === undefined ? {} : { reasoning: validatedRuntime.reasoning }),
+      ...(validatedRuntime.serviceTier === undefined ? {} : { serviceTier: validatedRuntime.serviceTier }),
+    };
     const cartography = parsed.cartographyId
       ? CartographySummarySchema.parse(new CartographyService(this.deps.store).get(parsed.cartographyId))
       : undefined;
@@ -80,7 +98,7 @@ export class MapDesignProjectService {
     const created = this.deps.store.inTransaction((db) => {
       const racedReplay = this.findWitness(parsed.idempotencyKey, db);
       if (racedReplay) return this.replay(racedReplay, witnessDigest, witnessJson);
-      this.deps.store.createProjectInTransaction({ project: parsed, primaryConversationId: conversationId, verifiedWorkingDirectory });
+      this.deps.store.createProjectInTransaction({ project: { ...parsed, runtime }, primaryConversationId: conversationId, verifiedWorkingDirectory });
       if (cartography) db.prepare('INSERT INTO project_cartography (project_id, cartography_id) VALUES (?, ?)')
         .run(parsed.projectId, cartography.id);
       const project = this.deps.sourceImportService.prepareImportInTransaction(db, parsed.projectId, {
@@ -92,7 +110,7 @@ export class MapDesignProjectService {
         .run(parsed.projectId, conversationId, parsed.designRequirement);
       const pinned = new CartographyService(this.deps.store).forProject(parsed.projectId);
       const boundCartography = pinned ? CartographySummarySchema.parse(pinned) : undefined;
-      const output = MapDesignProjectCreateOutputSchema.parse({ project, conversationId, title: parsed.title, runtime: parsed.runtime, ...(boundCartography ? { cartography: boundCartography } : {}) });
+      const output = MapDesignProjectCreateOutputSchema.parse({ project, conversationId, title: parsed.title, runtime, ...(boundCartography ? { cartography: boundCartography } : {}) });
       db.prepare(`INSERT INTO map_design_idempotency (
         project_id, operation, idempotency_key, request_digest, canonical_request_json,
         canonical_request_digest, response_json, created_at

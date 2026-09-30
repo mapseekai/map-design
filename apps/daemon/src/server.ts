@@ -117,11 +117,6 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
       runStore: { get: (runId) => runService?.getTrustedRun(runId) ?? null },
       onImported: async (id) => { await initialRuns?.start(id); },
     });
-    const projectService = new MapDesignProjectService({
-      store, sourceImportService: mapServices.sourceImportService, importJobRunner: mapServices.importJobRunner,
-      queryService: mapServices.queryService, verifyWorkingDirectoryGrant: verifyDesktopWorkingDirectoryGrant,
-      ensureInitialRun: async (id) => { await initialRuns?.start(id); },
-    });
     const toolTokens = new ToolTokenRegistry();
     const sdkToolRuntime = createSdkMapToolRuntime(mapServices.nativeToolRegistry);
     const sessionBroker = createMapAgentSessionBroker(store);
@@ -129,10 +124,17 @@ export async function startServer(options: StartServerOptions = {}): Promise<Sta
     let callbackUrl = '';
     const agents = createLocalAgentRegistry({
       projectRoot,
+      dataDir,
       config,
       nativeToolRegistry: mapServices.nativeToolRegistry,
       sessionBroker,
       ...(options.localAgentSpawn ? { spawn: options.localAgentSpawn } : {}),
+    });
+    const projectService = new MapDesignProjectService({
+      store, sourceImportService: mapServices.sourceImportService, importJobRunner: mapServices.importJobRunner,
+      queryService: mapServices.queryService, verifyWorkingDirectoryGrant: verifyDesktopWorkingDirectoryGrant,
+      runtimeCatalog: agents.runtimeCatalog,
+      ensureInitialRun: async (id) => { await initialRuns?.start(id); },
     });
     await agents.probeNativeMapTools();
     void agents.runtimeCatalog.refresh();

@@ -937,6 +937,7 @@ describe('Pi run-scoped extension Map Agent adapter', () => {
   });
 
   it('shares Pi session history across production local-registry adapter instances', async () => {
+    const dataDir = await extensionRoot();
     const probeServer = new FakePiRpc('registry-probe');
     const firstServer = new FakePiRpc('registry-first-run');
     const secondServer = new FakePiRpc('registry-second-run');
@@ -951,7 +952,7 @@ describe('Pi run-scoped extension Map Agent adapter', () => {
       }
       return runServers.shift()!.child;
     });
-    const registry = productionPiRegistry(spawn);
+    const registry = productionPiRegistry(spawn, dataDir);
     await registry.probeNativeMapTools();
     expect(spawn.mock.calls[0]?.[1]).toEqual(['--no-extensions', '--extension', expect.any(String), '--help']);
     expect(registry.list()).toMatchObject([{ id: 'pi', mapDesign: { nativeMapTools: true } }]);
@@ -964,6 +965,7 @@ describe('Pi run-scoped extension Map Agent adapter', () => {
       spawn,
       sessionFile: '/safe/sessions/registry-pi-1.jsonl',
     });
+    expect(first.extensionPath.startsWith(`${join(dataDir, 'agent-staging', 'pi')}${sep}`)).toBe(true);
     settle(firstServer);
     await first.handle.done;
 
@@ -1057,7 +1059,7 @@ describe('Pi run-scoped extension Map Agent adapter', () => {
       }
       return runServers.shift()!.child;
     });
-    const registry = productionPiRegistry(spawn);
+    const registry = productionPiRegistry(spawn, await extensionRoot());
     await registry.probeNativeMapTools();
     expect(registry.list()).toMatchObject([{ id: 'pi', mapDesign: { nativeMapTools: true } }]);
     const first = await start({
@@ -1087,8 +1089,9 @@ describe('Pi run-scoped extension Map Agent adapter', () => {
   });
 });
 
-function productionPiRegistry(spawn: PiSdkSpawn) {
+function productionPiRegistry(spawn: PiSdkSpawn, dataDir: string) {
   return createLocalAgentRegistry({
+    dataDir,
     definitions: [{
       id: 'pi',
       name: 'Pi',

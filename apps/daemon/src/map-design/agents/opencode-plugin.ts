@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { spawnAgentProcess } from '../../runtimes/spawn.js';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -596,6 +596,7 @@ async function stageOpenCodePlugin(
   plugin: OpenCodeRunPlugin,
   root = tmpdir(),
 ): Promise<OpenCodePluginLease> {
+  await mkdir(root, { recursive: true, mode: 0o700 });
   const directory = await mkdtemp(join(root, 'map-design-opencode-'));
   const path = join(directory, 'map-design-plugin.ts');
   const probePath = join(directory, 'tool-surface.json');
