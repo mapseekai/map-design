@@ -356,9 +356,16 @@ export async function requestJsonIpc<T = any>(
       buffer += decoder.write(chunk);
       const newlineIndex = buffer.indexOf("\n");
       if (newlineIndex < 0) return;
+      let response: JsonIpcResponse;
+      try {
+        response = parseJsonIpcResponse(buffer.slice(0, newlineIndex));
+      } catch (error) {
+        socket.destroy();
+        settle(() => rejectRequest(new TypeError("Invalid IPC response", { cause: error })));
+        return;
+      }
       socket.end();
       settle(() => {
-        const response = JSON.parse(buffer.slice(0, newlineIndex)) as { error?: { message?: string }; ok: boolean; result?: T };
         if (!response.ok) {
           traceJsonIpc("client.response_error", {
             durationMs: jsonIpcTraceDurationMs(startedAt),
@@ -398,4 +405,24 @@ export async function requestJsonIpc<T = any>(
       });
     });
   });
+}
+
+type JsonIpcResponse =
+  | { readonly ok: true; readonly result?: unknown }
+  | { readonly ok: false; readonly error?: { readonly message?: string } };
+
+function parseJsonIpcResponse(frame: string): JsonIpcResponse {
+  const value: unknown = JSON.parse(frame);
+  if (typeof value !== "object" || value === null || Array.isArray(value)
+    || !("ok" in value) || typeof value.ok !== "boolean") {
+    throw new TypeError("Invalid IPC response");
+  }
+  if (value.ok) return { ok: true, result: "result" in value ? value.result : undefined };
+  if (!("error" in value)) return { ok: false };
+  const error = value.error;
+  if (typeof error !== "object" || error === null || Array.isArray(error)
+    || ("message" in error && typeof error.message !== "string")) {
+    throw new TypeError("Invalid IPC response");
+  }
+  return { ok: false, error: "message" in error && typeof error.message === "string" ? { message: error.message } : {} };
 }
