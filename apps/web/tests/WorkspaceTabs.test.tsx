@@ -27,6 +27,23 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe('workspace titlebar tabs', () => {
+  it('restores the last history-visited conversation and hash after returning from Home', async () => {
+    render(<App />);
+    act(() => navigate({ kind: 'project', projectId: 'a' }, { search: '?conversation=c1', hash: '#first' }));
+    await screen.findByRole('tab', { name: 'Map a' });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Prompt' }), { target: { value: 'Retained draft' } });
+    act(() => navigate({ kind: 'project', projectId: 'a' }, { search: '?conversation=c2', hash: '#second' }));
+    act(() => navigate({ kind: 'project', projectId: 'b' }));
+    await screen.findByRole('tab', { name: 'Map b' });
+    for (const path of ['/projects/a?conversation=c2#second', '/projects/a?conversation=c1#first', '/']) {
+      act(() => { window.history.replaceState({}, '', path); window.dispatchEvent(new PopStateEvent('popstate')); });
+    }
+    fireEvent.click(screen.getByRole('tab', { name: 'Map a' }));
+    expect(window.location.search).toBe('?conversation=c1');
+    expect(window.location.hash).toBe('#first');
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('Retained draft');
+  });
+
   it('opens map and specification tabs once, preserving drafts and conversation/revision URLs across switches', async () => {
     render(<App />);
     act(() => navigate({ kind: 'project', projectId: 'a' }));

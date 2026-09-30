@@ -206,7 +206,7 @@ export function ConversationSession({ projectId, conversationId, cartographyLabe
 </>}
     composer={<div className="flex min-h-0 shrink-0 flex-col gap-2">
       <MapDesignMessageQueue items={queue.items} submittingId={queue.submittingId} editingId={queue.editingId} paused={queue.paused} disabled={readOnly} resumeDisabled={queueBlocked}
-        onEdit={queue.edit} onSave={queue.save} onCancelEdit={queue.cancelEdit} onRemove={queue.remove} onResume={queue.resume} />
+        onEdit={queue.edit} onSave={queue.save} onRemoveAttachment={queue.removeAttachment} onCancelEdit={queue.cancelEdit} onRemove={queue.remove} onResume={queue.resume} />
       <MapDesignComposer queueEnabled cartographyLabel={cartographyLabel} cartographyHref={cartographyHref} projectId={projectId} runtime={runtime} runtimeAgents={runtimeAgents} runtimeSaving={conversationRuntime.saving}
       runtimeNotice={conversationRuntime.notice} runtimeDisabled={runtimeDisabled || run.sending}
       runtimeDisabledReason={runtimeDisabledReason} onRuntimeChange={conversationRuntime.update}

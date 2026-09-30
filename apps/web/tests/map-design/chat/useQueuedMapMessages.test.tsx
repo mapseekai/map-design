@@ -85,3 +85,24 @@ describe('pending map messages', () => {
     expect(result.current.items).toHaveLength(0);
   });
 });
+
+it('removes attachments only from an editable row and renews retry identity without changing its position', async () => {
+  const send = vi.fn(async (_message: PendingMapMessage) => false);
+  const { result, rerender } = renderHook(props => useQueuedMapMessages({ ...props, send }), { initialProps: running });
+  const file = { id: 'c'.repeat(64), projectId: 'project', fileName: 'notes.txt', mediaType: 'text/plain', byteLength: 4, createdAt: '2026-09-22T00:00:00Z' } as const;
+  act(() => { result.current.enqueue('First', [], [file]); result.current.enqueue('Second'); });
+  const first = result.current.items[0];
+  if (!first) throw new Error('Pending row missing');
+  act(() => result.current.removeAttachment(first.id, file.id));
+  expect(result.current.items[0]).toBe(first);
+  act(() => { result.current.edit(first.id); result.current.removeAttachment(first.id, 'missing'); });
+  expect(result.current.items[0]).toBe(first);
+  act(() => result.current.removeAttachment(first.id, file.id));
+  expect(result.current.items.map(item => item.prompt)).toEqual(['First', 'Second']);
+  expect(result.current.items[0]?.attachments).toEqual([]);
+  expect(result.current.items[0]?.requestId).not.toBe(first.requestId);
+  act(() => result.current.save(first.id, first.prompt));
+  rerender({ ...running, sending: false, ready: true });
+  await waitFor(() => expect(result.current.paused).toBe(true));
+  expect(send.mock.calls[0]?.[0].attachments).toEqual([]);
+});

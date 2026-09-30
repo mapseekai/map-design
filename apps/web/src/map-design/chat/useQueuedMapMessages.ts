@@ -87,10 +87,21 @@ export function useQueuedMapMessages(options: QueueOptions) {
     if (latest.current.readOnly || queue.submittingId === id) return;
     update({ ...queue, items: queue.items.filter((entry) => entry.id !== id), editingId: queue.editingId === id ? null : queue.editingId });
   }, [store, update]);
+  const removeAttachment = useCallback((id: string, attachmentId: string) => {
+    const queue = store.getSnapshot();
+    if (latest.current.readOnly || queue.editingId !== id || queue.submittingId === id) return;
+    update({ ...queue, items: queue.items.map(entry => {
+      if (entry.id !== id) return entry;
+      const screenshots = entry.screenshots.filter(item => item.id !== attachmentId);
+      const attachments = entry.attachments.filter(item => item.id !== attachmentId);
+      if (screenshots.length === entry.screenshots.length && attachments.length === entry.attachments.length) return entry;
+      return { ...entry, screenshots, attachments, requestId: randomUUID() };
+    }) });
+  }, [store, update]);
   const cancelEdit = useCallback(() => update({ ...store.getSnapshot(), editingId: null }), [store, update]);
   const pause = useCallback(() => update({ ...store.getSnapshot(), paused: true }), [store, update]);
   const resume = useCallback(() => {
     if (!latest.current.blocked) update({ ...store.getSnapshot(), paused: false });
   }, [store, update]);
-  return { ...state, enqueue, edit, save, remove, cancelEdit, pause, resume };
+  return { ...state, enqueue, edit, save, remove, removeAttachment, cancelEdit, pause, resume };
 }
