@@ -56,15 +56,40 @@ function extractMapLayer(mapLayer: XmlNode, extracted: ExtractedStyle): void {
 
   const renderer = firstNode(mapLayer['renderer-v2']);
   if (renderer) extractRenderer(renderer, layerName, extracted);
+  else {
+    for (const rasterRenderer of findNodes(mapLayer, 'rasterrenderer')) {
+      skip(extracted, layerName, '栅格渲染器尚未转换', rasterRenderer);
+    }
+  }
+  if (attribute(mapLayer, 'labelsEnabled') === '0' && mapLayer.labeling) {
+    skip(extracted, layerName, 'labelsEnabled=0：当前标注提取未应用启用状态');
+  }
+  if (attribute(mapLayer, 'labelsEnabled') === '1' && !mapLayer.labeling) {
+    skip(extracted, layerName, 'labelsEnabled=1 但缺少 labeling，未生成标注');
+  }
+  const legacyLabels = findNodes(mapLayer.customproperties, 'property')
+    .filter(property => attribute(property, 'key')?.startsWith('labeling'));
+  if (legacyLabels.length) skip(extracted, layerName, '旧版 customproperties labeling 尚未转换', legacyLabels);
   extractLabeling(firstNode(mapLayer.labeling), layerName, extracted);
 }
 
 function extractRenderer(renderer: XmlNode, layerName: string, extracted: ExtractedStyle): void {
   const type = attribute(renderer, 'type');
+  if (!['singleSymbol', 'RuleBased', 'categorizedSymbol', 'graduatedSymbol'].includes(type ?? '')) {
+    skip(extracted, layerName, `未转换的渲染器: ${type ?? 'unknown'}`, renderer);
+    return;
+  }
+  if (type === 'categorizedSymbol' || type === 'graduatedSymbol') {
+    skip(extracted, layerName, `分类条件尚未转换: ${type}, attr=${attribute(renderer, 'attr') ?? ''}`, renderer.categories ?? renderer.ranges);
+  }
+  for (const rule of findNodes(renderer.rules, 'rule')) {
+    if (nodesOf(rule.rule).length) skip(extracted, layerName, '嵌套渲染规则尚未转换', rule);
+  }
   const symbols = new Map(nodesOf(firstNode(renderer.symbols)?.symbol).map((symbol) => [attribute(symbol, 'name') ?? '', symbol]));
   if (type === 'singleSymbol') {
     const symbol = symbols.values().next().value as XmlNode | undefined;
     if (symbol) extractSymbol(symbol, layerName, undefined, undefined, extracted);
+    else skip(extracted, layerName, 'singleSymbol 缺少符号');
     return;
   }
 
@@ -86,7 +111,10 @@ function extractRenderer(renderer: XmlNode, layerName: string, extracted: Extrac
 
   for (const [index, entry] of entries.entries()) {
     const symbol = entry.symbol ? symbols.get(entry.symbol) : undefined;
-    if (!symbol) continue;
+    if (!symbol) {
+      skip(extracted, layerName, `规则引用的符号未找到: ${entry.symbol ?? 'unknown'}`, entry);
+      continue;
+    }
     const element = extractSymbol(symbol, entry.name, layerName, roleFor(index), extracted);
     if (!element) continue;
     if (entry.filter) extracted.bindings.push({ source: 'qgis', layer: entry.name, family: layerName, kind: 'filter', expression: entry.filter });
@@ -96,13 +124,19 @@ function extractRenderer(renderer: XmlNode, layerName: string, extracted: Extrac
 
 function extractSymbol(symbol: XmlNode, name: string, family: string | undefined, roleHint: ExtractedElement['roleHint'] | undefined, extracted: ExtractedStyle): ExtractedElement | undefined {
   const geometry = geometryFor(attribute(symbol, 'type'));
-  if (!geometry) return undefined;
+  if (!geometry) {
+    skip(extracted, name, `未转换的符号几何类型: ${attribute(symbol, 'type') ?? 'unknown'}`, symbol);
+    return undefined;
+  }
   const style: CoreStyleProps = {};
   const element: ExtractedElement = { name, geometry, style, scaleHints: [] };
   if (family) element.family = family;
   if (roleHint) element.roleHint = roleHint;
 
-  for (const layer of nodesOf(symbol.layer)) extractSymbolLayer(layer, style, name, extracted, family);
+  const layers = nodesOf(symbol.layer);
+  if (layers.length > 1) skip(extracted, name, `多个 symbol layer 的叠加语义尚未转换（${layers.length} 层，核心属性按原顺序覆盖）`);
+  if (attribute(symbol, 'alpha') && attribute(symbol, 'alpha') !== '1') skip(extracted, name, '符号 alpha 尚未转换', attribute(symbol, 'alpha'));
+  for (const layer of layers) extractSymbolLayer(layer, style, name, extracted, family);
   if (Object.keys(style).length) extracted.elements.push(element);
   else extracted.skipped.push({ source: 'qgis', layer: name, reason: '未提取到可表示的核心样式属性，省略空符号' });
   return element;
@@ -128,18 +162,51 @@ function extractSymbolLayer(layer: XmlNode, style: CoreStyleProps, name: string,
   } else {
     extracted.skipped.push({ source: 'qgis', layer: name, reason: `不支持的符号图层: ${className ?? 'unknown'}` });
   }
+  // Keep existing extraction semantics; explicitly account for properties outside
+  // the core mapping, including solid/dash/none flags and per-property units.
+  const mapped = className === 'SimpleLine' ? ['line_color', 'line_width', 'line_width_unit']
+    : className === 'SimpleFill' ? ['color', 'outline_color', 'outline_width', 'outline_width_unit']
+      : className === 'SimpleMarker' ? ['color', 'outline_color', 'size', 'size_unit'] : [];
+  if (className === 'SimpleLine' && props.get('line_style') === 'dash' && props.get('customdash') && unit) mapped.push('customdash');
+  const remaining = Object.fromEntries([...props].filter(([key]) => !mapped.includes(key)));
+  if (Object.keys(remaining).length) skip(extracted, name, `${className ?? 'unknown'} 未转换属性: ${Object.keys(remaining).join(', ')}`, remaining);
+  if (attribute(layer, 'enabled') === '0') skip(extracted, name, 'symbol layer enabled=0：当前提取未应用启用状态');
   extractDataDefined(firstNode(layer.data_defined_properties), name, family, extracted);
 }
 
 function extractLabeling(labeling: XmlNode | undefined, layerName: string, extracted: ExtractedStyle): void {
   if (!labeling) return;
-  const textStyle = findNodes(labeling, 'text-style')[0];
-  if (!textStyle) return;
+  const textStyles = findNodes(labeling, 'text-style');
+  const textStyle = textStyles[0];
+  if (!textStyle) {
+    skip(extracted, layerName, '标注缺少 text-style，尚未转换', labeling);
+    return;
+  }
+  if (attribute(labeling, 'type') === 'rule-based') skip(extracted, layerName, '规则式标注条件尚未转换；仅提取首个 text-style', firstNode(labeling.rules));
+  for (const [index, item] of textStyles.entries()) {
+    const supported = ['fontFamily', 'font-family', 'fontSize', 'font-size', 'fontSizeUnit', 'font-size-unit', 'bufferColor', 'buffer-color', 'bufferSize', 'buffer-size'];
+    const remaining = Object.fromEntries([...attributesAndProperties(item)].filter(([key]) => !supported.includes(key)));
+    if (Object.keys(remaining).length) skip(extracted, layerName, `text-style[${index}] 未转换属性: ${Object.keys(remaining).join(', ')}`, remaining);
+    const children = Object.keys(item).filter(key => !key.startsWith('@_'));
+    if (children.length) skip(extracted, layerName, `text-style[${index}] 子设置尚未转换: ${children.join(', ')}`);
+    if (index > 0) skip(extracted, layerName, `额外 text-style[${index}] 尚未转换`, item);
+  }
+  const labelSettings = findNodes(labeling, 'settings');
+  for (const [index, settings] of labelSettings.entries()) {
+    const remaining = Object.fromEntries(Object.entries(settings).filter(([key]) => key !== 'text-style'));
+    if (Object.keys(remaining).length) skip(extracted, layerName, `标注 settings[${index}] 尚未转换: ${Object.keys(remaining).join(', ')}`, remaining);
+    for (const tag of ['text-buffer', 'text-mask', 'background', 'shadow']) {
+      for (const item of findNodes(settings['text-style'], tag)) skip(extracted, layerName, `标注 ${tag}[${index}] 尚未转换`, item);
+    }
+  }
   const props = attributesAndProperties(textStyle);
   const family = props.get('fontFamily') ?? props.get('font-family');
   const size = numberOf(props.get('fontSize') ?? props.get('font-size'));
   const unit = unitFor(props.get('fontSizeUnit') ?? props.get('font-size-unit'), layerName, extracted);
-  if (!family || size === undefined || !unit) return;
+  if (!family || size === undefined || !unit) {
+    skip(extracted, layerName, '标注缺少可转换的字体、字号或单位', textStyle);
+    return;
+  }
   const rawTypography: ExtractedType = { fontFamily: [family], fontSize: dimension(size, unit), nameHint: layerName, usedBy: [layerName] };
   const element: ExtractedElement = { name: layerName, geometry: 'label', style: {}, rawTypography, scaleHints: [] };
   const haloColor = props.get('bufferColor') ?? props.get('buffer-color');
@@ -148,6 +215,11 @@ function extractLabeling(labeling: XmlNode | undefined, layerName: string, extra
   setDimensionValue(haloWidth, 'haloWidth', element.style, unit, layerName, extracted);
   extracted.typography.push(rawTypography);
   extracted.elements.push(element);
+}
+
+function skip(extracted: ExtractedStyle, layer: string, reason: string, detail?: unknown): void {
+  extracted.skipped.push({ source: 'qgis', layer, reason,
+    ...(detail === undefined ? {} : { detail: JSON.stringify(detail).slice(0, 200) }) });
 }
 
 function extractDataDefined(properties: XmlNode | undefined, name: string, family: string | undefined, extracted: ExtractedStyle): void {
