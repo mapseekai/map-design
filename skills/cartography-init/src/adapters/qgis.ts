@@ -18,12 +18,12 @@ const units: Readonly<Record<string, DimensionUnit>> = {
 };
 
 export function parseQgis(buffer: Buffer, fileName: string): ExtractedStyle {
-  const xml = qgsXml(buffer);
+  const extracted = emptyExtracted({ kind: 'qgis', name: fileName });
+  const xml = qgsXml(buffer, extracted);
   const parsed: unknown = new XMLParser({
     ignoreAttributes: false,
     isArray: (tagName) => ['maplayer', 'symbol', 'layer', 'rule', 'category', 'range', 'prop', 'Option'].includes(tagName),
   }).parse(xml);
-  const extracted = emptyExtracted({ kind: 'qgis', name: fileName });
   extracted.unresolved.push(
     { topic: 'target tile source url/type', detail: '桌面样式不含瓦片源定义,转换需另行供给' },
     { topic: 'crs/tiling', detail: '坐标参考与切片方案未定' },
@@ -36,11 +36,14 @@ export function parseQgis(buffer: Buffer, fileName: string): ExtractedStyle {
   return extracted;
 }
 
-function qgsXml(buffer: Buffer): string {
+function qgsXml(buffer: Buffer, extracted: ExtractedStyle): string {
   if (buffer.subarray(0, 4).equals(Buffer.from('PK\x03\x04'))) {
     const entries = unzipSync(buffer);
     const entry = Object.entries(entries).find(([name]) => name.toLowerCase().endsWith('.qgs'));
     if (!entry) throw new Error('QGZ archive does not contain a .qgs entry');
+    for (const name of Object.keys(entries)) {
+      if (name !== entry[0]) extracted.skipped.push({ source: 'qgis', reason: `QGZ 附属文件未读取: ${name}` });
+    }
     return new TextDecoder().decode(entry[1]);
   }
   return buffer.toString('utf8');
@@ -57,6 +60,9 @@ function extractMapLayer(mapLayer: XmlNode, extracted: ExtractedStyle): void {
   const renderer = firstNode(mapLayer['renderer-v2']);
   if (renderer) extractRenderer(renderer, layerName, extracted);
   extractLabeling(firstNode(mapLayer.labeling), layerName, extracted);
+  if (attribute(mapLayer, 'labelsEnabled') === '0' && mapLayer.labeling) {
+    extracted.skipped.push({ source: 'qgis', layer: layerName, reason: 'labelsEnabled=0：保留标注样式定义，未转换启用状态' });
+  }
 }
 
 function extractRenderer(renderer: XmlNode, layerName: string, extracted: ExtractedStyle): void {
@@ -68,7 +74,16 @@ function extractRenderer(renderer: XmlNode, layerName: string, extracted: Extrac
     return;
   }
 
-  const entries = type === 'RuleBased'
+  const field = attribute(renderer, 'attr');
+  if (field) extracted.bindings.push({ source: 'qgis', layer: layerName, kind: 'field-ref', expression: field });
+  if (!['RuleBased', 'RuleRenderer', 'categorizedSymbol', 'graduatedSymbol'].includes(type ?? '')) {
+    extracted.skipped.push({ source: 'qgis', layer: layerName, reason: `不支持的渲染器: ${type ?? 'unknown'}` });
+    return;
+  }
+  for (const rule of nodesOf(firstNode(renderer.rules)?.rule)) {
+    if (rule.rule) extracted.skipped.push({ source: 'qgis', layer: layerName, reason: '嵌套规则未转换', detail: JSON.stringify(rule).slice(0, 200) });
+  }
+  const entries = type === 'RuleBased' || type === 'RuleRenderer'
     ? nodesOf(firstNode(renderer.rules)?.rule).map((rule) => ({
       symbol: attribute(rule, 'symbol'), name: attribute(rule, 'label') ?? layerName, filter: attribute(rule, 'filter'), value: undefined,
     }))
@@ -96,13 +111,19 @@ function extractRenderer(renderer: XmlNode, layerName: string, extracted: Extrac
 
 function extractSymbol(symbol: XmlNode, name: string, family: string | undefined, roleHint: ExtractedElement['roleHint'] | undefined, extracted: ExtractedStyle): ExtractedElement | undefined {
   const geometry = geometryFor(attribute(symbol, 'type'));
-  if (!geometry) return undefined;
+  if (!geometry) {
+    extracted.skipped.push({ source: 'qgis', layer: name, reason: `不支持的符号类型: ${attribute(symbol, 'type') ?? 'unknown'}` });
+    return undefined;
+  }
   const style: CoreStyleProps = {};
   const element: ExtractedElement = { name, geometry, style, scaleHints: [] };
   if (family) element.family = family;
   if (roleHint) element.roleHint = roleHint;
 
-  for (const layer of nodesOf(symbol.layer)) extractSymbolLayer(layer, style, name, extracted, family);
+  const layers = nodesOf(symbol.layer);
+  if (layers.length > 1) extracted.skipped.push({ source: 'qgis', layer: name,
+    reason: `多个符号图层的叠加效果未转换（${layers.map(layer => attribute(layer, 'class')).join(', ')}）；同名核心属性保留最后一个可提取值` });
+  for (const layer of layers) extractSymbolLayer(layer, style, name, extracted, family);
   if (Object.keys(style).length) extracted.elements.push(element);
   else extracted.skipped.push({ source: 'qgis', layer: name, reason: '未提取到可表示的核心样式属性，省略空符号' });
   return element;
@@ -128,6 +149,15 @@ function extractSymbolLayer(layer: XmlNode, style: CoreStyleProps, name: string,
   } else {
     extracted.skipped.push({ source: 'qgis', layer: name, reason: `不支持的符号图层: ${className ?? 'unknown'}` });
   }
+  const converted = className === 'SimpleLine' ? ['line_color', 'line_width', 'line_width_unit', ...(props.get('line_style') === 'dash' ? ['customdash'] : [])]
+    : className === 'SimpleFill' ? ['color', 'outline_color', 'outline_width', 'outline_width_unit']
+      : className === 'SimpleMarker' ? ['color', 'outline_color', 'size', 'size_unit'] : null;
+  if (converted) {
+    const remaining = [...props.keys()].filter(key => !converted.includes(key)).sort();
+    if (remaining.length) extracted.skipped.push({ source: 'qgis', layer: name,
+      reason: `${className} 未映射配置（含默认值）: ${remaining.join(', ')}`,
+      detail: JSON.stringify(Object.fromEntries(remaining.map(key => [key, props.get(key)]))).slice(0, 200) });
+  }
   extractDataDefined(firstNode(layer.data_defined_properties), name, family, extracted);
 }
 
@@ -136,6 +166,15 @@ function extractLabeling(labeling: XmlNode | undefined, layerName: string, extra
   const textStyle = findNodes(labeling, 'text-style')[0];
   if (!textStyle) return;
   const props = attributesAndProperties(textStyle);
+  const field = props.get('fieldName');
+  if (field) extracted.bindings.push({ source: 'qgis', layer: layerName,
+    kind: props.get('isExpression') === '1' ? 'field-override' : 'field-ref', expression: field });
+  const converted = ['fontFamily', 'font-family', 'fontSize', 'font-size', 'fontSizeUnit', 'font-size-unit', 'bufferColor', 'buffer-color', 'bufferSize', 'buffer-size', 'fieldName', 'isExpression'];
+  const remaining = [...props.keys()].filter(key => !converted.includes(key));
+  const sections = [...Object.keys(textStyle).filter(key => !key.startsWith('@_')), ...Object.keys(firstNode(labeling.settings) ?? {}).filter(key => key !== 'text-style')];
+  if (remaining.length || sections.length) extracted.skipped.push({ source: 'qgis', layer: layerName,
+    reason: `未转换的标注配置（含默认或未启用设置）: ${[...new Set([...remaining, ...sections])].sort().join(', ')}` });
+  if (findNodes(labeling, 'text-style').length > 1) extracted.skipped.push({ source: 'qgis', layer: layerName, reason: '多个标注样式仅提取第一个，其余标注规则未转换' });
   const family = props.get('fontFamily') ?? props.get('font-family');
   const size = numberOf(props.get('fontSize') ?? props.get('font-size'));
   const unit = unitFor(props.get('fontSizeUnit') ?? props.get('font-size-unit'), layerName, extracted);
