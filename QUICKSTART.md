@@ -11,11 +11,11 @@ nvm use # When using nvm; otherwise select Node.js 24 first
 node --version # Must report v24.x
 corepack enable
 pnpm install
-pnpm tools-dev start
+pnpm tools-dev start --daemon-port 7456
 pnpm tools-dev status
 ```
 
-`tools-dev` starts local daemon, web, and desktop processes. Stop them with `pnpm tools-dev stop`; inspect logs with `pnpm tools-dev logs`.
+`tools-dev` starts local daemon, web, and desktop processes. This example explicitly selects daemon port 7456 for the CLI commands below. Without `--daemon-port`, ports are assigned dynamically; use the actual daemon URL shown by `pnpm tools-dev status` in `MAP_DESIGN_DAEMON_URL`. Stop them with `pnpm tools-dev stop`; inspect logs with `pnpm tools-dev logs`.
 Install and authenticate a supported local coding-agent CLI, or configure the built-in
 **API Model** endpoint, key and model in Settings before creating a project. After the daemon starts, list the detected agent IDs:
 
