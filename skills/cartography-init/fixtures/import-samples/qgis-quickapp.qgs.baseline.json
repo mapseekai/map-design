@@ -1,0 +1,570 @@
+{
+  "extracted": {
+    "source": {
+      "kind": "qgis",
+      "name": "qgis-quickapp.qgs"
+    },
+    "colors": [
+      {
+        "value": "#9a8b74",
+        "nameHint": "Arterial",
+        "usedBy": [
+          "Arterial"
+        ]
+      },
+      {
+        "value": "#5e5937",
+        "nameHint": "Highway",
+        "usedBy": [
+          "Highway"
+        ]
+      },
+      {
+        "value": "rgba(118, 191, 227, 0.5176470588235295)",
+        "nameHint": "Dam",
+        "usedBy": [
+          "Dam"
+        ]
+      },
+      {
+        "value": "#1f78b4",
+        "nameHint": "Dam",
+        "usedBy": [
+          "Dam"
+        ]
+      },
+      {
+        "value": "#6ec2d9",
+        "nameHint": "Lake",
+        "usedBy": [
+          "Lake"
+        ]
+      },
+      {
+        "value": "#909090",
+        "nameHint": "Lake",
+        "usedBy": [
+          "Lake"
+        ]
+      }
+    ],
+    "widths": [
+      {
+        "value": {
+          "value": 1,
+          "unit": "mm"
+        },
+        "nameHint": "Arterial",
+        "usedBy": [
+          "Arterial"
+        ]
+      },
+      {
+        "value": {
+          "value": 1.3,
+          "unit": "mm"
+        },
+        "nameHint": "Highway",
+        "usedBy": [
+          "Highway"
+        ]
+      },
+      {
+        "value": {
+          "value": 0.66,
+          "unit": "mm"
+        },
+        "nameHint": "Dam",
+        "usedBy": [
+          "Dam"
+        ]
+      },
+      {
+        "value": {
+          "value": 0.66,
+          "unit": "mm"
+        },
+        "nameHint": "Lake",
+        "usedBy": [
+          "Lake"
+        ]
+      }
+    ],
+    "sizes": [],
+    "spacing": [],
+    "dashes": [],
+    "opacities": [],
+    "typography": [],
+    "elements": [
+      {
+        "name": "Arterial",
+        "geometry": "line",
+        "style": {
+          "strokeColor": "#9a8b74",
+          "strokeWidth": {
+            "value": 1,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": [],
+        "family": "Roads"
+      },
+      {
+        "name": "Highway",
+        "geometry": "line",
+        "style": {
+          "strokeColor": "#5e5937",
+          "strokeWidth": {
+            "value": 1.3,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": [],
+        "family": "Roads"
+      },
+      {
+        "name": "Dam",
+        "geometry": "polygon",
+        "style": {
+          "fillColor": "rgba(118, 191, 227, 0.5176470588235295)",
+          "strokeColor": "#1f78b4",
+          "outlineWidth": {
+            "value": 0.66,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": [],
+        "family": "Land"
+      },
+      {
+        "name": "Lake",
+        "geometry": "polygon",
+        "style": {
+          "fillColor": "#6ec2d9",
+          "strokeColor": "#909090",
+          "outlineWidth": {
+            "value": 0.66,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": [],
+        "family": "Land"
+      }
+    ],
+    "scaleHints": [],
+    "skipped": [
+      {
+        "source": "qgis",
+        "layer": "Roads",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Name",
+        "detail": "{\"category\":[{\"@_symbol\":\"0\",\"@_label\":\"Arterial\",\"@_value\":\"Arterial\",\"@_render\":\"true\"},{\"@_symbol\":\"1\",\"@_label\":\"Highway\",\"@_value\":\"Highway\",\"@_render\":\"true\"}]}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Arterial",
+        "reason": "SimpleLine 未转换属性: capstyle, customdash, customdash_map_unit_scale, customdash_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"capstyle\":\"square\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"draw_inside_polygon\":\"0\",\"joinstyle\":\"bevel\",\"line_style\":\"dash dot dot\",\"offset\":\"0\",\"offs"
+      },
+      {
+        "source": "qgis",
+        "layer": "Highway",
+        "reason": "SimpleLine 未转换属性: capstyle, customdash, customdash_map_unit_scale, customdash_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"capstyle\":\"square\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"draw_inside_polygon\":\"0\",\"joinstyle\":\"bevel\",\"line_style\":\"solid\",\"offset\":\"0\",\"offset_map_"
+      },
+      {
+        "source": "qgis",
+        "layer": "Roads",
+        "reason": "labelsEnabled=1 但缺少 labeling，未生成标注"
+      },
+      {
+        "source": "qgis",
+        "layer": "Planes",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Class",
+        "detail": "{\"category\":[{\"@_symbol\":\"0\",\"@_label\":\"B52\",\"@_value\":\"B52\",\"@_render\":\"true\"},{\"@_symbol\":\"1\",\"@_label\":\"Biplane\",\"@_value\":\"Biplane\",\"@_render\":\"true\"},{\"@_symbol\":\"2\",\"@_label\":\"Jet\",\"@_value\":\"Je"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"189,189,189,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outl"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"124,124,124,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"transport/transport_airport.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_uni"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"178,223,138,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"transport/transport_airport2.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_un"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Planes",
+        "reason": "labelsEnabled=1 但缺少 labeling，未生成标注"
+      },
+      {
+        "source": "qgis",
+        "layer": "Land",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Name",
+        "detail": "{\"category\":[{\"@_symbol\":\"0\",\"@_label\":\"Dam\",\"@_value\":\"Dam\",\"@_render\":\"true\"},{\"@_symbol\":\"1\",\"@_label\":\"Lake\",\"@_value\":\"Lake\",\"@_render\":\"true\"}]}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Dam",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Lake",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Land",
+        "reason": "labelsEnabled=1 但缺少 labeling，未生成标注"
+      }
+    ],
+    "datasources": [
+      {
+        "source": "qgis",
+        "layer": "Roads",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "Planes",
+        "identity": "ogr:./points.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "Land",
+        "identity": "ogr:./polys.shp",
+        "providerType": "ogr"
+      }
+    ],
+    "bindings": [
+      {
+        "source": "qgis",
+        "layer": "Arterial",
+        "family": "Roads",
+        "kind": "field-ref",
+        "expression": "Arterial"
+      },
+      {
+        "source": "qgis",
+        "layer": "Highway",
+        "family": "Roads",
+        "kind": "field-ref",
+        "expression": "Highway"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "family": "Planes",
+        "kind": "field-ref",
+        "expression": "B52"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "family": "Planes",
+        "kind": "field-ref",
+        "expression": "Biplane"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "family": "Planes",
+        "kind": "field-ref",
+        "expression": "Jet"
+      },
+      {
+        "source": "qgis",
+        "layer": "Dam",
+        "family": "Land",
+        "kind": "field-ref",
+        "expression": "Dam"
+      },
+      {
+        "source": "qgis",
+        "layer": "Lake",
+        "family": "Land",
+        "kind": "field-ref",
+        "expression": "Lake"
+      }
+    ],
+    "unresolved": [
+      {
+        "topic": "target tile source url/type",
+        "detail": "桌面样式不含瓦片源定义,转换需另行供给"
+      },
+      {
+        "topic": "crs/tiling",
+        "detail": "坐标参考与切片方案未定"
+      },
+      {
+        "topic": "glyphs",
+        "detail": "字体供给未定"
+      },
+      {
+        "topic": "sprites",
+        "detail": "符号精灵图供给未定"
+      }
+    ]
+  },
+  "report": {
+    "source": {
+      "kind": "qgis",
+      "name": "qgis-quickapp.qgs",
+      "file": "qgis-quickapp.qgs"
+    },
+    "skipped": [
+      {
+        "source": "qgis",
+        "layer": "Roads",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Name",
+        "detail": "{\"category\":[{\"@_symbol\":\"0\",\"@_label\":\"Arterial\",\"@_value\":\"Arterial\",\"@_render\":\"true\"},{\"@_symbol\":\"1\",\"@_label\":\"Highway\",\"@_value\":\"Highway\",\"@_render\":\"true\"}]}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Arterial",
+        "reason": "SimpleLine 未转换属性: capstyle, customdash, customdash_map_unit_scale, customdash_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"capstyle\":\"square\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"draw_inside_polygon\":\"0\",\"joinstyle\":\"bevel\",\"line_style\":\"dash dot dot\",\"offset\":\"0\",\"offs"
+      },
+      {
+        "source": "qgis",
+        "layer": "Highway",
+        "reason": "SimpleLine 未转换属性: capstyle, customdash, customdash_map_unit_scale, customdash_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"capstyle\":\"square\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"draw_inside_polygon\":\"0\",\"joinstyle\":\"bevel\",\"line_style\":\"solid\",\"offset\":\"0\",\"offset_map_"
+      },
+      {
+        "source": "qgis",
+        "layer": "Roads",
+        "reason": "labelsEnabled=1 但缺少 labeling，未生成标注"
+      },
+      {
+        "source": "qgis",
+        "layer": "Planes",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Class",
+        "detail": "{\"category\":[{\"@_symbol\":\"0\",\"@_label\":\"B52\",\"@_value\":\"B52\",\"@_render\":\"true\"},{\"@_symbol\":\"1\",\"@_label\":\"Biplane\",\"@_value\":\"Biplane\",\"@_render\":\"true\"},{\"@_symbol\":\"2\",\"@_label\":\"Jet\",\"@_value\":\"Je"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"189,189,189,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outl"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"124,124,124,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"transport/transport_airport.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_uni"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"178,223,138,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"transport/transport_airport2.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_un"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Planes",
+        "reason": "labelsEnabled=1 但缺少 labeling，未生成标注"
+      },
+      {
+        "source": "qgis",
+        "layer": "Land",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Name",
+        "detail": "{\"category\":[{\"@_symbol\":\"0\",\"@_label\":\"Dam\",\"@_value\":\"Dam\",\"@_render\":\"true\"},{\"@_symbol\":\"1\",\"@_label\":\"Lake\",\"@_value\":\"Lake\",\"@_render\":\"true\"}]}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Dam",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Lake",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "Land",
+        "reason": "labelsEnabled=1 但缺少 labeling，未生成标注"
+      }
+    ],
+    "datasources": [
+      {
+        "source": "qgis",
+        "layer": "Roads",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "Planes",
+        "identity": "ogr:./points.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "Land",
+        "identity": "ogr:./polys.shp",
+        "providerType": "ogr"
+      }
+    ],
+    "bindings": [
+      {
+        "source": "qgis",
+        "layer": "Arterial",
+        "family": "Roads",
+        "kind": "field-ref",
+        "expression": "Arterial",
+        "symbolRef": "arterial"
+      },
+      {
+        "source": "qgis",
+        "layer": "Highway",
+        "family": "Roads",
+        "kind": "field-ref",
+        "expression": "Highway",
+        "symbolRef": "highway"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "family": "Planes",
+        "kind": "field-ref",
+        "expression": "B52"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "family": "Planes",
+        "kind": "field-ref",
+        "expression": "Biplane"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "family": "Planes",
+        "kind": "field-ref",
+        "expression": "Jet"
+      },
+      {
+        "source": "qgis",
+        "layer": "Dam",
+        "family": "Land",
+        "kind": "field-ref",
+        "expression": "Dam",
+        "symbolRef": "dam"
+      },
+      {
+        "source": "qgis",
+        "layer": "Lake",
+        "family": "Land",
+        "kind": "field-ref",
+        "expression": "Lake",
+        "symbolRef": "lake"
+      }
+    ],
+    "unresolved": [
+      {
+        "topic": "target tile source url/type",
+        "detail": "桌面样式不含瓦片源定义,转换需另行供给"
+      },
+      {
+        "topic": "crs/tiling",
+        "detail": "坐标参考与切片方案未定"
+      },
+      {
+        "topic": "glyphs",
+        "detail": "字体供给未定"
+      },
+      {
+        "topic": "sprites",
+        "detail": "符号精灵图供给未定"
+      }
+    ],
+    "notes": [
+      "Shared-value candidate: widths.dam-outlinewidth and widths.lake-outlinewidth; confirm design semantics before merging.",
+      "Extracted 4 elements. Unconfirmed roles and states omitted; equal values do not establish shared semantics."
+    ],
+    "scaleHints": [],
+    "statistics": {
+      "elements": 4,
+      "colors": 6,
+      "skipped": 19
+    }
+  },
+  "documentSha256": "c7cd3029ef2ca511e7ce2bd85a4ea53e6de2d576240d98fb1ba17cbf2c34aed1"
+}

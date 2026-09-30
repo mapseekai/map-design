@@ -1,0 +1,1243 @@
+{
+  "extracted": {
+    "source": {
+      "kind": "qgis",
+      "name": "qgis-selective-masking.qgs"
+    },
+    "colors": [
+      {
+        "value": "#000000",
+        "nameHint": "lines_with_labels",
+        "usedBy": [
+          "lines_with_labels"
+        ]
+      },
+      {
+        "value": "#ffff06",
+        "nameHint": "lines_with_labels",
+        "usedBy": [
+          "lines_with_labels"
+        ]
+      },
+      {
+        "value": "#ababab",
+        "nameHint": "lines2",
+        "usedBy": [
+          "lines2"
+        ]
+      },
+      {
+        "value": "#000000",
+        "nameHint": "lines",
+        "usedBy": [
+          "lines"
+        ]
+      },
+      {
+        "value": "#ffff06",
+        "nameHint": "lines",
+        "usedBy": [
+          "lines"
+        ]
+      },
+      {
+        "value": "#377eb8",
+        "nameHint": "polys2",
+        "usedBy": [
+          "polys2"
+        ]
+      },
+      {
+        "value": "#265980",
+        "nameHint": "polys2",
+        "usedBy": [
+          "polys2"
+        ]
+      },
+      {
+        "value": "#377eb8",
+        "nameHint": "polys",
+        "usedBy": [
+          "polys"
+        ]
+      },
+      {
+        "value": "#265980",
+        "nameHint": "polys",
+        "usedBy": [
+          "polys"
+        ]
+      }
+    ],
+    "widths": [
+      {
+        "value": {
+          "value": 3.26,
+          "unit": "mm"
+        },
+        "nameHint": "lines_with_labels",
+        "usedBy": [
+          "lines_with_labels"
+        ]
+      },
+      {
+        "value": {
+          "value": 1.86,
+          "unit": "mm"
+        },
+        "nameHint": "lines_with_labels",
+        "usedBy": [
+          "lines_with_labels"
+        ]
+      },
+      {
+        "value": {
+          "value": 1.4,
+          "unit": "mm"
+        },
+        "nameHint": "lines2",
+        "usedBy": [
+          "lines2"
+        ]
+      },
+      {
+        "value": {
+          "value": 3.26,
+          "unit": "mm"
+        },
+        "nameHint": "lines",
+        "usedBy": [
+          "lines"
+        ]
+      },
+      {
+        "value": {
+          "value": 1.86,
+          "unit": "mm"
+        },
+        "nameHint": "lines",
+        "usedBy": [
+          "lines"
+        ]
+      },
+      {
+        "value": {
+          "value": 0.26,
+          "unit": "mm"
+        },
+        "nameHint": "polys2",
+        "usedBy": [
+          "polys2"
+        ]
+      },
+      {
+        "value": {
+          "value": 0.26,
+          "unit": "mm"
+        },
+        "nameHint": "polys",
+        "usedBy": [
+          "polys"
+        ]
+      }
+    ],
+    "sizes": [],
+    "spacing": [],
+    "dashes": [],
+    "opacities": [],
+    "typography": [
+      {
+        "fontFamily": [
+          "Sans"
+        ],
+        "fontSize": {
+          "value": 16,
+          "unit": "pt"
+        },
+        "nameHint": "lines_with_labels",
+        "usedBy": [
+          "lines_with_labels"
+        ]
+      },
+      {
+        "fontFamily": [
+          "Sans"
+        ],
+        "fontSize": {
+          "value": 10,
+          "unit": "pt"
+        },
+        "nameHint": "points",
+        "usedBy": [
+          "points"
+        ]
+      },
+      {
+        "fontFamily": [
+          "Sans"
+        ],
+        "fontSize": {
+          "value": 32,
+          "unit": "pt"
+        },
+        "nameHint": "polys2",
+        "usedBy": [
+          "polys2"
+        ]
+      },
+      {
+        "fontFamily": [
+          "Sans"
+        ],
+        "fontSize": {
+          "value": 32,
+          "unit": "pt"
+        },
+        "nameHint": "polys",
+        "usedBy": [
+          "polys"
+        ]
+      }
+    ],
+    "elements": [
+      {
+        "name": "lines_with_labels",
+        "geometry": "line",
+        "style": {
+          "strokeColor": "#ffff06",
+          "strokeWidth": {
+            "value": 1.86,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "lines_with_labels",
+        "geometry": "label",
+        "style": {},
+        "rawTypography": {
+          "fontFamily": [
+            "Sans"
+          ],
+          "fontSize": {
+            "value": 16,
+            "unit": "pt"
+          },
+          "nameHint": "lines_with_labels",
+          "usedBy": [
+            "lines_with_labels"
+          ]
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "lines2",
+        "geometry": "line",
+        "style": {
+          "strokeColor": "#ababab",
+          "strokeWidth": {
+            "value": 1.4,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "lines",
+        "geometry": "line",
+        "style": {
+          "strokeColor": "#ffff06",
+          "strokeWidth": {
+            "value": 1.86,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "points",
+        "geometry": "label",
+        "style": {},
+        "rawTypography": {
+          "fontFamily": [
+            "Sans"
+          ],
+          "fontSize": {
+            "value": 10,
+            "unit": "pt"
+          },
+          "nameHint": "points",
+          "usedBy": [
+            "points"
+          ]
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "polys2",
+        "geometry": "polygon",
+        "style": {
+          "fillColor": "#377eb8",
+          "strokeColor": "#265980",
+          "outlineWidth": {
+            "value": 0.26,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "polys2",
+        "geometry": "label",
+        "style": {},
+        "rawTypography": {
+          "fontFamily": [
+            "Sans"
+          ],
+          "fontSize": {
+            "value": 32,
+            "unit": "pt"
+          },
+          "nameHint": "polys2",
+          "usedBy": [
+            "polys2"
+          ]
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "polys",
+        "geometry": "polygon",
+        "style": {
+          "fillColor": "#377eb8",
+          "strokeColor": "#265980",
+          "outlineWidth": {
+            "value": 0.26,
+            "unit": "mm"
+          }
+        },
+        "scaleHints": []
+      },
+      {
+        "name": "polys",
+        "geometry": "label",
+        "style": {},
+        "rawTypography": {
+          "fontFamily": [
+            "Sans"
+          ],
+          "fontSize": {
+            "value": 32,
+            "unit": "pt"
+          },
+          "nameHint": "polys",
+          "usedBy": [
+            "polys"
+          ]
+        },
+        "scaleHints": []
+      }
+    ],
+    "scaleHints": [],
+    "skipped": [
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "多个 symbol layer 的叠加语义尚未转换（2 层，核心属性按原顺序覆盖）"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Name\",\"textColor\":\"4,1"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor\":\"255,255,255,255\",\"@_buffer"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"1.5\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "多个 symbol layer 的叠加语义尚未转换（2 层，核心属性按原顺序覆盖）"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "不支持的符号图层: MarkerLine"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "MarkerLine 未转换属性: average_angle_length, average_angle_map_unit_scale, average_angle_unit, interval, interval_map_unit_scale, interval_unit, offset, offset_along_line, offset_along_line_map_unit_scale, offset_along_line_unit, offset_map_unit_scale, offset_unit, place_on_every_part, placements, ring_filter, rotate",
+        "detail": "{\"average_angle_length\":\"4\",\"average_angle_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"average_angle_unit\":\"MM\",\"interval\":\"3\",\"interval_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"interval_unit\":\"MM\",\"offset\":\"0\",\"offse"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "reason": "多个 symbol layer 的叠加语义尚未转换（2 层，核心属性按原顺序覆盖）"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Class",
+        "detail": "{\"category\":[{\"@_render\":\"true\",\"@_symbol\":\"0\",\"@_value\":\"B52\",\"@_type\":\"string\",\"@_label\":\"B52\"},{\"@_render\":\"true\",\"@_symbol\":\"1\",\"@_value\":\"Biplane\",\"@_type\":\"string\",\"@_label\":\"Biplane\"},{\"@_rende"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"0,0,0,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_co"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"0,0,0,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane_orange.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"out"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"0,0,0,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_co"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "labelsEnabled=0：当前标注提取未应用启用状态"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Heading\",\"textColor\":\""
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"3\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor\":\"255,255,255,255\",\"@_buffer"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"0\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "规则式标注条件尚未转换；仅提取首个 text-style",
+        "detail": "{\"rule\":[{\"settings\":{\"text-style\":{\"families\":\"\",\"text-buffer\":{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Name\",\"textColor\":\"0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[1] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"1\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"'Tadam'\",\"textColor\":\""
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[1] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "额外 text-style[1] 尚未转换",
+        "detail": "{\"families\":\"\",\"text-buffer\":{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"2.5\",\"@_bufferColor\":\"255,255,255,255\",\"@_buff"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"0\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 settings[1] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-buffer[1] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor\":\"255,255,255,255\",\"@_buffer"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-mask[1] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"1.5\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 background[1] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 shadow[1] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Name\",\"textColor\":\"0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"2.5\",\"@_bufferColor\":\"255,255,255,255\",\"@_buff"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"0\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "raster_layer",
+        "reason": "栅格渲染器尚未转换",
+        "detail": "{\"rasterTransparency\":\"\",\"minMaxOrigin\":{\"limits\":\"MinMax\",\"extent\":\"WholeRaster\",\"statAccuracy\":\"Estimated\",\"cumulativeCutLower\":0.02,\"cumulativeCutUpper\":0.98,\"stdDevFactor\":2},\"redContrastEnhanceme"
+      }
+    ],
+    "datasources": [
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "identity": "ogr:./points.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "identity": "ogr:./polys.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "identity": "ogr:./polys.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "raster_layer",
+        "identity": "gdal:./raster_layer.tiff",
+        "providerType": "gdal"
+      }
+    ],
+    "bindings": [
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "family": "points",
+        "kind": "field-ref",
+        "expression": "B52"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "family": "points",
+        "kind": "field-ref",
+        "expression": "Biplane"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "family": "points",
+        "kind": "field-ref",
+        "expression": "Jet"
+      }
+    ],
+    "unresolved": [
+      {
+        "topic": "target tile source url/type",
+        "detail": "桌面样式不含瓦片源定义,转换需另行供给"
+      },
+      {
+        "topic": "crs/tiling",
+        "detail": "坐标参考与切片方案未定"
+      },
+      {
+        "topic": "glyphs",
+        "detail": "字体供给未定"
+      },
+      {
+        "topic": "sprites",
+        "detail": "符号精灵图供给未定"
+      }
+    ]
+  },
+  "report": {
+    "source": {
+      "kind": "qgis",
+      "name": "qgis-selective-masking.qgs",
+      "file": "qgis-selective-masking.qgs"
+    },
+    "skipped": [
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "多个 symbol layer 的叠加语义尚未转换（2 层，核心属性按原顺序覆盖）"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Name\",\"textColor\":\"4,1"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor\":\"255,255,255,255\",\"@_buffer"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"1.5\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "多个 symbol layer 的叠加语义尚未转换（2 层，核心属性按原顺序覆盖）"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "不支持的符号图层: MarkerLine"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "reason": "MarkerLine 未转换属性: average_angle_length, average_angle_map_unit_scale, average_angle_unit, interval, interval_map_unit_scale, interval_unit, offset, offset_along_line, offset_along_line_map_unit_scale, offset_along_line_unit, offset_map_unit_scale, offset_unit, place_on_every_part, placements, ring_filter, rotate",
+        "detail": "{\"average_angle_length\":\"4\",\"average_angle_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"average_angle_unit\":\"MM\",\"interval\":\"3\",\"interval_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"interval_unit\":\"MM\",\"offset\":\"0\",\"offse"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "reason": "多个 symbol layer 的叠加语义尚未转换（2 层，核心属性按原顺序覆盖）"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "reason": "SimpleLine 未转换属性: align_dash_pattern, capstyle, customdash, customdash_map_unit_scale, customdash_unit, dash_pattern_offset, dash_pattern_offset_map_unit_scale, dash_pattern_offset_unit, draw_inside_polygon, joinstyle, line_style, offset, offset_map_unit_scale, offset_unit, ring_filter, trim_distance_end, trim_distance_end_map_unit_scale, trim_distance_end_unit, trim_distance_start, trim_distance_start_map_unit_scale, trim_distance_start_unit, tweak_dash_pattern_on_corners, use_custom_dash, width_map_unit_scale",
+        "detail": "{\"align_dash_pattern\":\"0\",\"capstyle\":\"round\",\"customdash\":\"5;2\",\"customdash_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"customdash_unit\":\"MM\",\"dash_pattern_offset\":\"0\",\"dash_pattern_offset_map_unit_scale\":\"3x:0"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "分类条件尚未转换: categorizedSymbol, attr=Class",
+        "detail": "{\"category\":[{\"@_render\":\"true\",\"@_symbol\":\"0\",\"@_value\":\"B52\",\"@_type\":\"string\",\"@_label\":\"B52\"},{\"@_render\":\"true\",\"@_symbol\":\"1\",\"@_value\":\"Biplane\",\"@_type\":\"string\",\"@_label\":\"Biplane\"},{\"@_rende"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"0,0,0,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_co"
+      },
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"0,0,0,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane_orange.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"out"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "不支持的符号图层: SvgMarker"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "SvgMarker 未转换属性: angle, color, fixedAspectRatio, horizontal_anchor_point, name, offset, offset_map_unit_scale, offset_unit, outline_color, outline_width, outline_width_map_unit_scale, outline_width_unit, scale_method, size, size_map_unit_scale, size_unit, vertical_anchor_point",
+        "detail": "{\"angle\":\"0\",\"color\":\"0,0,0,255\",\"fixedAspectRatio\":\"0\",\"horizontal_anchor_point\":\"1\",\"name\":\"gpsicons/plane.svg\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_co"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "reason": "未提取到可表示的核心样式属性，省略空符号"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "labelsEnabled=0：当前标注提取未应用启用状态"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Heading\",\"textColor\":\""
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"3\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor\":\"255,255,255,255\",\"@_buffer"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"0\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "规则式标注条件尚未转换；仅提取首个 text-style",
+        "detail": "{\"rule\":[{\"settings\":{\"text-style\":{\"families\":\"\",\"text-buffer\":{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Name\",\"textColor\":\"0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[1] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"1\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"'Tadam'\",\"textColor\":\""
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "text-style[1] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "额外 text-style[1] 尚未转换",
+        "detail": "{\"families\":\"\",\"text-buffer\":{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"2.5\",\"@_bufferColor\":\"255,255,255,255\",\"@_buff"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"0\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 settings[1] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-buffer[1] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"1\",\"@_bufferColor\":\"255,255,255,255\",\"@_buffer"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 text-mask[1] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"1.5\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 background[1] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "reason": "标注 shadow[1] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "SimpleFill 未转换属性: border_width_map_unit_scale, joinstyle, offset, offset_map_unit_scale, offset_unit, outline_style, style",
+        "detail": "{\"border_width_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"joinstyle\":\"bevel\",\"offset\":\"0,0\",\"offset_map_unit_scale\":\"3x:0,0,0,0,0,0\",\"offset_unit\":\"MM\",\"outline_style\":\"solid\",\"style\":\"solid\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "text-style[0] 未转换属性: namedStyle, fontSizeMapUnitScale, fontStrikeout, isExpression, fontUnderline, fontKerning, fontLetterSpacing, fieldName, textColor, previewBkgrdColor, textOrientation, fontItalic, capitalization, useSubstitutions, fontWeight, multilineHeight, legendString, allowHtml, fontWordSpacing, blendMode, textOpacity",
+        "detail": "{\"namedStyle\":\"Regular\",\"fontSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"fontStrikeout\":\"0\",\"isExpression\":\"0\",\"fontUnderline\":\"0\",\"fontKerning\":\"1\",\"fontLetterSpacing\":\"0\",\"fieldName\":\"Name\",\"textColor\":\"0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "text-style[0] 子设置尚未转换: families, text-buffer, text-mask, background, shadow, dd_properties, substitutions"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 settings[0] 尚未转换: text-format, placement, rendering, dd_properties, callout, @_calloutType",
+        "detail": "{\"text-format\":{\"@_plussign\":\"0\",\"@_autoWrapLength\":\"0\",\"@_useMaxLineLengthForAutoWrap\":\"1\",\"@_rightDirectionSymbol\":\">\",\"@_placeDirectionSymbol\":\"0\",\"@_decimals\":\"3\",\"@_multilineAlign\":\"0\",\"@_wrapCha"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 text-buffer[0] 尚未转换",
+        "detail": "{\"@_bufferSizeUnits\":\"MM\",\"@_bufferOpacity\":\"1\",\"@_bufferDraw\":\"0\",\"@_bufferNoFill\":\"1\",\"@_bufferJoinStyle\":\"128\",\"@_bufferBlendMode\":\"0\",\"@_bufferSize\":\"2.5\",\"@_bufferColor\":\"255,255,255,255\",\"@_buff"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 text-mask[0] 尚未转换",
+        "detail": "{\"@_maskOpacity\":\"1\",\"@_maskSize\":\"0\",\"@_maskSizeMapUnitScale\":\"3x:0,0,0,0,0,0\",\"@_maskEnabled\":\"0\",\"@_maskType\":\"0\",\"@_maskSizeUnits\":\"MM\",\"@_maskJoinStyle\":\"128\",\"@_maskedSymbolLayers\":\"\"}"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 background[0] 尚未转换",
+        "detail": "{\"symbol\":[{\"data_defined_properties\":{\"Option\":[{\"Option\":[{\"@_name\":\"name\",\"@_value\":\"\",\"@_type\":\"QString\"},{\"@_name\":\"properties\"},{\"@_name\":\"type\",\"@_value\":\"collection\",\"@_type\":\"QString\"}],\"@_ty"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "reason": "标注 shadow[0] 尚未转换",
+        "detail": "{\"@_shadowRadiusUnit\":\"MM\",\"@_shadowRadiusAlphaOnly\":\"0\",\"@_shadowUnder\":\"0\",\"@_shadowOffsetGlobal\":\"1\",\"@_shadowBlendMode\":\"6\",\"@_shadowOffsetAngle\":\"135\",\"@_shadowRadiusMapUnitScale\":\"3x:0,0,0,0,0,0"
+      },
+      {
+        "source": "qgis",
+        "layer": "raster_layer",
+        "reason": "栅格渲染器尚未转换",
+        "detail": "{\"rasterTransparency\":\"\",\"minMaxOrigin\":{\"limits\":\"MinMax\",\"extent\":\"WholeRaster\",\"statAccuracy\":\"Estimated\",\"cumulativeCutLower\":0.02,\"cumulativeCutUpper\":0.98,\"stdDevFactor\":2},\"redContrastEnhanceme"
+      }
+    ],
+    "datasources": [
+      {
+        "source": "qgis",
+        "layer": "lines_with_labels",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines2",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "lines",
+        "identity": "ogr:./lines.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "points",
+        "identity": "ogr:./points.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys2",
+        "identity": "ogr:./polys.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "polys",
+        "identity": "ogr:./polys.shp",
+        "providerType": "ogr"
+      },
+      {
+        "source": "qgis",
+        "layer": "raster_layer",
+        "identity": "gdal:./raster_layer.tiff",
+        "providerType": "gdal"
+      }
+    ],
+    "bindings": [
+      {
+        "source": "qgis",
+        "layer": "B52",
+        "family": "points",
+        "kind": "field-ref",
+        "expression": "B52"
+      },
+      {
+        "source": "qgis",
+        "layer": "Biplane",
+        "family": "points",
+        "kind": "field-ref",
+        "expression": "Biplane"
+      },
+      {
+        "source": "qgis",
+        "layer": "Jet",
+        "family": "points",
+        "kind": "field-ref",
+        "expression": "Jet"
+      }
+    ],
+    "unresolved": [
+      {
+        "topic": "target tile source url/type",
+        "detail": "桌面样式不含瓦片源定义,转换需另行供给"
+      },
+      {
+        "topic": "crs/tiling",
+        "detail": "坐标参考与切片方案未定"
+      },
+      {
+        "topic": "glyphs",
+        "detail": "字体供给未定"
+      },
+      {
+        "topic": "sprites",
+        "detail": "符号精灵图供给未定"
+      }
+    ],
+    "notes": [
+      "Shared-value candidate: colors.lines_with_labels-strokecolor and colors.lines-strokecolor; confirm design semantics before merging.",
+      "Shared-value candidate: widths.lines_with_labels-strokewidth and widths.lines-strokewidth; confirm design semantics before merging.",
+      "Shared-value candidate: colors.polys2-fillcolor and colors.polys-fillcolor; confirm design semantics before merging.",
+      "Shared-value candidate: colors.polys2-strokecolor and colors.polys-strokecolor; confirm design semantics before merging.",
+      "Shared-value candidate: widths.polys2-outlinewidth and widths.polys-outlinewidth; confirm design semantics before merging.",
+      "Shared-value candidate: typography.polys2-2-typography and typography.polys-2-typography; confirm design semantics before merging.",
+      "Shared-value candidate: colors.lines_with_labels and colors.lines; confirm design semantics before merging.",
+      "Shared-value candidate: widths.lines_with_labels and widths.lines; confirm design semantics before merging.",
+      "Extracted 9 elements. Unconfirmed roles and states omitted; equal values do not establish shared semantics."
+    ],
+    "scaleHints": [],
+    "statistics": {
+      "elements": 9,
+      "colors": 9,
+      "skipped": 61
+    }
+  },
+  "documentSha256": "99a2299d7f9e8cfc33f49c84d12c5bac133a2187a987449bbd22ab7d6c1e22d9"
+}
