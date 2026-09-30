@@ -221,7 +221,7 @@ describe('MapDesign system config route', () => {
     });
 
     const response = await request(app, 'PUT', {
-      byokProviders: { default: { protocol: 'anthropic', baseUrl: 'https://new.example' } },
+      byokProviders: { default: { protocol: 'anthropic', baseUrl: 'https://new.example', apiKey: 'real-secret' } },
     });
 
     expect(response.status).toBe(200);
@@ -275,6 +275,7 @@ describe('MapDesign system config route', () => {
     const response = await request(app, 'PUT', { byokProviders: { default: {
       protocol: 'azure',
       baseUrl: '',
+      apiKey: 'real-secret',
       apiVersion: '',
       model: '',
     } } });
