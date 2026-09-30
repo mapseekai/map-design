@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+import { brotliCompressSync, deflateSync, gzipSync } from 'node:zlib';
 import { createManagedTransport } from '../../../src/map-design/ingestion/managed-transport.js';
+import { decodeResponseBody } from '../../../src/map-design/ingestion/decoded-body.js';
 import type { PinnedFetchRequest, PinnedFetchResponse } from '../../../src/map-design/ingestion/pinned-transport.js';
 const request: PinnedFetchRequest = { url: new URL('https://tiles.example.test/a'), purpose: 'tile' };
 function response(input: PinnedFetchRequest, headers: Record<string, string> = {}): PinnedFetchResponse {
@@ -8,6 +10,27 @@ function response(input: PinnedFetchRequest, headers: Record<string, string> = {
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe('managed map transport', () => {
+  it.each([
+    { encoding: 'gzip', compress: gzipSync },
+    { encoding: 'deflate', compress: deflateSync },
+    { encoding: 'br', compress: brotliCompressSync },
+  ])('isolates subscribers and cached bytes after $encoding decoding', async ({ encoding, compress }) => {
+    const body = await decodeResponseBody(compress(Uint8Array.of(1, 2, 3)), encoding, 1024,
+      new AbortController().signal, false);
+    const fetch = vi.fn(async (input: PinnedFetchRequest) => ({
+      ...response(input, { 'cache-control': 'max-age=60' }), body,
+    }));
+    const managed = createManagedTransport({ fetch });
+    try {
+      const [left, right] = await Promise.all([managed.fetch(request), managed.fetch(request)]);
+      left.body[0] = 99;
+      const cached = await managed.fetch(request);
+      expect([...right.body]).toEqual([1, 2, 3]);
+      expect([...cached.body]).toEqual([1, 2, 3]);
+      expect([...body]).toEqual([1, 2, 3]);
+      expect(fetch).toHaveBeenCalledOnce();
+    } finally { await managed.close?.(); }
+  });
   it('coalesces equal requests and isolates cancellation and mutable result bytes', async () => {
     let release!: () => void; let signal!: AbortSignal;
     const fetch = vi.fn(async (input: PinnedFetchRequest) => { signal = input.signal!; await new Promise<void>((resolve) => { release = resolve; }); return response(input); });
