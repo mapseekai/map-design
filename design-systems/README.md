@@ -1,5 +1,10 @@
 # Bundled cartographic design systems
 
+`monet/CARTOGRAPHY.md` is the default bundled preset, based on the saved
+“莫奈风格” document. It preserves its warm canvas, blue-green water, muted
+vegetation, ochre roads, and label hierarchy in CARTOGRAPHY.md format 0.4.0.
+Existing user documents and pinned project revisions remain unchanged.
+
 `quiet-atlas/CARTOGRAPHY.md` is the unmodified upstream Quiet Atlas example, using
 format 0.4.0 and validated with `@mapseekai/cartography.md` 0.4.1.
 

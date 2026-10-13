@@ -22,7 +22,7 @@ export function CartographyVisualPreview({ preview, name, compact = false }: {
       <Button type="button" variant={view === 'tokens' ? 'secondary' : 'ghost'} aria-pressed={view === 'tokens'} onClick={() => setView('tokens')}>{copy.palette} / {copy.typography}</Button>
       <Button type="button" variant={view === 'map' ? 'secondary' : 'ghost'} aria-pressed={view === 'map'} onClick={() => setView('map')}>{copy.mapTitle}</Button>
     </div>
-    {view === 'map' ? <Suspense fallback={<MapLoading label={copy.mapTitle} />}><SpecificationMap key={`${name}:${JSON.stringify([preview?.elements, preview?.sampleBindings])}`} elements={preview?.elements ?? []} sampleBindings={preview?.sampleBindings} /></Suspense> : <div className="flex flex-col gap-8">
+    {view === 'map' ? <Suspense fallback={<div className="grid h-80 place-items-center"><MapLoading label={copy.mapTitle} /></div>}><SpecificationMap key={`${name}:${JSON.stringify([preview?.elements, preview?.sampleBindings])}`} elements={preview?.elements ?? []} sampleBindings={preview?.sampleBindings} /></Suspense> : <div className="flex flex-col gap-8">
     <section aria-label={copy.palette} className="flex flex-col gap-4">
       <h3 className="text-sm font-medium">{copy.palette}</h3>
       {colors.length ? <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))' }}>

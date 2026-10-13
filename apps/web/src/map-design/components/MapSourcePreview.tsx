@@ -65,8 +65,8 @@ function DirectStylePreview({ sourceUrl, onRetry, ...mapProps }: PreviewProps & 
           if (mounted.current) setError(event?.webglUnavailable ? 'webgl' : readyRef.current || event?.sourceId || event?.status ? 'resource' : 'load');
         }}
       />
-      {!ready && !error ? <div className="pointer-events-none absolute left-4 top-4 rounded-md bg-card/90 px-3 py-2">
-        <MapLoading variant="inline" label={t('common.loading')} />
+      {!ready && !error ? <div className="pointer-events-none absolute inset-0 grid place-items-center">
+        <MapLoading label={t('common.loading')} />
       </div> : null}
       <div className="absolute inset-x-3 bottom-9 flex flex-col gap-2">
         {error ? <Alert variant={ready ? 'default' : 'destructive'} appearance="floating"><AlertDescription>

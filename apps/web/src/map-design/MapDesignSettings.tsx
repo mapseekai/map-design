@@ -89,7 +89,7 @@ export function MapDesignSettings({ section = 'models' }: { section?: 'models' |
     } catch { if (!controller.signal.aborted) setError('saveError'); }
     finally { if (saveController.current === controller) { saveController.current = null; if (!controller.signal.aborted) setSaving(false); } }
   }
-  if (!draft) return <div>{error ? <p role="alert">{labels[error]}</p> : <MapLoading label={labels.loading} />}</div>;
+  if (!draft) return <div className="flex flex-1 flex-col justify-center">{error ? <p role="alert">{labels[error]}</p> : <MapLoading label={labels.loading} />}</div>;
   return <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-10 md:px-10 [&_h1]:font-serif [&_h1]:text-4xl" aria-labelledby="map-design-settings-title" aria-busy={saving}>
     <header><h1 id="map-design-settings-title">{navigationCopy[locale].settings}</h1></header>
     <h2 className="text-xl font-medium">{settingsNavigationCopy[locale][section]}</h2>

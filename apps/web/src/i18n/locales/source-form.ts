@@ -1,8 +1,9 @@
 import type { Locale } from '../types';
 
-type Copy = { agent: string; selectAgent: string; agentRequired: string; fieldsRequired: string; createError: string; chooseDirectory: string; directorySelected: string; directoryError: string };
+type Copy = { useDefaultMap: string; agent: string; selectAgent: string; agentRequired: string; fieldsRequired: string; createError: string; chooseDirectory: string; directorySelected: string; directoryError: string };
 export const sourceFormCopy: Record<Locale, Copy> = {
   "en": {
+    "useDefaultMap": "Use default map",
     "agent": "Local agent",
     "selectAgent": "Select an agent",
     "agentRequired": "Select an available local agent before continuing.",
@@ -13,6 +14,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Unable to choose a working directory."
   },
   "zh-CN": {
+    "useDefaultMap": "使用默认地图",
     "agent": "本地智能体",
     "selectAgent": "选择智能体",
     "agentRequired": "请先选择可用的本地智能体。",
@@ -23,6 +25,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "无法选择工作目录。"
   },
   "zh-TW": {
+    "useDefaultMap": "使用預設地圖",
     "agent": "本機智慧體",
     "selectAgent": "選擇智慧體",
     "agentRequired": "請先選擇可用的本機智慧體。",
@@ -33,6 +36,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "無法選擇工作目錄。"
   },
   "de": {
+    "useDefaultMap": "Standardkarte verwenden",
     "agent": "Lokaler Agent",
     "selectAgent": "Agent auswählen",
     "agentRequired": "Wählen Sie zuerst einen verfügbaren lokalen Agenten.",
@@ -43,6 +47,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Arbeitsverzeichnis konnte nicht gewählt werden."
   },
   "fr": {
+    "useDefaultMap": "Utiliser la carte par défaut",
     "agent": "Agent local",
     "selectAgent": "Choisir un agent",
     "agentRequired": "Choisissez d’abord un agent local disponible.",
@@ -53,6 +58,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Impossible de choisir le dossier de travail."
   },
   "es-ES": {
+    "useDefaultMap": "Usar mapa predeterminado",
     "agent": "Agente local",
     "selectAgent": "Seleccionar agente",
     "agentRequired": "Selecciona primero un agente local disponible.",
@@ -63,6 +69,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "No se pudo elegir el directorio de trabajo."
   },
   "pt-BR": {
+    "useDefaultMap": "Usar mapa padrão",
     "agent": "Agente local",
     "selectAgent": "Selecionar agente",
     "agentRequired": "Selecione primeiro um agente local disponível.",
@@ -73,6 +80,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Não foi possível escolher o diretório de trabalho."
   },
   "it": {
+    "useDefaultMap": "Usa mappa predefinita",
     "agent": "Agente locale",
     "selectAgent": "Seleziona agente",
     "agentRequired": "Seleziona prima un agente locale disponibile.",
@@ -83,6 +91,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Impossibile scegliere la cartella di lavoro."
   },
   "ja": {
+    "useDefaultMap": "デフォルトの地図を使う",
     "agent": "ローカルエージェント",
     "selectAgent": "エージェントを選択",
     "agentRequired": "利用可能なローカルエージェントを選択してください。",
@@ -93,6 +102,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "作業フォルダーを選択できません。"
   },
   "ko": {
+    "useDefaultMap": "기본 지도 사용",
     "agent": "로컬 에이전트",
     "selectAgent": "에이전트 선택",
     "agentRequired": "사용 가능한 로컬 에이전트를 먼저 선택하세요.",
@@ -103,6 +113,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "작업 폴더를 선택할 수 없습니다."
   },
   "id": {
+    "useDefaultMap": "Gunakan peta bawaan",
     "agent": "Agen lokal",
     "selectAgent": "Pilih agen",
     "agentRequired": "Pilih agen lokal yang tersedia terlebih dahulu.",
@@ -113,6 +124,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Direktori kerja tidak dapat dipilih."
   },
   "ru": {
+    "useDefaultMap": "Использовать карту по умолчанию",
     "agent": "Локальный агент",
     "selectAgent": "Выберите агента",
     "agentRequired": "Сначала выберите доступного локального агента.",
@@ -123,6 +135,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Не удалось выбрать рабочий каталог."
   },
   "uk": {
+    "useDefaultMap": "Використати типову карту",
     "agent": "Локальний агент",
     "selectAgent": "Виберіть агента",
     "agentRequired": "Спочатку виберіть доступного локального агента.",
@@ -133,6 +146,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Не вдалося вибрати робочий каталог."
   },
   "pl": {
+    "useDefaultMap": "Użyj mapy domyślnej",
     "agent": "Lokalny agent",
     "selectAgent": "Wybierz agenta",
     "agentRequired": "Najpierw wybierz dostępnego lokalnego agenta.",
@@ -143,6 +157,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Nie udało się wybrać katalogu roboczego."
   },
   "hu": {
+    "useDefaultMap": "Alapértelmezett térkép használata",
     "agent": "Helyi ügynök",
     "selectAgent": "Ügynök kiválasztása",
     "agentRequired": "Először válasszon elérhető helyi ügynököt.",
@@ -153,6 +168,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "A munkakönyvtár nem választható ki."
   },
   "tr": {
+    "useDefaultMap": "Varsayılan haritayı kullan",
     "agent": "Yerel ajan",
     "selectAgent": "Ajan seç",
     "agentRequired": "Önce kullanılabilir bir yerel ajan seçin.",
@@ -163,6 +179,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "Çalışma dizini seçilemedi."
   },
   "th": {
+    "useDefaultMap": "ใช้แผนที่เริ่มต้น",
     "agent": "เอเจนต์ในเครื่อง",
     "selectAgent": "เลือกเอเจนต์",
     "agentRequired": "เลือกเอเจนต์ในเครื่องที่พร้อมใช้งานก่อน",
@@ -173,6 +190,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "เลือกโฟลเดอร์ทำงานไม่ได้"
   },
   "ar": {
+    "useDefaultMap": "استخدام الخريطة الافتراضية",
     "agent": "وكيل محلي",
     "selectAgent": "اختر وكيلًا",
     "agentRequired": "اختر أولًا وكيلًا محليًا متاحًا.",
@@ -183,6 +201,7 @@ export const sourceFormCopy: Record<Locale, Copy> = {
     "directoryError": "تعذر اختيار مجلد العمل."
   },
   "fa": {
+    "useDefaultMap": "استفاده از نقشه پیش‌فرض",
     "agent": "عامل محلی",
     "selectAgent": "انتخاب عامل",
     "agentRequired": "ابتدا یک عامل محلی در دسترس انتخاب کنید.",

@@ -1,3 +1,4 @@
+import { isSelectableAgent } from '../agent-availability';
 import { apiProfilesCopy } from '../../i18n/locales/api-profiles';
 import { getMapDesignHost, pickMapDesignWorkingDirectory } from '../../platform/map-design-host';
 import { Alert, AlertDescription, Button, Input, Textarea, Field, FieldGroup, FieldLabel, Card, CardContent } from '@mapseekai/components';
@@ -12,6 +13,8 @@ import { parseMapSourceUrl } from '../map/source-url';
 import { MapSourcePreview } from './MapSourcePreview';
 import { AgentModelFields } from './AgentModelFields';
 import { CartographyPicker } from './CartographyPicker';
+
+const DEFAULT_MAP_SOURCE_URL = 'https://demotiles.maplibre.org/styles/osm-bright-gl-style/style.json';
 
 interface MapSourceFormProps {
   agents: LocalAgentInfo[];
@@ -43,7 +46,7 @@ export function MapSourceForm({ agents, onCreate }: MapSourceFormProps) {
       createController.current?.abort();
     };
   }, []);
-  const selectedAgent = agents.find((agent) => agent.id === agentId && agent.available && agent.enabled !== false) ?? null;
+  const selectedAgent = agents.find((agent) => agent.id === agentId && isSelectableAgent(agent)) ?? null;
   const models = selectedAgent?.models?.filter((model) => model.enabled) ?? [];
   const selectedModel = selectedModelId ? models.find((model) => model.id === selectedModelId) : models.find((model) => model.default) ?? models[0];
   const selectedAgentSupportsMapEditing = selectedAgent?.mapDesign.nativeMapTools === true;
@@ -93,7 +96,12 @@ export function MapSourceForm({ agents, onCreate }: MapSourceFormProps) {
       <Card role="region" className="min-w-0" aria-label={t('mapDesign.form.sourceTitle')}>
         <CardContent><FieldGroup>
         <Field><FieldLabel htmlFor="mapsourceform-1"><span>{t('mapDesign.form.projectName')}</span></FieldLabel><Input id="mapsourceform-1" value={title} maxLength={256} onChange={(event) => { setTitle(event.target.value); setError(null); }} autoComplete="off" /></Field>
-        <Field><FieldLabel htmlFor="mapsourceform-2"><span>{t('mapDesign.form.sourceUrl')}</span></FieldLabel><Input id="mapsourceform-2" type="url" value={sourceUrl} maxLength={4096} aria-invalid={Boolean(sourceUrl.trim() && !parsedSourceUrl)} data-testid="home-hero-input" onChange={(event) => { setSourceUrl(event.target.value); setError(null); }} autoComplete="url" /></Field>
+        <Field><FieldLabel htmlFor="mapsourceform-2"><span>{t('mapDesign.form.sourceUrl')}</span></FieldLabel><Input id="mapsourceform-2" type="url" value={sourceUrl} maxLength={4096} aria-invalid={Boolean(sourceUrl.trim() && !parsedSourceUrl)} data-testid="home-hero-input" onChange={(event) => { setSourceUrl(event.target.value); setError(null); }} autoComplete="url" />
+          <div className="flex justify-start"><Button type="button" variant="link" size="sm" disabled={createLoading}
+            title={DEFAULT_MAP_SOURCE_URL} onClick={() => { setSourceUrl(DEFAULT_MAP_SOURCE_URL); setError(null); }}>
+            {copy.useDefaultMap}
+          </Button></div>
+        </Field>
         <Field><FieldLabel htmlFor="mapsourceform-3"><span>{t('mapDesign.form.designRequirement')}</span></FieldLabel><Textarea id="mapsourceform-3" value={designRequirement} maxLength={16_384} onChange={(event) => { setDesignRequirement(event.target.value); setError(null); }} rows={4} /></Field>
         <CartographyPicker value={cartographyId} onChange={setCartographyId} disabled={createLoading} />
         <AgentModelFields id="mapsourceform-4" agents={agents} agentId={agentId} model={selectedModelId} disabled={createLoading}

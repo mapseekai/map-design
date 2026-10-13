@@ -42,8 +42,8 @@ export function MapSourcePreflight({
       aria-label={t('mapDesign.preview.title')}
       aria-busy={loading || Boolean(preview && !ready && !error)}
     >
-      {loading ? <div className="absolute left-5 top-5 rounded-md bg-card/90 px-3 py-2">
-        <MapLoading variant="inline" label={t('common.loading')} />
+      {loading ? <div className="absolute inset-0 grid place-items-center">
+        <MapLoading label={t('common.loading')} />
       </div> : null}
 
       {!preview && error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}

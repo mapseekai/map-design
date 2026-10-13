@@ -924,7 +924,7 @@ describe('project import and Studio transport contracts', () => {
       projectId: 'project-1', title: 'Walking map', lifecycle: 'ready' as const, sourceKind: 'style' as const,
       draftRevision: 3, committedRevision: 2, validationStatus: 'valid' as const, updatedAt: TIMESTAMP,
     };
-    expect(DEFAULT_MAP_DESIGN_SYSTEM_ID).toBe('quiet-atlas');
+    expect(DEFAULT_MAP_DESIGN_SYSTEM_ID).toBe('monet');
     expect(MapDesignProjectSummarySchema.parse(summary)).toEqual(summary);
     expect(MapDesignProjectListOutputSchema.parse({ projects: [summary] })).toEqual({ projects: [summary] });
     expect(() => MapDesignProjectListOutputSchema.parse({ projects: [{ ...summary, url: source.url }] })).toThrow();

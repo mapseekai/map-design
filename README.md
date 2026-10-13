@@ -113,7 +113,7 @@ https://demotiles.maplibre.org/style.json
 
 创建项目时填写项目名称、地图源地址和设计需求，选择运行时、模型及制图规范。项目导入接受 Style、GeoJSON、TileJSON 和 PMTiles URL；首页即时预览使用 MapLibre Style URL。
 
-制图规范可以选用内置的 Quiet Atlas，也可以从规范库选择已有文档。桌面端提供项目工作目录选择入口。
+制图规范可以选用默认内置的莫奈风格，也可以从规范库选择已有文档。桌面端提供项目工作目录选择入口。
 
 设计需求示例：
 
@@ -151,7 +151,7 @@ https://demotiles.maplibre.org/style.json
 
 `CARTOGRAPHY.md` 用于描述地图的颜色、字体、线宽、尺寸、透明度、视觉层级和尺度策略。MapDesign 使用 0.4.0 文档格式，并通过 `@mapseekai/cartography.md` 0.4.1 执行解析与格式校验。
 
-规范库提供文件上传、在线文档导入、AI 生成和文档编辑入口。内置 Quiet Atlas 预设位于 `design-systems/quiet-atlas/CARTOGRAPHY.md`。
+规范库提供文件上传、在线文档导入、AI 生成和文档编辑入口。默认内置莫奈风格预设位于 `design-systems/monet/CARTOGRAPHY.md`。
 
 ### 从已有样式提取规范
 

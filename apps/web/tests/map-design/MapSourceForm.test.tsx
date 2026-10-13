@@ -51,6 +51,19 @@ afterEach(() => {
 });
 
 describe('MapSourceForm independent preview and creation', () => {
+  it('fills the default map on click, previews it, and keeps the URL editable without submitting', async () => {
+    const create = renderForm([]);
+    const input = screen.getByLabelText(/public map url/i);
+    const defaultUrl = 'https://demotiles.maplibre.org/styles/osm-bright-gl-style/style.json';
+    expect(input).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: 'Use default map' }));
+    expect(input).toHaveValue(defaultUrl);
+    expect(await screen.findByTestId('direct-preview')).toHaveAttribute('data-source', defaultUrl);
+    expect(create).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: SOURCE_URL } });
+    expect(input).toHaveValue(SOURCE_URL);
+  });
+
   it('shows CLI models, resets them on runtime switches and submits the selected model', async () => {
     const model = (id: string, label: string, isDefault = false) => ({ id, label, default: isDefault, enabled: true, reasoningOptions: [], serviceTierOptions: [] });
     const create = renderForm([
@@ -128,16 +141,13 @@ describe('MapSourceForm independent preview and creation', () => {
     expect(onCreate).not.toHaveBeenCalled();
   });
 
-  it('keeps unsupported agents visible but unavailable for map creation', async () => {
-    const onCreate = renderForm([...defaultAgents, { id: 'text-only', label: 'Text Agent', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'native-tools-unavailable' } }]);
+  it('hides offline and unsupported agents from map creation', async () => {
+    const onCreate = renderForm([...defaultAgents, { ...defaultAgents[0]!, id: 'disabled', label: 'Disabled agent', enabled: false }, { id: 'text-only', label: 'Text Agent', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'native-tools-unavailable' } }]);
     fillForm();
     openSelect(screen.getByLabelText(/local agent/i));
-    expect(screen.getByRole('option', { name: 'Offline agent' })).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('option', { name: 'Text Agent — Map editing unavailable' })).not.toHaveAttribute('aria-disabled', 'true');
-    selectValue(screen.getByLabelText(/local agent/i), 'text-only');
-    expect(createButton()).toBeDisabled();
-    submit();
-    expect(screen.getByRole('alert')).toHaveTextContent('Map editing unavailable');
+    expect(screen.queryByRole('option', { name: 'Offline agent' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Disabled agent/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Text Agent/ })).not.toBeInTheDocument();
     expect(onCreate).not.toHaveBeenCalled();
     selectValue(screen.getByLabelText(/local agent/i), 'codex');
     expect(createButton()).toBeEnabled();
@@ -215,13 +225,13 @@ describe('MapSourceForm independent preview and creation', () => {
     expect(screen.queryByText('internal path disclosure')).not.toBeInTheDocument();
   });
 
-  it('preserves an explicit unavailable-Agent label instead of map-editing copy', () => {
+  it('hides agents explicitly marked unavailable', () => {
     renderForm([
       { id: 'agent-unavailable', label: 'Unavailable Agent', available: true, modelCatalogSource: 'fallback', mapDesign: { nativeMapTools: false, publicReasoningSummary: false, reason: 'agent-unavailable' } },
     ]);
 
     openSelect(screen.getByLabelText(/local agent/i));
-    expect(screen.getByRole('option', { name: 'Unavailable Agent' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Unavailable Agent' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /map editing unavailable/i })).not.toBeInTheDocument();
   });
 });

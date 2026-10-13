@@ -42,7 +42,7 @@ export function CartographyEditor({ sessionId }: { sessionId: string }) {
       .catch(() => { if (!controller.signal.aborted) setError(true); });
     return () => controller.abort();
   }, [sessionId]);
-  if (!session || session.id !== sessionId) return <div className="p-6">{error ? <Alert variant="destructive"><AlertDescription>{cartographyEditorCopy[locale].failed}</AlertDescription></Alert> : <MapLoading label={t('common.loading')} />}</div>;
+  if (!session || session.id !== sessionId) return <div className="grid flex-1 place-items-center p-6">{error ? <Alert variant="destructive"><AlertDescription>{cartographyEditorCopy[locale].failed}</AlertDescription></Alert> : <MapLoading label={t('common.loading')} />}</div>;
   return <CartographyEditorWorkspace key={sessionId} initial={session} />;
 }
 

@@ -1,3 +1,4 @@
+import { isSelectableAgent } from '../agent-availability';
 import { apiProfilesCopy } from '../../i18n/locales/api-profiles';
 import { runtimeConfirmCopy } from '../../i18n/locales/runtime-confirm';
 import { runtimeSettingsCopy } from '../../i18n/locales/runtime-settings';
@@ -29,10 +30,6 @@ export interface MapDesignRuntimeSwitcherProps {
   saving: boolean;
   notice: string | null;
   onChange(next: MapDesignRuntimeSelectionInput): Promise<void>;
-}
-
-function isSupported(agent: LocalAgentInfo): boolean {
-  return agent.available && agent.enabled !== false && agent.mapDesign.nativeMapTools && agent.mapDesign.reason === undefined;
 }
 
 function defaultModel(agent: LocalAgentInfo | undefined): LocalAgentModelOption | undefined {
@@ -115,10 +112,7 @@ export function MapDesignRuntimeSwitcher({
   const fieldId = useId();
   const disabledDescriptionId = `map-runtime-disabled-${useId().replace(/:/gu, '')}`;
   const restoreFocusPendingRef = useRef(false);
-  const orderedAgents = useMemo(() => [...agents]
-    .map((agent, index) => ({ agent, index }))
-    .sort((left, right) => Number(isSupported(right.agent)) - Number(isSupported(left.agent)) || left.index - right.index)
-    .map(({ agent }) => agent), [agents]);
+  const orderedAgents = useMemo(() => agents.filter(isSelectableAgent), [agents]);
   const activeAgent = agents.find((agent) => agent.id === runtime.agentId);
   const catalogActiveModel = activeAgent?.models?.find((model) => model.id === runtime.model);
   const activeModel = catalogActiveModel
@@ -433,7 +427,7 @@ export function MapDesignRuntimeSwitcher({
       {runtimeStatus}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" disabled={saving} onClick={close}>{t('mapDesign.revision.cancel')}</Button>
-        <Button type="button" disabled={disabled || saving || !activeAgent || !isSupported(activeAgent) || (runtime.modelOrigin !== 'custom' && !activeModel?.enabled)} onClick={() => { void confirm(); }}>{runtimeConfirmCopy[locale]}</Button>
+        <Button type="button" disabled={disabled || saving || !activeAgent || !isSelectableAgent(activeAgent) || (runtime.modelOrigin !== 'custom' && !activeModel?.enabled)} onClick={() => { void confirm(); }}>{runtimeConfirmCopy[locale]}</Button>
       </div>
     </DialogContent>
     {!open && (saving || notice) ? <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground" role="status" aria-live="polite">

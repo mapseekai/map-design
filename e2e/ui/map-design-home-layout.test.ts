@@ -46,7 +46,7 @@ test('[P1] WebGL2 unavailable keeps the preview error local and project controls
   expect(errors.filter(message => /GPUInitializationError|WebGL2 is required|Uncaught/u.test(message))).toEqual([]);
 });
 
-test('[P0] keeps ACP and BYOK Agents visible but blocks unsupported map work before spawn', async ({ page, toolsDev }) => {
+test('[P0] hides unavailable and unsupported Agents before spawn', async ({ page, toolsDev }) => {
   const agentsResponse = await fetch(`${toolsDev.daemonUrl}/api/agents`);
   if (!agentsResponse.ok) throw new Error(`Agent catalogue request failed: ${await agentsResponse.text()}`);
   const { agents } = await agentsResponse.json() as { agents: AgentCapabilitySnapshot[] };
@@ -74,20 +74,12 @@ test('[P0] keeps ACP and BYOK Agents visible but blocks unsupported map work bef
   await page.getByLabel('Design requirement').fill('Keep labels legible.');
   const agentSelect = page.getByRole('combobox', { name: 'Local agent', exact: true });
   await agentSelect.click();
-  for (const name of ['Kimi CLI — Map editing unavailable', 'BYOK OpenCode — Map editing unavailable']) {
-    const option = page.getByRole('option', { name, exact: true });
-    await expect(option).toBeVisible();
-    await expect(option).toBeEnabled();
+  for (const agent of agents.filter(agent => !agent.available || !agent.mapDesign.nativeMapTools)) {
+    await expect(page.locator(`[role="option"][data-value="${agent.id}"]`)).toHaveCount(0);
   }
+  await expect(page.locator('[role="option"][data-value="codex"]')).toBeVisible();
   await page.keyboard.press('Escape');
-
-  for (const name of ['Kimi CLI — Map editing unavailable', 'BYOK OpenCode — Map editing unavailable']) {
-    await agentSelect.click();
-    await page.getByRole('option', { name, exact: true }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Map editing unavailable' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeDisabled();
-    await expect(page.getByRole('button', { name: 'Check source', exact: true })).toHaveCount(0);
-  }
+  await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeDisabled();
 
   expect(blockedMutations).toEqual([]);
   expect(await unsupportedSpawnCount(toolsDev.fakeMapAcp.capturePath)).toBe(spawnCountBefore);
@@ -144,6 +136,7 @@ test('[P2] Home keyboard order reaches creation after shell navigation', async (
     page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Settings', exact: true }),
     page.getByLabel('Project name', { exact: true }),
     page.getByLabel('Public map URL', { exact: true }),
+    page.getByRole('button', { name: 'Use default map', exact: true }),
     page.getByLabel('Design requirement', { exact: true }),
     page.getByRole('combobox', { name: 'Map design system', exact: true }),
     page.getByRole('region', { name: 'Source and brief', exact: true }).getByRole('button', { name: 'Design specifications', exact: true }),
