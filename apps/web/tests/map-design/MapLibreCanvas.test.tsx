@@ -7,6 +7,20 @@ import { MapLibreCanvas } from '../../src/map-design/map/MapLibreCanvas';
 import { resetMapDesignProtocolsForTests } from '../../src/map-design/map/map-lifecycle';
 
 describe('MapLibreCanvas', () => {
+  it('releases the map, subscriptions and protocols when initial resize fails', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unsubscribe = vi.fn();
+    const map = { remove: vi.fn(), resize: () => { throw new Error('resize failed'); }, on: () => ({ unsubscribe }) };
+    const maplibre = { addProtocol: vi.fn(), removeProtocol: vi.fn() };
+    try {
+      expect(() => render(<MapLibreCanvas style="/style.json" createMap={() => map} maplibre={maplibre} />)).toThrow('resize failed');
+      expect(map.remove).toHaveBeenCalled();
+      expect(unsubscribe).toHaveBeenCalledTimes(map.remove.mock.calls.length);
+      expect(maplibre.removeProtocol).toHaveBeenCalledWith('pmtiles');
+      expect(maplibre.removeProtocol).toHaveBeenCalledWith('map-design-resource');
+    } finally { consoleError.mockRestore(); }
+  });
+
   afterEach(() => {
     cleanup();
     resetMapDesignProtocolsForTests();

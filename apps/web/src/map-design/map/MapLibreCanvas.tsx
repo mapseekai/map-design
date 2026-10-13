@@ -148,6 +148,7 @@ export function MapLibreCanvas({
       : undefined;
     try {
       onMapReadyRef.current?.(map);
+      map.resize();
     } catch (error) {
       try {
         errorSubscription?.unsubscribe();
@@ -159,7 +160,6 @@ export function MapLibreCanvas({
       throw error;
     }
     mapRef.current = map;
-    map.resize();
     return () => {
       active = false;
       if (mapRef.current === map) mapRef.current = null;

@@ -1,3 +1,4 @@
+import { apiConversationHistory } from '../storage/api-context.js';
 import { apiProfileIdFromModel } from '@mapseekai/contracts';
 import { resolveApiProfile } from './api-profile-service.js';
 import type { MapRunHistory } from '../storage/run-history.js';
@@ -31,7 +32,7 @@ import { CartographyService, cartographyPrompt } from './cartography-service.js'
 import { mapCommentPrompt, type MapDesignCommentService } from './comment-service.js';
 import type { MapScreenshotService } from './screenshot-service.js';
 import type { MapTrustedRunRecord, MapTrustedRunStore } from './revision-service.js';
-import { containsSensitiveText, fitMapDesignMessageToBudget, RunEventAccumulator, sanitizeEventText } from './run-events.js';
+import { appendRunContent, containsSensitiveText, fitMapDesignMessageToBudget, RunEventAccumulator, sanitizeEventText } from './run-events.js';
 import type { MapDesignConversationRuntimeService } from './conversation-runtime-service.js';
 import type { MapDesignRuntimeCatalog, ResolvedRuntimeChoice } from './runtime-catalog.js';
 
@@ -285,7 +286,7 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
   const onMapAdapterEvent = (active: ActiveRun, event: MapAgentEvent): void => {
     if (active.terminal || (active.canceling && event.kind !== 'tool_result')) return;
     if (event.kind === 'run_finished') return;
-    if (event.kind === 'text') active.content += event.text;
+    if (event.kind === 'text') active.content = appendRunContent(active.content, event.text);
     if (active.eventAccumulator.apply(event)) {
       resetInactivityTimer(active);
       scheduleEventSnapshot(active);
@@ -482,13 +483,14 @@ export function createMapDesignRunService(deps: CreateMapDesignRunServiceDeps): 
         }
       }
       if (active.terminal || shuttingDown) { if (!active.terminal) finish(active, 'canceled'); return response; }
-      const prompt = composeMapPrompt(scopedPrompt, conversation.messages, mapContext, request.projectId, runId, request.locale, config?.customInstructions, cartography);
+      const prompt = composeMapPrompt(scopedPrompt, agent.id === 'api' ? [] : conversation.messages, mapContext, request.projectId, runId, request.locale, config?.customInstructions, cartography);
       try {
           active.mapStarting = mapAdapter.startMapRun({
             runId,
             projectId: request.projectId,
             conversationId: request.conversationId,
             prompt,
+            ...(agent.id === 'api' ? { apiHistory: apiConversationHistory(deps.store, request.conversationId, conversation.messages) } : {}),
             resumePrompt: composeMapPrompt(scopedPrompt, [], mapContext, request.projectId, runId, request.locale, config?.customInstructions, cartography),
             ...(captured ? { images: captured.images } : {}),
             cwd,

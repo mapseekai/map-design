@@ -20,7 +20,7 @@ export function usePreviewRequests(options: UsePreviewRequestsOptions): {
   const [status, setStatus] = useState<PreviewRequestStatus>('idle');
   const [output, setOutput] = useState<MapRenderPreviewOutput | null>(null);
   const activeRef = useRef(true);
-  const completedRef = useRef(new Set<string>());
+  const completedRef = useRef(new Map<string, number>());
   const inFlightRef = useRef(new Map<string, Promise<void>>());
   const controllersRef = useRef(new Set<AbortController>());
   const tailRef = useRef(Promise.resolve());
@@ -33,6 +33,7 @@ export function usePreviewRequests(options: UsePreviewRequestsOptions): {
     activeRef.current = false;
     for (const controller of controllersRef.current) controller.abort();
     controllersRef.current.clear();
+    completedRef.current.clear();
   }, []);
 
   useEffect(() => {
@@ -43,6 +44,9 @@ export function usePreviewRequests(options: UsePreviewRequestsOptions): {
   const handleRecord = useCallback((record: MapStudioEventRecord): Promise<void> => {
     if (record.event.type !== 'preview.requested') return Promise.resolve();
     const request = record.event.payload;
+    const now = Date.now();
+    for (const [id, expiry] of completedRef.current) if (expiry <= now) completedRef.current.delete(id);
+    if (!activeRef.current || Date.parse(request.expiresAt) <= now) return Promise.resolve();
     if (completedRef.current.has(request.previewId)) return Promise.resolve();
     const existing = inFlightRef.current.get(request.previewId);
     if (existing) return existing;
@@ -69,7 +73,7 @@ export function usePreviewRequests(options: UsePreviewRequestsOptions): {
           throw error;
         }
         if (activeRef.current) {
-          completedRef.current.add(request.previewId);
+          completedRef.current.set(request.previewId, Date.parse(request.expiresAt));
           setOutput(result);
           setStatus(result.status === 'succeeded' ? 'succeeded' : 'failed');
         }

@@ -26,7 +26,7 @@ import {
   type CreateMapDesignRunServiceDeps,
   type SpawnedLocalAgent,
 } from '../../../src/map-design/application/run-service.js';
-import { RunEventAccumulator } from '../../../src/map-design/application/run-events.js';
+import { appendRunContent, RunEventAccumulator } from '../../../src/map-design/application/run-events.js';
 import type { MapAgentAdapter, MapAgentEvent, MapRunInput } from '../../../src/map-design/agents/types.js';
 import { createSdkMapToolRuntime, type SdkMapToolRuntime } from '../../../src/map-design/agents/sdk-tool-runtime.js';
 import type { MapDesignNativeToolRegistry } from '../../../src/map-design/tools/tool-context.js';
@@ -444,27 +444,64 @@ describe('MapDesignRunService', () => {
     });
   });
 
-  it('bounds ordered event snapshots while retaining the latest terminal tool and run result', () => {
+  it('bounds retained events and deduplication while keeping pending calls and cumulative omitted counts', () => {
     const events = new RunEventAccumulator();
-    for (let index = 0; index < 100; index += 1) {
+    events.apply({ kind: 'tool_use', id: 'pending', name: 'map_render_preview', summary: {} });
+    const retained = events as unknown as { events: PersistedMapAgentEvent[]; terminalToolIds: Set<string> };
+    for (let index = 0; index < 2_048; index += 1) {
       expect(events.apply({
         kind: 'tool_use', id: `call-${index}`, name: 'map_inspect',
         summary: { target: `layer-${index}`, padding: '一'.repeat(1_024) },
       })).toBe(true);
       expect(events.apply({
-        kind: 'tool_result', toolUseId: `call-${index}`, status: 'succeeded', summary: { returned: index },
+        kind: 'tool_result', toolUseId: `call-${index}`, status: index % 2 ? 'failed' : 'succeeded', summary: { returned: index },
       })).toBe(true);
+      expect(retained.events.length).toBeLessThanOrEqual(80);
+      expect(Buffer.byteLength(JSON.stringify(retained.events))).toBeLessThanOrEqual(65_536);
+      expect(retained.terminalToolIds.size).toBeLessThanOrEqual(1_024);
     }
+    expect(events.apply({ kind: 'tool_use', id: 'call-2047', name: 'map_inspect', summary: {} })).toBe(false);
+    expect(events.apply({ kind: 'tool_result', toolUseId: 'call-0', status: 'failed', summary: {} })).toBe(false);
+    expect(events.apply({ kind: 'tool_result', toolUseId: 'pending', status: 'succeeded', summary: {} })).toBe(true);
     expect(events.finish('succeeded', undefined, 1_788_100_002_000)).toBe(true);
 
     const snapshot = events.snapshot();
     expect(snapshot.length).toBeLessThanOrEqual(80);
     expect(Buffer.byteLength(JSON.stringify(snapshot))).toBeLessThanOrEqual(65_536);
     expect(snapshot).toContainEqual(expect.objectContaining({ kind: 'tool_use', id: 'tools-omitted' }));
-    expect(snapshot).toContainEqual(expect.objectContaining({ kind: 'tool_use', id: 'call-99' }));
+    expect(snapshot).toContainEqual(expect.objectContaining({ kind: 'tool_use', id: 'pending' }));
+    expect(snapshot).toContainEqual(expect.objectContaining({ kind: 'tool_result', toolUseId: 'pending' }));
     expect(snapshot.at(-1)).toEqual({ kind: 'run_finished', status: 'succeeded' });
     expect(snapshot.filter((event) => event.kind === 'tool_use' && event.id === 'tools-omitted')).toHaveLength(1);
     expect(snapshot.filter((event) => event.kind === 'tool_result' && event.toolUseId === 'tools-omitted')).toHaveLength(1);
+    const aggregate = snapshot.find((event) => event.kind === 'tool_result' && event.toolUseId === 'tools-omitted');
+    if (aggregate?.kind !== 'tool_result') throw new Error('missing omitted tool evidence');
+    const completed = snapshot.filter((event) => event.kind === 'tool_result' && event.toolUseId !== 'tools-omitted');
+    expect(Number(aggregate.summary.omitted) + completed.length).toBe(2_049);
+    expect(Number(aggregate.summary.failures) + completed.filter((event) => event.kind === 'tool_result' && event.status === 'failed').length).toBe(1_024);
+    snapshot.splice(0);
+    expect(events.snapshot().length).toBeGreaterThan(0);
+  });
+
+  it('keeps unfinished calls available for late results when the snapshot omits them', () => {
+    const events = new RunEventAccumulator();
+    for (let index = 0; index < 1_024; index++) events.apply({ kind: 'tool_use', id: `pending-${index}`, name: 'map_inspect', summary: {} });
+    expect(events.apply({ kind: 'tool_use', id: 'overflow', name: 'map_inspect', summary: {} })).toBe(false);
+    expect(events.snapshot().length).toBeLessThanOrEqual(80);
+    for (let index = 0; index < 1_024; index++) {
+      expect(events.apply({ kind: 'tool_result', toolUseId: `pending-${index}`, status: 'succeeded', summary: {} })).toBe(true);
+    }
+    expect(events.snapshot()).toContainEqual(expect.objectContaining({ kind: 'tool_result', toolUseId: 'pending-1023' }));
+    expect(events.apply({ kind: 'tool_use', id: 'overflow', name: 'map_inspect', summary: {} })).toBe(true);
+  });
+
+  it('bounds live answer text on append without splitting Unicode code points', () => {
+    let content = '';
+    for (let index = 0; index < 100; index++) content = appendRunContent(content, '🗺界'.repeat(1_024));
+    expect(Array.from(content)).toHaveLength(65_536);
+    expect(Buffer.from(content).toString('utf8')).toBe(content);
+    expect(content.startsWith('🗺界')).toBe(true);
+    expect(content.endsWith('…')).toBe(true);
   });
 
   it('fits multibyte final content and ordered evidence into one complete persisted message budget', async () => {
@@ -1388,6 +1425,32 @@ describe('MapDesignRunService', () => {
     await service.start({ projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Improve labels.', agentId: 'text', clientRequestId: 'request-1', userMessageId: 'user-1', assistantMessageId: 'assistant-1' });
     expect(prompt).toContain(`user: ${newer}`);
     expect(prompt).not.toContain(`user: ${older}`);
+  });
+
+  it('passes complete API history separately from the current prompt for compaction', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'map-api-history-'));
+    const db = openMapDesignDatabase(root);
+    const store = createMapDesignLocalStore(db);
+    store.createProject({ project: { projectId: 'map-1', title: 'Map', runtime: { agentId: 'api' }, source: { url: 'https://example.com/style.json' }, designRequirement: 'Clear', idempotencyKey: 'key' }, primaryConversationId: 'conversation-1', verifiedWorkingDirectory: null });
+    for (const [index, id] of ['old', 'recent'].entries()) store.appendMessage({ message: { id, conversationId: 'conversation-1', role: 'user', content: id + 'x'.repeat(40_000), events: [], runStatus: 'succeeded', startedAt: index, endedAt: index } });
+    const startMapRun = vi.fn<MapAgentAdapter['startMapRun']>(async () => ({ done: Promise.resolve({ status: 'succeeded' }), cancel: async () => {} }));
+    const service = createMapDesignRunService({ store,
+      agents: { get: () => ({ id: 'api', bin: '', streamFormat: 'text', buildArgs: () => [] }),
+        getMapAgent: () => ({ id: 'api', capabilities: { nativeMapTools: true, publicReasoningSummary: true }, startMapRun }) },
+      nativeToolRegistry: fixtureNativeToolRegistry,
+      toolTokens: new ToolTokenRegistry(), dataDir: root, projectRoot: root,
+      daemonUrl: () => 'http://localhost', mapContext: { getContext: async () => ({ draftRevision: 9 }) },
+    });
+    try {
+      await service.start({ projectId: 'map-1', conversationId: 'conversation-1', prompt: 'Improve roads.', agentId: 'api', clientRequestId: 'request', userMessageId: 'current', assistantMessageId: 'reply' });
+      const request = startMapRun.mock.calls[0]?.[0];
+      expect(request?.apiHistory?.messages.map(message => message.id)).toEqual(['old', 'recent']);
+      expect(request?.apiHistory?.messages[0]?.content).toHaveLength(40_003);
+      expect(request?.prompt).toContain('Improve roads.');
+      expect(request?.prompt).toContain('draftRevision');
+      expect(request?.prompt).not.toContain('oldxxxx');
+      expect(request?.apiHistory?.save).toBeTypeOf('function');
+    } finally { await service.shutdown(); db.close(); rmSync(root, { recursive: true, force: true }); }
   });
 
   it('terminalizes a run when stored-session lookup throws', async () => {

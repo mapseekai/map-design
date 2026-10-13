@@ -111,11 +111,18 @@ export function MapDesignComments({ projectId, map, draftRevision, styleHash, re
     return () => { controller.abort(); mutationController.current?.abort(); inFlight.current = false; lifecycleGeneration.current += 1; loadSequence.current += 1; };
   }, [projectId, reload]);
 
+  const hasSubmittedComments = comments.some((comment) => comment.status === 'submitted');
   useEffect(() => {
-    if (!comments.some((comment) => comment.status === 'submitted')) return;
-    const timer = window.setInterval(() => void reload(), 1500);
-    return () => window.clearInterval(timer);
-  }, [comments, reload]);
+    if (!hasSubmittedComments) return;
+    const controller = new AbortController();
+    let polling = false;
+    const timer = window.setInterval(async () => {
+      if (polling || controller.signal.aborted) return;
+      polling = true;
+      try { await reload(controller.signal); } finally { polling = false; }
+    }, 1500);
+    return () => { window.clearInterval(timer); controller.abort(); };
+  }, [hasSubmittedComments, reload]);
 
   const chooseCandidate = useCallback((next: FeatureCandidate, nextAnchor: [number, number], snapshot = { draftRevision, styleHash }) => {
     const normalizedAnchor = normalizeAnchor(nextAnchor);

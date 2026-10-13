@@ -164,6 +164,52 @@ function mockSuccessfulSecondStage() {
 }
 
 describe('useMapDesignProject', () => {
+  it('coalesces invalidations during a read without aborting it or acknowledging stale data', async () => {
+    mockSuccessfulSecondStage();
+    clientMocks.context.mockResolvedValue(context(1, HASH_A));
+    const { result } = renderHook(() => useMapDesignProject('map-project-1', CURRENT_VIEW));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    clientMocks.style.mockClear();
+    const oldStyle = deferred<typeof STYLE>();
+    const newStyle = deferred<typeof STYLE>();
+    clientMocks.style.mockReturnValueOnce(oldStyle.promise).mockReturnValueOnce(newStyle.promise);
+    const settled = vi.fn();
+    let pending!: Promise<unknown>;
+    act(() => { pending = result.current.reload().then(settled); });
+    await waitFor(() => expect(clientMocks.style).toHaveBeenCalledTimes(1));
+    const signal = clientMocks.style.mock.calls[0]![1] as AbortSignal;
+    const reloads: Promise<void>[] = [];
+    act(() => { for (let index = 0; index < 10; index++) reloads.push(result.current.reload()); });
+    expect(signal.aborted).toBe(false);
+    expect(clientMocks.style).toHaveBeenCalledTimes(1);
+    await act(async () => { oldStyle.resolve(STYLE); });
+    await waitFor(() => expect(clientMocks.style).toHaveBeenCalledTimes(2));
+    expect(settled).not.toHaveBeenCalled();
+    await act(async () => { newStyle.resolve({ ...STYLE, name: 'latest' } as typeof STYLE); });
+    await Promise.all([pending, ...reloads]);
+    expect(result.current.project?.style.name).toBe('latest');
+    expect(clientMocks.style).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([false, true])('can reload after an interrupted history read returns to seeded current data (queued: %s)', async (queued) => {
+    mockSuccessfulSecondStage();
+    clientMocks.context.mockResolvedValue(context(1, HASH_A));
+    const { result, rerender } = renderHook(({ view, seed }: { view: MapDesignProjectView; seed: MapDesignProjectData | undefined }) => (
+      useMapDesignProject('map-project-1', view, seed)
+    ), { initialProps: { view: CURRENT_VIEW, seed: undefined } as { view: MapDesignProjectView; seed: MapDesignProjectData | undefined } });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const seed = result.current.project!;
+    clientMocks.revisionSnapshot.mockImplementation((_projectId, _revision, signal) => abortableNever(signal));
+    rerender({ view: { kind: 'historical', revision: 1 }, seed });
+    let pending!: Promise<void>;
+    if (queued) act(() => { pending = result.current.reload(); });
+    clientMocks.context.mockResolvedValue(context(3, HASH_B));
+    rerender({ view: CURRENT_VIEW, seed });
+    if (!queued) act(() => { pending = result.current.reload(); });
+    await waitFor(() => expect(result.current.project?.context.draftRevision).toBe(3));
+    await pending;
+  });
+
   it('rejects a historical snapshot with a null source entry as a safe invalid response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(CLIENT_SNAPSHOT), {
       headers: { 'content-type': 'application/json' },

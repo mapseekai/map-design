@@ -16,6 +16,7 @@ export async function runCartographyAgent(options: {
   dataRoot: string; prompt: string; runtime: MapDesignRuntimeSelectionInput;
   sessionId: string; conversationId: string; runId: string;
   sourceFile?: CartographyStyleFile | undefined;
+  apiHistory?: import('./api-context.js').ApiConversationHistory | undefined;
   configuredApiModel?: string | undefined; signal: AbortSignal;
   onEvent?: ((event: MapAgentEvent) => void) | undefined;
 }): Promise<string> {
@@ -65,6 +66,7 @@ export async function runCartographyAgent(options: {
     const handle = await adapter.startMapRun({
       runId: options.runId, projectId: sessionId, conversationId, cwd,
       prompt, resumePrompt: prompt, taskKind: 'cartography',
+      ...(resolved.agentId === 'api' ? { apiHistory: options.apiHistory } : {}),
       ...(cartographySources.length ? { cartographySources } : {}),
       model: resolved.agentId === 'api' && resolved.model === 'default' ? options.configuredApiModel ?? resolved.model : resolved.model,
       reasoning: resolved.reasoning ?? null, serviceTier: resolved.serviceTier ?? null,

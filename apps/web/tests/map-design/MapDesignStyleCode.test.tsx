@@ -12,6 +12,23 @@ const props = { projectId: 'project', style, draftRevision: 1, styleHash: 'a'.re
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); });
 async function tick() { await act(async () => { await vi.advanceTimersByTimeAsync(700); }); }
 
+it('defers parsing during typing and reuses the canonical source until the style changes', async () => {
+  vi.useFakeTimers();
+  const sources = vi.fn(() => ({}));
+  render(<MapDesignStyleCode {...props} style={{ ...style, get sources() { return sources(); } }} />);
+  const sourceReads = sources.mock.calls.length;
+  const parse = vi.spyOn(JSON, 'parse');
+  const edited = JSON.stringify(style) + '\n';
+  try {
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: edited } });
+    expect(parse).not.toHaveBeenCalledWith(edited);
+    expect(sources).toHaveBeenCalledTimes(sourceReads);
+    await tick();
+    expect(parse).toHaveBeenCalledWith(edited);
+    expect(saveMapStyleDocument).not.toHaveBeenCalled();
+  } finally { parse.mockRestore(); }
+});
+
 it('cancels pending saves for invalid JSON and preserves the exact text', async () => {
   vi.useFakeTimers(); render(<MapDesignStyleCode {...props} />);
   const editor = screen.getByRole('textbox');

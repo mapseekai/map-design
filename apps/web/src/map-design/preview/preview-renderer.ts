@@ -6,7 +6,13 @@ import {
   type MapRenderPreviewOutput,
 } from '@mapseekai/map-design-contracts';
 
-interface PreviewMap {
+const INTERACTION_HANDLERS = ['boxZoom', 'doubleClickZoom', 'dragPan', 'dragRotate', 'keyboard', 'scrollZoom', 'touchZoomRotate', 'touchPitch'] as const;
+
+interface PreviewMap extends Partial<Record<typeof INTERACTION_HANDLERS[number], {
+  isEnabled(): boolean;
+  disable(): void;
+  enable(): void;
+}>> {
   getCenter(): { lng: number; lat: number };
   getZoom(): number;
   getBearing(): number;
@@ -46,13 +52,13 @@ const READINESS_OBSERVATION_INTERVAL_MS = 50;
 export async function renderMapDesignPreview(options: RenderMapDesignPreviewOptions): Promise<MapRenderPreviewOutput | unknown> {
   const controller = new AbortController();
   const abort = () => controller.abort(options.signal?.reason);
-  options.signal?.addEventListener('abort', abort, { once: true });
   if (options.signal?.aborted) abort();
   const signal = controller.signal;
   const deadline = Date.parse(options.request.expiresAt);
   if (!Number.isFinite(deadline)) throw new TypeError('Map preview expiry is invalid.');
   const viewport = MapPreviewViewportSchema.parse(options.request.viewport);
   const map = options.map;
+  const disabledHandlers: NonNullable<PreviewMap[typeof INTERACTION_HANDLERS[number]]>[] = [];
   const previous = {
     center: [map.getCenter().lng, map.getCenter().lat] as [number, number],
     zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch(),
@@ -64,6 +70,7 @@ export async function renderMapDesignPreview(options: RenderMapDesignPreviewOpti
     maxWidth: map.getContainer?.().style.maxWidth,
     maxHeight: map.getContainer?.().style.maxHeight,
   };
+  options.signal?.addEventListener('abort', abort, { once: true });
   try {
     let fulfillment: MapPreviewFulfillRequest;
     let failureStage: 'sync' | 'viewport' | 'render' | 'capture' = 'sync';
@@ -78,6 +85,12 @@ export async function renderMapDesignPreview(options: RenderMapDesignPreviewOpti
       assertBeforeDeadline(deadline);
       assertSnapshot(options);
       failureStage = 'viewport';
+      for (const name of INTERACTION_HANDLERS) {
+        const handler = map[name];
+        if (!handler?.isEnabled()) continue;
+        disabledHandlers.push(handler);
+        handler.disable();
+      }
       applyViewport(map, viewport);
       failureStage = 'render';
       await waitForIdle(map, signal, deadline);
@@ -103,19 +116,23 @@ export async function renderMapDesignPreview(options: RenderMapDesignPreviewOpti
     assertBeforeDeadline(deadline);
     return await options.fulfill(fulfillment, signal);
   } finally {
-    const container = map.getContainer?.();
-    if (container) {
-      container.style.width = previous.width ?? '';
-      container.style.height = previous.height ?? '';
-      container.style.minWidth = previous.minWidth ?? '';
-      container.style.minHeight = previous.minHeight ?? '';
-      container.style.maxWidth = previous.maxWidth ?? '';
-      container.style.maxHeight = previous.maxHeight ?? '';
-    }
-    map.setPixelRatio?.(previous.pixelRatio);
-    map.jumpTo({ center: previous.center, zoom: previous.zoom, bearing: previous.bearing, pitch: previous.pitch });
-    map.resize();
     options.signal?.removeEventListener('abort', abort);
+    try {
+      const container = map.getContainer?.();
+      if (container) {
+        container.style.width = previous.width ?? '';
+        container.style.height = previous.height ?? '';
+        container.style.minWidth = previous.minWidth ?? '';
+        container.style.minHeight = previous.minHeight ?? '';
+        container.style.maxWidth = previous.maxWidth ?? '';
+        container.style.maxHeight = previous.maxHeight ?? '';
+      }
+      map.setPixelRatio?.(previous.pixelRatio);
+      map.jumpTo({ center: previous.center, zoom: previous.zoom, bearing: previous.bearing, pitch: previous.pitch });
+      map.resize();
+    } finally {
+      for (const handler of disabledHandlers) handler.enable();
+    }
   }
 }
 
@@ -232,6 +249,7 @@ function capturePng(map: PreviewMap, viewport: MapPreviewViewport, signal: Abort
           map.once('render', capture);
           return;
         }
+        assertViewport(map, viewport);
         const source = map.getCanvas();
         let canvas = source;
         // The API's PNG dimensions are logical viewport pixels, independent of rendering DPR.
@@ -254,6 +272,16 @@ function capturePng(map: PreviewMap, viewport: MapPreviewViewport, signal: Abort
     map.once('render', capture);
     map.triggerRepaint?.();
   });
+}
+
+function assertViewport(map: PreviewMap, viewport: MapPreviewViewport): void {
+  const center = map.getCenter();
+  const angleDifference = (actual: number, expected: number) => Math.abs(((actual - expected) % 360 + 540) % 360 - 180);
+  const differences = [angleDifference(center.lng, viewport.center[0]), Math.abs(center.lat - viewport.center[1]),
+    Math.abs(map.getZoom() - viewport.zoom), angleDifference(map.getBearing(), viewport.bearing), Math.abs(map.getPitch() - viewport.pitch)];
+  if (differences.some((difference) => !Number.isFinite(difference) || difference > 1e-6)) {
+    throw new Error('Map viewport changed during preview capture.');
+  }
 }
 
 function assertActive(signal: AbortSignal): void {

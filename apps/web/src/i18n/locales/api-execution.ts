@@ -1,8 +1,9 @@
 import type { Locale } from '../types';
 
-export const apiExecutionCopy: Record<Locale, { title: string; automatic: string; maxSteps: string; maxToolCalls: string; maxOutputTokens: string; cartographyMaxOutputTokens: string; hint: string; invalid: string }> = {
+export const apiExecutionCopy: Record<Locale, { title: string; contextWindowTokens: string; automatic: string; maxSteps: string; maxToolCalls: string; maxOutputTokens: string; cartographyMaxOutputTokens: string; hint: string; invalid: string }> = {
   "en": {
     "title": "API execution budget",
+    "contextWindowTokens": "Context window tokens (default 131072)",
     "automatic": "Leave blank for automatic budgeting",
     "maxSteps": "Maximum model steps",
     "maxToolCalls": "Maximum tool calls",
@@ -13,6 +14,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "zh-CN": {
     "title": "API 执行预算",
+    "contextWindowTokens": "上下文窗口 Token（默认 131072）",
     "automatic": "留空时自动选择预算",
     "maxSteps": "最大模型调用步数",
     "maxToolCalls": "最大工具调用次数",
@@ -23,6 +25,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "zh-TW": {
     "title": "API 執行預算",
+    "contextWindowTokens": "上下文視窗 Token（預設 131072）",
     "automatic": "留空時自動選擇預算",
     "maxSteps": "最大模型呼叫步數",
     "maxToolCalls": "最大工具呼叫次數",
@@ -33,6 +36,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "de": {
     "title": "API-Ausführungsbudget",
+    "contextWindowTokens": "Kontextfenster-Tokens (Standard 131072)",
     "automatic": "Für automatisches Budget leer lassen",
     "maxSteps": "Maximale Modellschritte",
     "maxToolCalls": "Maximale Werkzeugaufrufe",
@@ -43,6 +47,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "fr": {
     "title": "Budget API",
+    "contextWindowTokens": "Tokens de contexte (par défaut 131072)",
     "automatic": "Laisser vide pour un budget automatique",
     "maxSteps": "Étapes maximales du modèle",
     "maxToolCalls": "Appels d’outils maximaux",
@@ -53,6 +58,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "es-ES": {
     "title": "Presupuesto de API",
+    "contextWindowTokens": "Tokens de contexto (por defecto 131072)",
     "automatic": "Dejar vacío para presupuesto automático",
     "maxSteps": "Pasos máximos del modelo",
     "maxToolCalls": "Llamadas máximas a herramientas",
@@ -63,6 +69,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "pt-BR": {
     "title": "Orçamento de API",
+    "contextWindowTokens": "Tokens de contexto (padrão 131072)",
     "automatic": "Deixe vazio para orçamento automático",
     "maxSteps": "Máximo de etapas do modelo",
     "maxToolCalls": "Máximo de chamadas de ferramentas",
@@ -73,6 +80,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "it": {
     "title": "Budget API",
+    "contextWindowTokens": "Token di contesto (predefinito 131072)",
     "automatic": "Lascia vuoto per il budget automatico",
     "maxSteps": "Passi massimi del modello",
     "maxToolCalls": "Chiamate massime agli strumenti",
@@ -83,6 +91,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "ja": {
     "title": "API 実行予算",
+    "contextWindowTokens": "コンテキストトークン数（既定 131072）",
     "automatic": "空欄の場合は予算を自動設定",
     "maxSteps": "モデルの最大ステップ数",
     "maxToolCalls": "ツールの最大呼び出し回数",
@@ -93,6 +102,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "ko": {
     "title": "API 실행 예산",
+    "contextWindowTokens": "컨텍스트 토큰 (기본 131072)",
     "automatic": "비워 두면 예산 자동 설정",
     "maxSteps": "최대 모델 단계",
     "maxToolCalls": "최대 도구 호출",
@@ -103,6 +113,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "ru": {
     "title": "Бюджет API",
+    "contextWindowTokens": "Токены контекста (по умолчанию 131072)",
     "automatic": "Оставьте пустым для автоматического бюджета",
     "maxSteps": "Максимум шагов модели",
     "maxToolCalls": "Максимум вызовов инструментов",
@@ -113,6 +124,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "uk": {
     "title": "Бюджет API",
+    "contextWindowTokens": "Токени контексту (типово 131072)",
     "automatic": "Залиште порожнім для автоматичного бюджету",
     "maxSteps": "Максимум кроків моделі",
     "maxToolCalls": "Максимум викликів інструментів",
@@ -123,6 +135,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "pl": {
     "title": "Budżet API",
+    "contextWindowTokens": "Tokeny kontekstu (domyślnie 131072)",
     "automatic": "Pozostaw puste, aby dobrać budżet automatycznie",
     "maxSteps": "Maksymalna liczba kroków modelu",
     "maxToolCalls": "Maksymalna liczba wywołań narzędzi",
@@ -133,6 +146,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "hu": {
     "title": "API-keret",
+    "contextWindowTokens": "Kontextus tokenek (alapérték 131072)",
     "automatic": "Automatikus kerethez hagyja üresen",
     "maxSteps": "Modelllépések maximuma",
     "maxToolCalls": "Eszközhívások maximuma",
@@ -143,6 +157,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "id": {
     "title": "Anggaran API",
+    "contextWindowTokens": "Token konteks (bawaan 131072)",
     "automatic": "Kosongkan untuk anggaran otomatis",
     "maxSteps": "Langkah model maksimum",
     "maxToolCalls": "Panggilan alat maksimum",
@@ -153,6 +168,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "tr": {
     "title": "API bütçesi",
+    "contextWindowTokens": "Bağlam tokenleri (varsayılan 131072)",
     "automatic": "Otomatik bütçe için boş bırakın",
     "maxSteps": "Azami model adımı",
     "maxToolCalls": "Azami araç çağrısı",
@@ -163,6 +179,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "ar": {
     "title": "ميزانية API",
+    "contextWindowTokens": "رموز السياق (الافتراضي 131072)",
     "automatic": "اتركه فارغاً لاختيار الميزانية تلقائياً",
     "maxSteps": "الحد الأقصى لخطوات النموذج",
     "maxToolCalls": "الحد الأقصى لاستدعاءات الأدوات",
@@ -173,6 +190,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "fa": {
     "title": "بودجه API",
+    "contextWindowTokens": "توکن‌های زمینه (پیش‌فرض 131072)",
     "automatic": "برای بودجه خودکار خالی بگذارید",
     "maxSteps": "حداکثر مراحل مدل",
     "maxToolCalls": "حداکثر فراخوانی ابزار",
@@ -183,6 +201,7 @@ export const apiExecutionCopy: Record<Locale, { title: string; automatic: string
   },
   "th": {
     "title": "งบประมาณ API",
+    "contextWindowTokens": "โทเคนบริบท (ค่าเริ่มต้น 131072)",
     "automatic": "เว้นว่างเพื่อเลือกงบประมาณอัตโนมัติ",
     "maxSteps": "ขั้นตอนโมเดลสูงสุด",
     "maxToolCalls": "การเรียกเครื่องมือสูงสุด",
