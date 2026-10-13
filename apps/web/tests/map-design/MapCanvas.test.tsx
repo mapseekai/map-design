@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AddProtocolAction, MapOptions } from 'maplibre-gl';
 
 import { MapCanvas } from '../../src/map-design/map/MapCanvas';
@@ -12,6 +12,11 @@ import {
 import { GatewayPmtilesSource } from '../../src/map-design/map/gateway-pmtiles-source';
 import { PMTILES_PROTOCOL } from '../../src/map-design/map/pmtiles-protocol';
 import { createMapDesignResourceProtocol } from '../../src/map-design/map/resource-protocol';
+
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ getExtension: () => null } as unknown as WebGL2RenderingContext);
+});
+afterEach(() => vi.restoreAllMocks());
 
 describe('MapCanvas lifecycle and resource protocols', () => {
   afterEach(() => {

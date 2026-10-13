@@ -1,12 +1,46 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MapLibreCanvas } from '../../src/map-design/map/MapLibreCanvas';
 import { resetMapDesignProtocolsForTests } from '../../src/map-design/map/map-lifecycle';
 
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ getExtension: () => null } as unknown as WebGL2RenderingContext);
+});
+afterEach(() => vi.restoreAllMocks());
+
 describe('MapLibreCanvas', () => {
+  it.each(['missing', 'throws'])('reports %s WebGL2 support before constructing a map or acquiring protocols', (failure) => {
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockImplementation(() => {
+      if (failure === 'throws') throw new Error('Browser policy detail');
+      return null;
+    });
+    const createMap = vi.fn();
+    const onMapError = vi.fn();
+    const maplibre = { addProtocol: vi.fn(), removeProtocol: vi.fn() };
+    render(<MapLibreCanvas style="/style.json" createMap={createMap} maplibre={maplibre} onMapError={onMapError} />);
+    expect(onMapError).toHaveBeenCalledWith({ webglUnavailable: true });
+    expect(createMap).not.toHaveBeenCalled();
+    expect(maplibre.addProtocol).not.toHaveBeenCalled();
+  });
+
+  it('releases the support probe context and handles constructor failures with gateway protocols enabled', () => {
+    const loseContext = vi.fn();
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue({
+      getExtension: () => ({ loseContext }),
+    } as unknown as WebGL2RenderingContext);
+    const onMapError = vi.fn();
+    const maplibre = { addProtocol: vi.fn(), removeProtocol: vi.fn() };
+    render(<MapLibreCanvas style="/style.json" maplibre={maplibre} onMapError={onMapError}
+      createMap={() => { throw new Error('Private initialization detail'); }} />);
+    expect(loseContext).toHaveBeenCalledOnce();
+    expect(onMapError).toHaveBeenCalledWith();
+    expect(maplibre.removeProtocol).toHaveBeenCalledWith('pmtiles');
+    expect(maplibre.removeProtocol).toHaveBeenCalledWith('map-design-resource');
+  });
+
   it('releases the map, subscriptions and protocols when initial resize fails', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const unsubscribe = vi.fn();

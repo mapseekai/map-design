@@ -39,7 +39,7 @@ export function MapSourcePreview({ sourceUrl, ...mapProps }: PreviewProps) {
 function DirectStylePreview({ sourceUrl, onRetry, ...mapProps }: PreviewProps & { onRetry(): void }) {
   const t = useT();
   const [ready, setReady] = useState(false);
-  const [error, setError] = useState<'load' | 'resource' | null>(null);
+  const [error, setError] = useState<'load' | 'resource' | 'webgl' | null>(null);
   const readyRef = useRef(false);
   const mounted = useRef(true);
   useEffect(() => {
@@ -62,7 +62,7 @@ function DirectStylePreview({ sourceUrl, onRetry, ...mapProps }: PreviewProps & 
         transformRequest={createMapResourceTransform({ origin: window.location.origin, sourceUrl })}
         onMapLoad={handleLoad}
         onMapError={(event) => {
-          if (mounted.current) setError(readyRef.current || event?.sourceId || event?.status ? 'resource' : 'load');
+          if (mounted.current) setError(event?.webglUnavailable ? 'webgl' : readyRef.current || event?.sourceId || event?.status ? 'resource' : 'load');
         }}
       />
       {!ready && !error ? <div className="pointer-events-none absolute left-4 top-4 rounded-md bg-card/90 px-3 py-2">
@@ -70,7 +70,7 @@ function DirectStylePreview({ sourceUrl, onRetry, ...mapProps }: PreviewProps & 
       </div> : null}
       <div className="absolute inset-x-3 bottom-9 flex flex-col gap-2">
         {error ? <Alert variant={ready ? 'default' : 'destructive'} appearance="floating"><AlertDescription>
-          {error === 'resource' ? t('mapDesign.preview.resourceError') : t('mapDesign.preview.loadError')}
+          {error === 'webgl' ? t('mapDesign.preview.webglUnavailable') : error === 'resource' ? t('mapDesign.preview.resourceError') : t('mapDesign.preview.loadError')}
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>{t('mapDesign.preview.retry')}</Button>
         </AlertDescription></Alert> : null}
       </div>

@@ -26,6 +26,7 @@ export const de: Dict = {
   'mapDesign.preview.idle': "Eine öffentliche MapLibre-Style-URL eingeben, um die Karte automatisch zu laden.",
   'mapDesign.preview.invalidUrl': "Eine gültige HTTP(S)-Karten-URL ohne Benutzername, Passwort oder Fragment eingeben.",
   'mapDesign.preview.loadError': "Kartenvorschau nicht vollständig geladen. Style-Format, Netzwerk oder CORS prüfen. Das Projekt kann trotzdem erstellt werden.",
+  'mapDesign.preview.webglUnavailable': "Die Kartenvorschau benötigt WebGL2, das in diesem Browser nicht verfügbar ist. Aktivieren Sie die Grafikbeschleunigung oder verwenden Sie einen kompatiblen Browser und laden Sie die Vorschau erneut. Sie können das Projekt trotzdem erstellen.",
   'mapDesign.preview.resourceError': "Einige Kartenressourcen konnten nicht geladen werden. Das Projekt kann trotzdem erstellt werden.",
   'mapDesign.preview.retry': "Vorschau neu laden",
   'mapDesign.preview.hint': "Die Live-Vorschau verwendet eine MapLibre-Style-URL. GeoJSON, TileJSON und PMTiles werden beim Erstellen des Projekts importiert.",

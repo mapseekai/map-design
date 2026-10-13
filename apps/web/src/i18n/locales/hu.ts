@@ -26,6 +26,7 @@ export const hu: Dict = {
   'mapDesign.preview.idle': "Adjon meg nyilvános MapLibre Style URL-t a térkép automatikus betöltéséhez.",
   'mapDesign.preview.invalidUrl': "Érvényes HTTP(S) URL-t adjon meg felhasználónév, jelszó és töredék nélkül.",
   'mapDesign.preview.loadError': "Az előnézet nem töltődött be teljesen. Ellenőrizze a formátumot, a hálózatot vagy a CORS-t. A projekt így is létrehozható.",
+  'mapDesign.preview.webglUnavailable': "A térkép előnézetéhez WebGL2 szükséges, amely ebben a böngészőben nem érhető el. Engedélyezze a grafikus gyorsítást, vagy használjon kompatibilis böngészőt, majd töltse újra az előnézetet. A projekt így is létrehozható.",
   'mapDesign.preview.resourceError': "Egyes térképi erőforrások nem töltődtek be. A projekt így is létrehozható.",
   'mapDesign.preview.retry': "Előnézet újratöltése",
   'mapDesign.preview.hint': "Az előnézet MapLibre Style URL-t használ. A GeoJSON, TileJSON és PMTiles a projekt létrehozásakor importálódik.",

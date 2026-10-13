@@ -17,7 +17,7 @@ import {
 const defaultMapLibre: MapLibreProtocolApi = { addProtocol, removeProtocol, setWorkerUrl };
 const mapLibreWorkerUrl = '/maplibre/maplibre-gl-worker.mjs';
 
-export interface MapCanvasError { error?: unknown; sourceId?: string; status?: number; retryAfter?: string }
+export interface MapCanvasError { error?: unknown; sourceId?: string; status?: number; retryAfter?: string; webglUnavailable?: boolean }
 
 export interface OwnedMap {
   remove(): void;
@@ -100,6 +100,14 @@ export function MapLibreCanvas({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    // MapLibre 6.3 emits GPU errors during construction, before listeners can be attached.
+    let context: WebGL2RenderingContext | null = null;
+    try { context = document.createElement('canvas').getContext('webgl2'); } catch { /* Context creation can be disabled by the browser. */ }
+    if (!context) {
+      onMapErrorRef.current?.({ webglUnavailable: true });
+      return;
+    }
+    context.getExtension('WEBGL_lose_context')?.loseContext();
     maplibre.setWorkerUrl?.(mapLibreWorkerUrl);
     const releaseProtocols = resourceGateway
       ? acquireMapDesignProtocols(maplibre, protocolOptionsRef.current)
@@ -118,7 +126,7 @@ export function MapLibreCanvas({
       });
     } catch (error) {
       releaseProtocols();
-      if (resourceGateway || !onMapErrorRef.current) throw error;
+      if (!onMapErrorRef.current) throw error;
       onMapErrorRef.current();
       return;
     }

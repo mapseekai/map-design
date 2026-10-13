@@ -26,6 +26,7 @@ export const pl: Dict = {
   'mapDesign.preview.idle': "Wpisz publiczny URL stylu MapLibre, aby automatycznie wczytać mapę.",
   'mapDesign.preview.invalidUrl': "Wpisz prawidłowy URL HTTP(S) bez nazwy użytkownika, hasła i fragmentu.",
   'mapDesign.preview.loadError': "Podgląd nie został w pełni wczytany. Sprawdź format stylu, sieć lub CORS. Nadal można utworzyć projekt.",
+  'mapDesign.preview.webglUnavailable': "Podgląd mapy wymaga WebGL2, niedostępnego w tej przeglądarce. Włącz akcelerację grafiki lub użyj zgodnej przeglądarki, a następnie wczytaj ponownie podgląd. Nadal możesz utworzyć projekt.",
   'mapDesign.preview.resourceError': "Nie wczytano części zasobów mapy. Nadal można utworzyć projekt.",
   'mapDesign.preview.retry': "Odśwież podgląd",
   'mapDesign.preview.hint': "Podgląd używa URL stylu MapLibre. GeoJSON, TileJSON i PMTiles są importowane przy tworzeniu projektu.",

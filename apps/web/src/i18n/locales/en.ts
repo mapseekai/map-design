@@ -26,6 +26,7 @@ export const en: Dict = {
   'mapDesign.preview.idle': "Enter a public MapLibre Style URL to load the map automatically.",
   'mapDesign.preview.invalidUrl': "Enter a valid HTTP(S) map URL without a username, password or fragment.",
   'mapDesign.preview.loadError': "Map preview could not finish loading. Check the Style format, network or cross-origin access (CORS). You can still create the project.",
+  'mapDesign.preview.webglUnavailable': "Map preview requires WebGL2, which is unavailable in this browser. Enable graphics acceleration or use a compatible browser, then reload the preview. You can still create the project.",
   'mapDesign.preview.resourceError': "Some map resources could not load. You can still create the project.",
   'mapDesign.preview.retry': "Reload preview",
   'mapDesign.preview.hint': "Live preview uses a MapLibre Style URL. GeoJSON, TileJSON and PMTiles are imported when you create a project.",

@@ -26,6 +26,7 @@ export const zhCN: Dict = {
   'mapDesign.preview.idle': "输入公开的 MapLibre Style 地址后，地图将自动加载。",
   'mapDesign.preview.invalidUrl': "请输入有效的 HTTP(S) 地图地址，不包含用户名、密码或片段。",
   'mapDesign.preview.loadError': "地图预览未能完成，请检查样式格式、网络或跨域访问（CORS）。仍可继续创建项目。",
+  'mapDesign.preview.webglUnavailable': "地图预览需要 WebGL2，当前浏览器无法使用。请开启图形加速或使用兼容的浏览器，再重新加载预览。仍可继续创建项目。",
   'mapDesign.preview.resourceError': "部分地图资源未能加载，仍可继续创建项目。",
   'mapDesign.preview.retry': "重新加载预览",
   'mapDesign.preview.hint': "此处直接预览 MapLibre Style；GeoJSON、TileJSON 和 PMTiles 在创建项目时导入。",

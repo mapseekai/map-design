@@ -26,6 +26,7 @@ export const th: Dict = {
   'mapDesign.preview.idle': "ป้อน URL สไตล์ MapLibre สาธารณะเพื่อโหลดแผนที่อัตโนมัติ",
   'mapDesign.preview.invalidUrl': "ป้อน URL HTTP(S) ที่ถูกต้องโดยไม่มีชื่อผู้ใช้ รหัสผ่าน หรือส่วน fragment",
   'mapDesign.preview.loadError': "โหลดตัวอย่างไม่สมบูรณ์ โปรดตรวจสอบรูปแบบสไตล์ เครือข่าย หรือ CORS คุณยังสร้างโปรเจกต์ได้",
+  'mapDesign.preview.webglUnavailable': "การแสดงตัวอย่างแผนที่ต้องใช้ WebGL2 ซึ่งไม่พร้อมใช้งานในเบราว์เซอร์นี้ โปรดเปิดการเร่งกราฟิกหรือใช้เบราว์เซอร์ที่รองรับ แล้วโหลดตัวอย่างใหม่ คุณยังสามารถสร้างโครงการได้",
   'mapDesign.preview.resourceError': "โหลดทรัพยากรแผนที่บางรายการไม่ได้ คุณยังสร้างโปรเจกต์ได้",
   'mapDesign.preview.retry': "โหลดตัวอย่างใหม่",
   'mapDesign.preview.hint': "ตัวอย่างใช้ URL สไตล์ MapLibre ส่วน GeoJSON, TileJSON และ PMTiles จะนำเข้าเมื่อสร้างโปรเจกต์",

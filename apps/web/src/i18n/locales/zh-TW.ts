@@ -26,6 +26,7 @@ export const zhTW: Dict = {
   'mapDesign.preview.idle': "輸入公開的 MapLibre Style 網址後，地圖將自動載入。",
   'mapDesign.preview.invalidUrl': "請輸入有效的 HTTP(S) 地圖網址，不含使用者名稱、密碼或片段。",
   'mapDesign.preview.loadError': "地圖預覽未能完成，請檢查樣式格式、網路或跨來源存取（CORS）。仍可繼續建立專案。",
+  'mapDesign.preview.webglUnavailable': "地圖預覽需要 WebGL2，目前瀏覽器無法使用。請開啟圖形加速或使用相容的瀏覽器，再重新載入預覽。仍可繼續建立專案。",
   'mapDesign.preview.resourceError': "部分地圖資源未能載入，仍可繼續建立專案。",
   'mapDesign.preview.retry': "重新載入預覽",
   'mapDesign.preview.hint': "此處直接預覽 MapLibre Style；GeoJSON、TileJSON 和 PMTiles 於建立專案時匯入。",

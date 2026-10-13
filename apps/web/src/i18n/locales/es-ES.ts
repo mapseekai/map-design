@@ -26,6 +26,7 @@ export const esES: Dict = {
   'mapDesign.preview.idle': "Introduce una URL pública de estilo MapLibre para cargar el mapa automáticamente.",
   'mapDesign.preview.invalidUrl': "Introduce una URL HTTP(S) válida sin usuario, contraseña ni fragmento.",
   'mapDesign.preview.loadError': "La vista previa no se ha cargado por completo. Revisa el formato, la red o CORS. Puedes crear el proyecto igualmente.",
+  'mapDesign.preview.webglUnavailable': "La vista previa requiere WebGL2, que no está disponible en este navegador. Activa la aceleración gráfica o usa un navegador compatible y vuelve a cargar la vista previa. Puedes crear el proyecto de todos modos.",
   'mapDesign.preview.resourceError': "No se han cargado algunos recursos. Puedes crear el proyecto igualmente.",
   'mapDesign.preview.retry': "Recargar vista previa",
   'mapDesign.preview.hint': "La vista previa usa una URL de estilo MapLibre. GeoJSON, TileJSON y PMTiles se importan al crear el proyecto.",

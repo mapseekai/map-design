@@ -20,6 +20,32 @@ test.beforeEach(async ({ page }, testInfo) => {
   if (!testInfo.title.includes('[external]')) await routeMapSourceFixtures(page);
 });
 
+test('[P1] WebGL2 unavailable keeps the preview error local and project controls usable', async ({ page, toolsDev }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof getContext>) {
+      if (args[0] === 'webgl2') return null;
+      return getContext.apply(this, args);
+    } as typeof getContext;
+  });
+  await selectFakeLocalAgent(toolsDev.daemonUrl!);
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Project name').fill('Map without WebGL2');
+  await page.getByLabel('Public map URL').fill(SOURCE_URL);
+  await page.getByLabel('Design requirement').fill('Keep labels legible.');
+  await expect(page.getByRole('alert').filter({ hasText: 'Map preview requires WebGL2' })).toBeVisible();
+  await page.getByRole('button', { name: 'Reload preview' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Map preview requires WebGL2' })).toBeVisible();
+  await page.getByLabel('Project name').fill('Still editable');
+  await page.getByRole('combobox', { name: 'Local agent', exact: true }).click();
+  await page.getByRole('option', { name: /^Codex CLI(?: — .+)?$/u }).click();
+  await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeEnabled();
+  expect(errors.filter(message => /GPUInitializationError|WebGL2 is required|Uncaught/u.test(message))).toEqual([]);
+});
+
 test('[P0] keeps ACP and BYOK Agents visible but blocks unsupported map work before spawn', async ({ page, toolsDev }) => {
   const agentsResponse = await fetch(`${toolsDev.daemonUrl}/api/agents`);
   if (!agentsResponse.ok) throw new Error(`Agent catalogue request failed: ${await agentsResponse.text()}`);
