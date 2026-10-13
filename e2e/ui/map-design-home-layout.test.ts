@@ -136,7 +136,7 @@ test('[P2] Home keyboard order reaches creation after shell navigation', async (
     page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Settings', exact: true }),
     page.getByLabel('Project name', { exact: true }),
     page.getByLabel('Public map URL', { exact: true }),
-    page.getByRole('button', { name: 'Use default map', exact: true }),
+    page.getByRole('combobox', { name: 'Use default map', exact: true }),
     page.getByLabel('Design requirement', { exact: true }),
     page.getByRole('combobox', { name: 'Map design system', exact: true }),
     page.getByRole('region', { name: 'Source and brief', exact: true }).getByRole('button', { name: 'Design specifications', exact: true }),

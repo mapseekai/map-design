@@ -51,17 +51,22 @@ afterEach(() => {
 });
 
 describe('MapSourceForm independent preview and creation', () => {
-  it('fills the default map on click, previews it, and keeps the URL editable without submitting', async () => {
+  it.each([
+    'https://tiles.openfreemap.org/styles/liberty',
+    'https://tiles.openfreemap.org/styles/bright',
+    'https://tiles.openfreemap.org/styles/positron',
+    'https://demotiles.maplibre.org/styles/osm-bright-gl-style/style.json',
+  ])('selects preset %s and keeps the URL editable without submitting', async (defaultUrl) => {
     const create = renderForm([]);
     const input = screen.getByLabelText(/public map url/i);
-    const defaultUrl = 'https://demotiles.maplibre.org/styles/osm-bright-gl-style/style.json';
     expect(input).toHaveValue('');
-    fireEvent.click(screen.getByRole('button', { name: 'Use default map' }));
+    selectValue(screen.getByRole('combobox', { name: 'Use default map' }), defaultUrl);
     expect(input).toHaveValue(defaultUrl);
     expect(await screen.findByTestId('direct-preview')).toHaveAttribute('data-source', defaultUrl);
     expect(create).not.toHaveBeenCalled();
     fireEvent.change(input, { target: { value: SOURCE_URL } });
     expect(input).toHaveValue(SOURCE_URL);
+    expect(screen.getByRole('combobox', { name: 'Use default map' })).toHaveTextContent('Use default map');
   });
 
   it('shows CLI models, resets them on runtime switches and submits the selected model', async () => {
