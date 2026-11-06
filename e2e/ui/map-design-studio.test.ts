@@ -117,7 +117,9 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
   expect(codexSessions).toHaveLength(2);
   expect(codexSessions[0]).toMatchObject({ resumed: false, sessionId: expect.stringMatching(/^codex-session-/u) });
   expect(codexSessions[1]).toMatchObject({ resumed: true, sessionId: codexSessions[0]?.sessionId });
-  expect(codexSessions[1]?.prompt).toBe(thirdPrompt);
+  expect(codexSessions[1]?.visibleTranscript).toBe(`user: ${thirdPrompt}`);
+  expect(codexSessions[1]?.prompt).toContain(`Project: ${projectId}`);
+  expect(codexSessions[1]?.prompt).toContain('Current canonical map context at Run start');
 
   const conversation = await getConversation(toolsDev.daemonUrl!, projectId, conversationId);
   expect(conversation.messages.filter((message) => message.role === 'assistant').map((message) => message.runtime))
@@ -155,12 +157,7 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
   ).agentId).toBe('opencode');
   const chat = page.getByRole('region', { name: 'Map design agent chat' });
   await chat.getByRole('button', { name: 'New conversation', exact: true }).last().click();
-  let newConversationId = '';
-  await expect.poll(() => {
-    const current = selectedConversationId(page);
-    if (current !== conversationId) newConversationId = current;
-    return newConversationId;
-  }).not.toBe('');
+  const newConversationId = await waitForSelectedConversation(page, conversationId);
   expect(await getConversationRuntime(toolsDev.daemonUrl!, projectId, newConversationId)).toMatchObject({
     agentId: 'codex',
     revision: 0,
@@ -169,10 +166,9 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
 
   await runtimeChip.click();
   const runtimeDialog = page.getByRole('dialog', { name: 'Runtime settings', exact: true });
-  const claude = runtimeDialog.getByRole('option', { name: /Claude Code/u });
-  await expect(claude).toBeVisible();
-  await expect(claude).toBeDisabled();
-  await expect(claude).toContainText('Claude Code policy does not allow MapDesign MCP tools.');
+  await expect(runtimeDialog.getByRole('option', { name: /^Codex(?:\s|$)/u })).toHaveAttribute('aria-selected', 'true');
+  await expect(runtimeDialog.getByRole('option', { name: /^OpenCode(?:\s|$)/u })).toBeEnabled();
+  await expect(runtimeDialog.getByRole('option', { name: /Claude Code/u })).toHaveCount(0);
   await runtimeDialog.getByRole('button', { name: 'Close', exact: true }).click();
 
   await openRevisionInspector(page);
@@ -182,8 +178,9 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
   await expect(runtimeChip).toBeDisabled();
 
   expect(capture.filter((event) => event.type === 'map-mcp-server' || event.type === 'map-cli-invocation')).toEqual([]);
-  expect(consoleErrors).toEqual([]);
-  expect(networkErrors).toEqual([]);
+  const runtimeEvents = (await readFakeCapture(toolsDev.fakeMapAcp.capturePath)).slice(captureOffset);
+  expect(runtimeEvents).not.toContainEqual(expect.objectContaining({ type: 'unsupported-run-spawn', agentId: 'claude' }));
+  expect({ networkErrors, consoleErrors }).toEqual({ networkErrors: [], consoleErrors: [] });
 });
 
 for (const [agentId, adapter, sessionId] of [
@@ -435,6 +432,7 @@ test('[P1] Studio drives the retained local agent tool run, previews, validates,
 
   await page.getByLabel('Message map agent').fill('Add the deterministic acceptance metadata.');
   await page.getByRole('button', { name: 'Send' }).click();
+  await waitForAssistantTurnStatus(toolsDev.daemonUrl!, projectId, selectedConversationId(page), 0, 'succeeded');
   await expect.poll(async () => (await readFakeCapture(toolsDev.fakeMapAcp.capturePath))
     .some((event) => event.type === 'fixture-complete' && event.branch === 'native-transaction')).toBe(true);
   const nativeToolEvents = (await readFakeCapture(toolsDev.fakeMapAcp.capturePath))
@@ -757,8 +755,7 @@ test('[P0] switches and restores committed revisions through historical read-onl
     toolsDev.daemonUrl!,
     `${projectPrefix}/revisions/1/snapshot`,
   )).style)).toEqual(REVISION_PAINTS[1]);
-  expect(consoleErrors).toEqual([]);
-  expect(networkErrors).toEqual([]);
+  expect({ networkErrors, consoleErrors }).toEqual({ networkErrors: [], consoleErrors: [] });
 });
 
 test('[P0] halts a repeated invalid legacy mutation at eight calls and renders localized loop copy', async ({ page, toolsDev }) => {
@@ -1000,10 +997,10 @@ async function createAndOpenReadyMapProject(page: Page, daemonUrl: string, optio
 }
 
 async function openFreshConversation(page: Page, daemonUrl: string, projectId: string): Promise<void> {
-  const initialConversationId = selectedConversationId(page);
+  const initialConversationId = await waitForSelectedConversation(page);
   await waitForAssistantTurnStatus(daemonUrl, projectId, initialConversationId, 0, 'succeeded');
   await page.getByRole('region', { name: 'Map design agent chat' }).getByRole('button', { name: 'New conversation', exact: true }).last().click();
-  await expect.poll(() => selectedConversationId(page)).not.toBe(initialConversationId);
+  await waitForSelectedConversation(page, initialConversationId);
   await expect(page.getByRole('article', { name: 'Assistant message' })).toHaveCount(0);
 }
 
@@ -1018,28 +1015,7 @@ async function switchConversationRuntime(page: Page, agentLabel: 'Codex' | 'Open
 }
 
 async function createAndOpenReadyMapProjectForAgent(page: Page, daemonUrl: string, agentId: 'codex'): Promise<string> {
-  const projectId = `activity-${crypto.randomUUID()}`;
-  const response = await fetch(`${daemonUrl}/api/map-design/projects`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      projectId,
-      title: 'Activity acceptance map',
-      source: { url: 'https://demotiles.maplibre.org/style.json' },
-      designRequirement: 'Keep the map deterministic and legible.',
-      runtime: { agentId },
-      idempotencyKey: `map-create:${projectId}`,
-    }),
-  });
-  if (!response.ok) throw new Error(`Map project creation failed: ${await response.text()}`);
-  await expect.poll(async () => (
-    await fetch(`${daemonUrl}/api/map-design/projects/${projectId}`).then((value) => value.json()) as { project: { lifecycle: string } }
-  ).project.lifecycle).toBe('ready');
-  await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('region', { name: 'Map canvas' })).toBeVisible();
-  await waitForRenderedMap(page.locator('#map-design-map-surface [role="region"][aria-label="Map"]'));
-  await openFreshConversation(page, daemonUrl, projectId);
-  return projectId;
+  return createAndOpenReadyMapProject(page, daemonUrl, { agentId, projectPrefix: 'activity', title: 'Activity acceptance map' });
 }
 
 async function sendMapPrompt(page: Page, prompt: string): Promise<void> {
@@ -1056,6 +1032,14 @@ function waitForRunEventRequest(page: Page): Promise<PlaywrightRequest> {
   return page.waitForRequest((request) => (
     request.method() === 'GET' && /\/api\/runs\/[^/]+\/events$/u.test(new URL(request.url()).pathname)
   ));
+}
+
+async function waitForSelectedConversation(page: Page, previousId?: string): Promise<string> {
+  await expect(page).toHaveURL(url => {
+    const id = url.searchParams.get('conversation');
+    return Boolean(id && id !== previousId);
+  });
+  return selectedConversationId(page);
 }
 
 function selectedConversationId(page: Page): string {

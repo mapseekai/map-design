@@ -18,8 +18,8 @@ function writeConversationId(conversationId: string | null, mode: 'push' | 'repl
   else url.searchParams.set('conversation', conversationId);
   if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash === window.location.hash) return;
   const next = `${url.pathname}${url.search}${url.hash}`;
-  if (mode === 'push') window.history.pushState(window.history.state, '', next);
-  else window.history.replaceState(window.history.state, '', next);
+  if (mode === 'push') window.history.pushState(null, '', next);
+  else window.history.replaceState(null, '', next);
 }
 
 function newIdempotencyKey(): string {

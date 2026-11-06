@@ -69,7 +69,7 @@ function bulletList(items: string[]): string {
 /** Render the human-readable conversion report and Agent follow-up checklist. */
 export function renderReportMarkdown(ir: ExtractedStyle, c: Consolidated, sourceFile?: string): string {
   const report = buildReport(ir, c, sourceFile);
-  const skipped = report.skipped.map(item => `${item.source}/${item.layer}: ${item.reason}`);
+  const skipped = report.skipped.map(item => `${item.layer ? `${item.source}/${item.layer}` : item.source}: ${item.reason}`);
   const datasources = report.datasources.map(item =>
     `${item.source}/${item.layer}: ${item.identity}${item.providerType ? ` (${item.providerType})` : ''}`,
   );
@@ -81,7 +81,7 @@ export function renderReportMarkdown(ir: ExtractedStyle, c: Consolidated, source
     ...report.bindings.filter(item => !item.triage?.decision)
       .map(item => `补写 binding 分诊：${item.layer}+${item.expression}`),
     ...report.unresolved.map(item => `补写未决项：${item.topic}`),
-    ...report.skipped.map(item => `确认跳过项：${item.layer} (${item.reason})`),
+    ...report.skipped.map(item => `确认跳过项：${item.layer ?? item.source} (${item.reason})`),
   ];
 
   return [

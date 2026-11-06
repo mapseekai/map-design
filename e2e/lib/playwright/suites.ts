@@ -17,7 +17,7 @@ export type VisualCiMatrixEntry = {
 
 export const uiP0Groups = {
   'map-design': {
-    grep: String.raw`\\[P[02]\\]`,
+    grep: /\[P[02]\]/.source,
     fullyParallel: true,
     files: ['ui/map-design-studio.test.ts', 'ui/map-design-home-layout.test.ts'],
   },

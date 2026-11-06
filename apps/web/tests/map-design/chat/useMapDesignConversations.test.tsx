@@ -261,7 +261,7 @@ describe('useMapDesignConversations', () => {
   });
 
   it('falls back from a missing deep link to the newest conversation, preserves other parameters, and announces it once', async () => {
-    window.history.replaceState({}, '', '/studio?panel=map&conversation=missing#chat');
+    window.history.replaceState({ __NA: true }, '', '/studio?panel=map&conversation=missing#chat');
     const replaceState = vi.spyOn(window.history, 'replaceState');
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({ conversations: [newest, first] }));
 
@@ -271,7 +271,7 @@ describe('useMapDesignConversations', () => {
     expect(view.result.current.notice).toBe('The requested conversation is unavailable. Showing the newest conversation.');
     expect(window.location.search).toBe('?panel=map&conversation=conversation-2');
     expect(window.location.hash).toBe('#chat');
-    expect(replaceState).toHaveBeenCalledTimes(1);
+    expect(replaceState).toHaveBeenCalledExactlyOnceWith(null, '', '/studio?panel=map&conversation=conversation-2#chat');
   });
 
   it('responds to browser history selection only when that conversation belongs to the fetched project list', async () => {

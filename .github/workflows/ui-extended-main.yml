@@ -31,6 +31,8 @@ jobs:
   map_design:
     name: MapDesign Playwright
     runs-on: ubuntu-24.04
+    env:
+      MAP_DESIGN_WEB_PROD: "1"
     timeout-minutes: 30
 
     steps:
@@ -53,6 +55,9 @@ jobs:
           pnpm --filter @mapseekai/daemon build
           pnpm --filter @mapseekai/desktop build
           pnpm --filter @mapseekai/web build:sidecar
+
+      - name: Build production web server for browser tests
+        run: MAP_DESIGN_WEB_OUTPUT_MODE=server pnpm --filter @mapseekai/web build
 
       - name: Run MapDesign browser tests
         run: |

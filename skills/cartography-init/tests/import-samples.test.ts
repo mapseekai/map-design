@@ -14,10 +14,14 @@ const samples = [
     evidence: ["rag-status-1:", "rag-status-cvd-3:", "#e9002d"] },
   { file: "style-v8.json", elements: 48, colors: 55, skipped: 46,
     evidence: ["hsl(47, 26%, 88%)", "hsl(205, 56%, 73%)"] },
-  { file: "selective_masking.qgs", elements: 4, colors: 4, skipped: 13,
+  { file: "selective_masking.qgs", elements: 4, colors: 4, skipped: 14,
     evidence: ["#ffff06", "#377eb8", "1.86mm", "32pt", "Sans"] },
   { file: "network.qgz", elements: 5, colors: 8, skipped: 16,
     evidence: ["#cb8d7b", "#b25cd4", "#7fd95e", "0.86mm", "10pt"] },
+  { file: "qgis-quickapp.qgs", elements: 4, colors: 6, skipped: 16,
+    evidence: ["#9a8b74", "rgba(118, 191, 227, 0.5176470588235295)", "0.66mm"] },
+  { file: "qgis-selective-masking.qgs", elements: 9, colors: 9, skipped: 27,
+    evidence: ["#ffff06", "#377eb8", "1.86mm", "16pt", "Sans"] },
 ] as const;
 
 describe("real style import samples", () => {
@@ -47,13 +51,29 @@ describe("real style import samples", () => {
 });
 
 
-describe('official QGIS training projects', () => {
+describe('official QGIS projects', () => {
   it.each([
     ['selective_masking.qgs', 'a43f23b25cd0e456bf49c23702aff456a928f8828b8abefa89f4170d2af80e8e'],
     ['network.qgz', '43cbad6404801e95dc2572423f815218c11975270d405ee2aa0a2c35363ca666'],
+    ['qgis-quickapp.qgs', 'f1a7c68cdd5de3e5061f3e589db34893316a472ca85b10f7563315c1f8b84c3b'],
+    ['qgis-selective-masking.qgs', 'b0a3f607a59ffaabc2f40ff9b083c91196bedba86975a7f3fb86a2f130ebdba1'],
     ['QGIS-Training-Data.LICENSE.txt', 'dba313854f65a8d41b1777cf9d6cb5ddf692792be04d808b82c86c63909fbdf0'],
   ])('keeps %s byte-identical to the pinned upstream source', (file, hash) => {
     expect(createHash('sha256').update(loadFixture(`import-samples/${file}`)).digest('hex')).toBe(hash);
+  });
+
+  it('identifies QuickApp layers with enabled labels but no definition', () => {
+    const ir = parseQgis(loadFixture('import-samples/qgis-quickapp.qgs'), 'qgis-quickapp.qgs');
+    expect(ir.skipped.filter(item => item.reason.includes('缺少 labeling')).map(item => item.layer))
+      .toEqual(['Roads', 'Planes', 'Land']);
+    expect(ir.skipped.filter(item => item.reason.includes('分类条件')).map(item => item.detail)).toEqual(['Name', 'Class', 'Name']);
+  });
+
+  it('identifies the actual raster renderer and unapplied label filters in the QGIS masking test project', () => {
+    const ir = parseQgis(loadFixture('import-samples/qgis-selective-masking.qgs'), 'qgis-selective-masking.qgs');
+    expect(ir.skipped).toContainEqual(expect.objectContaining({ layer: 'raster_layer', reason: '栅格渲染器未转换', detail: 'multibandcolor' }));
+    expect(ir.skipped.filter(item => item.layer === 'polys2' && item.reason.includes('规则式标注'))
+      .map(item => item.detail)).toEqual(['ELSE', "Name='Dam'"]);
   });
 
   it('reads actual RuleRenderer definitions from the original QGZ and reports lost symbol composition', () => {

@@ -1,4 +1,5 @@
 import { expect } from '@/playwright/suite';
+import { warmPlaywrightWebRuntime } from './runtime-lifecycle.ts';
 import { PNG } from 'pngjs';
 import type { Locator, Page } from '@playwright/test';
 
@@ -20,7 +21,7 @@ export async function createAndOpenReadyMapProject(
   expect(response.ok, await response.text()).toBe(true);
   await expect.poll(async () => (await fetch(`${daemonUrl}/api/map-design/projects/${projectId}`).then((value) => value.json()) as { project: { lifecycle: string } }).project.lifecycle)
     .toBe('ready');
-  await page.goto(`/projects/${projectId}`, { waitUntil: 'domcontentloaded' });
+  await warmPlaywrightWebRuntime(page, `/projects/${projectId}`);
   await expect(page.getByRole('region', { name: 'Map canvas' })).toBeVisible();
   await waitForRenderedMapWithRetry(page);
   return projectId;

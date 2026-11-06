@@ -86,4 +86,81 @@ describe('parseQgis', () => {
     expect(ir.bindings.some((b) => b.kind === 'field-override')).toBe(true);
     for (const e of ir.elements) expect(JSON.stringify(e)).not.toContain('"highway"');
   });
+
+  it('reports unapplied ranges, missing symbols and visibility while retaining extracted style definitions', () => {
+    const xml = `<qgis><maplayer><layername>roads</layername><renderer-v2 type="graduatedSymbol" attr="speed">
+      <ranges><range lower="10" upper="50" symbol="0"/><range lower="50" upper="90" symbol="missing"/></ranges>
+      <symbols><symbol name="0" type="line" alpha="0.25"><layer class="SimpleLine" enabled="0">
+        <prop k="line_color" v="255,0,0,255"/></layer></symbol></symbols>
+      </renderer-v2></maplayer><maplayer><layername>empty</layername><renderer-v2 type="singleSymbol"/></maplayer></qgis>`;
+    const report = JSON.parse(initializeCartography(Buffer.from(xml), 'ranges.qgs', 'Ranges').reportJson);
+    expect(report.statistics.elements).toBe(1);
+    expect(report.skipped).toEqual(expect.arrayContaining([
+      expect.objectContaining({ layer: 'roads', detail: 'lower=10, upper=50' }),
+      expect.objectContaining({ layer: 'roads', detail: 'lower=50, upper=90' }),
+      expect.objectContaining({ layer: 'roads', reason: '引用的符号未找到', detail: 'missing' }),
+      expect.objectContaining({ layer: 'roads', reason: '符号透明度 alpha 未应用', detail: '0.25' }),
+      expect.objectContaining({ layer: 'roads', reason: expect.stringContaining('已禁用符号图层') }),
+      expect.objectContaining({ layer: 'empty', reason: 'singleSymbol 缺少符号定义' }),
+    ]));
+    expect(report.bindings).toContainEqual(expect.objectContaining({ layer: 'roads', expression: 'speed' }));
+  });
+
+  it('reports a single label rule and incomplete or legacy definitions through QGZ', () => {
+    const xml = `<qgis><maplayer><layername>filtered</layername><labeling type="rule-based"><rules><rule filter="id=5">
+      <settings><text-style fontFamily="Sans" fontSize="12" fontSizeUnit="Point"/></settings></rule></rules></labeling></maplayer>
+      <maplayer><layername>legacy</layername><customproperties><property key="labeling/fieldName" value="name"/></customproperties></maplayer>
+      <maplayer><layername>empty</layername><labeling type="simple"/></maplayer>
+      <maplayer><layername>incomplete</layername><labeling type="simple"><settings><text-style fontSize="12"/></settings></labeling></maplayer></qgis>`;
+    const archive = Buffer.from(zipSync({ 'project.qgs': Buffer.from(xml) }));
+    const result = initializeCartography(archive, 'labels.qgz', 'Labels');
+    const report = JSON.parse(result.reportJson);
+    expect(report.statistics.elements).toBe(1);
+    expect(report.skipped).toEqual([
+      { source: 'qgis', layer: 'filtered', reason: expect.stringContaining('规则式标注'), detail: 'id=5' },
+      { source: 'qgis', layer: 'legacy', reason: expect.stringContaining('旧版 customproperties') },
+      { source: 'qgis', layer: 'empty', reason: expect.stringContaining('缺少 text-style') },
+      { source: 'qgis', layer: 'incomplete', reason: expect.stringContaining('字体') },
+    ]);
+    for (const item of report.skipped) expect(result.reportMarkdown).toContain(item.reason);
+  });
+
+  it.each([
+    ['key="id" description="always" active="1" scalemindenom="0" scalemaxdenom="0"', []],
+    ['scalemindenom="500" scalemaxdenom="2500"', ['scalemindenom=500, scalemaxdenom=2500']],
+    ['active="0"', ['active=0']],
+  ] as const)('only reports effective conditions on a label rule with %s', (attributes, expected) => {
+    const xml = `<qgis><maplayer><layername>labels</layername><labeling type="rule-based"><rules>
+      <rule ${attributes}><rule><settings><text-style fontFamily="Sans" fontSize="12"/></settings></rule></rule>
+      </rules></labeling></maplayer></qgis>`;
+    const ir = parseQgis(Buffer.from(xml), 'conditions.qgs');
+    expect(ir.elements).toHaveLength(1);
+    expect(ir.skipped.map(item => item.detail)).toEqual(expected);
+  });
+
+  it('keeps large QGZ rule reports within the draft response limit and counts omitted details', () => {
+    const rules = Array.from({ length: 10_000 }, (_, i) =>
+      `<rule filter="id=${i}"><settings><text-style fontSize="12" fontFamily="Sans"/></settings></rule>`);
+    const xml = `<qgis><maplayer><layername>places</layername><labeling type="rule-based"><rules>${rules.join('')}</rules></labeling></maplayer></qgis>`;
+    const archive = Buffer.from(zipSync({ 'places.qgs': Buffer.from(xml) }));
+    const draft = initializeCartography(archive, 'places.qgz', 'Places');
+    const report = JSON.parse(draft.reportJson);
+    expect(report.statistics.elements).toBe(1);
+    const summary = '另有 9900 条转换提示已省略（共 10000 条）';
+    expect(report.skipped).toContainEqual({ source: 'qgis', reason: summary });
+    expect(report.skipped).toContainEqual(expect.objectContaining({ detail: 'id=99' }));
+    expect(draft.reportMarkdown).toContain(summary);
+    expect(draft.reportMarkdown).not.toContain('undefined');
+    expect(draft.reportJson.length).toBeLessThan(2 * 1024 * 1024);
+    expect(draft.reportMarkdown.length).toBeLessThan(2 * 1024 * 1024);
+  });
+
+  it('keeps distinct source layer names intact and counts oversized diagnostics', () => {
+    const prefix = 'a'.repeat(200);
+    const names = [prefix + 'roads', 'x'.repeat(65_536), prefix + 'sites'];
+    const xml = `<qgis>${names.map(name => `<maplayer labelsEnabled="1"><layername>${name}</layername></maplayer>`).join('')}</qgis>`;
+    const ir = parseQgis(Buffer.from(xml), 'names.qgs');
+    expect(ir.skipped.map(item => item.layer)).toEqual([names[0], names[2], undefined]);
+    expect(ir.skipped.at(-1)?.reason).toBe('另有 1 条转换提示已省略（共 3 条）');
+  });
 });

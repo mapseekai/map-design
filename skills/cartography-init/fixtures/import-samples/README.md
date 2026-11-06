@@ -39,7 +39,7 @@ pnpm --filter @cartographymd/init-skill exec vitest run tests/import-samples.tes
 
 | 文件 / 固定原始地址 | 字节数 | 真实特性 | 当前回归基线 |
 | --- | ---: | --- | --- |
-| [selective_masking.qgs](https://raw.githubusercontent.com/qgis/QGIS-Training-Data/fd26dd88e39b9aec550eea450cec18d02b1de3b5/exercise_data/masking/selective_masking.qgs) | 127069 | QGIS 3.37；`Class` 分类、3 个 SvgMarker、双 SimpleLine、SimpleFill、Sans 标注、MM/Point、扩展 RGB 颜色 | 4 元素、4 颜色 token、13 skipped |
+| [selective_masking.qgs](https://raw.githubusercontent.com/qgis/QGIS-Training-Data/fd26dd88e39b9aec550eea450cec18d02b1de3b5/exercise_data/masking/selective_masking.qgs) | 127069 | QGIS 3.37；`Class` 分类、3 个 SvgMarker、双 SimpleLine、SimpleFill、Sans 标注、MM/Point、扩展 RGB 颜色 | 4 元素、4 颜色 token、14 skipped |
 | [network.qgz](https://raw.githubusercontent.com/qgis/QGIS-Training-Data/fd26dd88e39b9aec550eea450cec18d02b1de3b5/exercise_data/network_analysis/network.qgz) | 14465 | QGIS 3.28.7；3 条 `RuleRenderer` 规则、双 SimpleLine 和 MarkerLine、点符号、`speed` 标注、MM/Point | 5 元素、8 颜色 token、16 skipped |
 
 SHA-256（测试自动验证，`.gitattributes` 禁止这些原始文件的换行转换）：
@@ -71,3 +71,14 @@ pnpm --filter @cartographymd/init-skill run init -- --input skills/cartography-i
 ```
 
 Windows 上请把 `/tmp/` 改为已存在的临时目录。替换样例时需一起核对固定提交、许可、原始 hash、属性断言和统计，不能只更新数量使测试通过。
+
+## QGIS 官方测试工程
+
+下面两份工程取自 QGIS 项目的同一提交。文件保留了上游的原始字节和作者信息，测试会校验 SHA-256。上游的 COPYING 与本目录已有的许可副本逐字相同。[QGIS COPYING](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/COPYING) · [本地许可副本](QGIS-Training-Data.LICENSE.txt)
+
+| 文件和上游来源 | 验证的导入结果 | SHA-256 |
+| --- | --- | --- |
+| [qgis-quickapp.qgs](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/quickapp_project.qgs) | 4 个元素、6 个颜色项、16 条跳过说明。Roads、Planes、Land 启用了标注但缺少标注定义，报告逐层指出。 | `f1a7c68cdd5de3e5061f3e589db34893316a472ca85b10f7563315c1f8b84c3b` |
+| [qgis-selective-masking.qgs](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/selective_masking.qgs) | 9 个元素、9 个颜色项、27 条跳过说明。JSON 报告记录了栅格渲染器 `multibandcolor` 以及标注条件 `ELSE` 和 `Name='Dam'`。 | `b0a3f607a59ffaabc2f40ff9b083c91196bedba86975a7f3fb86a2f130ebdba1` |
+
+草稿沿用可提取的符号和字体。对分类、分级、符号透明度、禁用的符号图层及标注规则，请查看 `INIT_REPORT.md` 中对应图层的跳过说明。`INIT_REPORT.json` 的 `detail` 可提供区间端点、过滤表达式或渲染器类型的最多 200 个字符。每个工程最多保留 100 条此类提示，明细文本合计最多 65,536 个 UTF-16 码元。报告保留完整图层名，并列出省略数和总数。

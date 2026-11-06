@@ -47,8 +47,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
           AMR_HOME: join(toolsDev.root, 'scratch', 'amr-home'),
           MAP_DESIGN_BIN: join(e2eWorkspaceRoot(), 'apps', 'daemon', 'dist', 'cli.js'),
           MAP_DESIGN_NODE_BIN: process.execPath,
-          MAP_DESIGN_WEB_DIST_DIR: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'next'),
-          MAP_DESIGN_WEB_TSCONFIG_PATH: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'tsconfig.json'),
+          ...(process.env.MAP_DESIGN_WEB_PROD === '1' ? {} : {
+            MAP_DESIGN_WEB_DIST_DIR: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'next'),
+            MAP_DESIGN_WEB_TSCONFIG_PATH: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'tsconfig.json'),
+          }),
           ...fakeMapAcp.env,
         });
         await warmPlaywrightDaemonRuntime(toolsDev.url.daemon('/api/health'));
