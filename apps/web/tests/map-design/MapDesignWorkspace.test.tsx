@@ -206,7 +206,8 @@ describe('MapDesignWorkspace', () => {
   });
 
   it('updates only the revision query parameter when changing views', async () => {
-    window.history.replaceState(null, '', '?conversation=conversation-1');
+    window.history.replaceState({ __NA: true }, '', '/projects/map-project-1?conversation=conversation-1#chat');
+    const pushState = vi.spyOn(window.history, 'pushState');
     api.project.mockResolvedValue(project('map-project-1', 'Transit atlas'));
     api.config.mockResolvedValue(configured);
     api.conversations.mockResolvedValue({ conversations: [conversationSummary('map-project-1', 'conversation-1')] });
@@ -215,6 +216,7 @@ describe('MapDesignWorkspace', () => {
 
     await screen.findByTestId('studio');
     fireEvent.click(screen.getByRole('button', { name: 'View revision 2' }));
+    expect(pushState).toHaveBeenCalledWith(null, '', '/projects/map-project-1?conversation=conversation-1&revision=2#chat');
     expect(window.location.search).toBe('?conversation=conversation-1&revision=2');
     expect(screen.getByTestId('studio')).toHaveAttribute('data-view-revision', '2');
 

@@ -121,8 +121,8 @@ export function MapDesignWorkspace({ projectId, onMissingProject, onOpenSettings
     if (view.kind === 'historical') url.searchParams.set('revision', String(view.revision));
     else url.searchParams.delete('revision');
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
-    if (options?.replace) window.history.replaceState(window.history.state, '', nextUrl);
-    else window.history.pushState(window.history.state, '', nextUrl);
+    if (options?.replace) window.history.replaceState(null, '', nextUrl);
+    else window.history.pushState(null, '', nextUrl);
     setUrlState((current) => ({ ...current, view, error: null }));
   }, []);
 
