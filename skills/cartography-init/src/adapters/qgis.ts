@@ -238,8 +238,8 @@ function extractLabeling(labeling: XmlNode, layerName: string, extracted: Extrac
     ...Object.keys(textStyle).filter(key => !key.startsWith('@_')),
     ...findNodes(labeling, 'settings').flatMap(settings => Object.keys(settings).filter(key => key !== 'text-style')),
   ];
-  if (remaining.length || sections.length) extracted.skipped.push({ source: 'qgis', layer: layerName,
-    reason: `未转换的标注配置（含默认或未启用设置）: ${[...new Set([...remaining, ...sections])].sort().join(', ')}` });
+  if (remaining.length || sections.length) reportLoss(layerName,
+    `未转换的标注配置（含默认或未启用设置）: ${[...new Set([...remaining, ...sections])].sort().join(', ')}`);
   if (textStyles.length > 1) extracted.skipped.push({ source: 'qgis', layer: layerName, reason: '多个标注样式仅提取第一个，其余标注规则未转换' });
   const family = props.get('fontFamily') ?? props.get('font-family');
   const size = numberOf(props.get('fontSize') ?? props.get('font-size'));

@@ -163,4 +163,30 @@ describe('parseQgis', () => {
     expect(ir.skipped.map(item => item.layer)).toEqual([names[0], names[2], undefined]);
     expect(ir.skipped.at(-1)?.reason).toBe('另有 1 条转换提示已省略（共 3 条）');
   });
+
+  it.each([
+    ['an oversized section name', `<${'a'.repeat(1_100_000)}/>`],
+    ['many unknown sections', Array.from({ length: 10_000 }, (_, index) =>
+      `<section_${index}_${'x'.repeat(110)}/>`).join('')],
+  ])('bounds nested label reports with %s through QGS and QGZ', (_scenario, sections) => {
+    const project = (settings: string) => `<qgis><maplayer><layername>places</layername>
+      <labeling type="rule-based"><rules><rule><settings>
+        <text-style fontFamily="Sans" fontSize="12" fontSizeUnit="Point"/>${settings}
+      </settings></rule></rules></labeling></maplayer></qgis>`;
+    const baseline = initializeCartography(Buffer.from(project('')), 'places.qgs', 'Places');
+    const xml = Buffer.from(project(sections));
+    for (const fileName of ['places.qgs', 'places.qgz']) {
+      const input = fileName.endsWith('.qgz') ? Buffer.from(zipSync({ 'places.qgs': xml })) : xml;
+      expect(input.length).toBeLessThanOrEqual(4 * 1024 * 1024);
+      const draft = initializeCartography(input, fileName, 'Places');
+      expect(draft.reportMarkdown.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+      expect(draft.reportJson.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+      expect(draft.source).toBe(baseline.source);
+      const report = JSON.parse(draft.reportJson);
+      expect(report.statistics.elements).toBe(1);
+      const summary = '另有 1 条转换提示已省略（共 1 条）';
+      expect(report.skipped).toEqual([{ source: 'qgis', reason: summary }]);
+      expect(draft.reportMarkdown).toContain(summary);
+    }
+  });
 });
