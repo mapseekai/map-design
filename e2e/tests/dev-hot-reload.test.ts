@@ -1,4 +1,4 @@
-import type { BrowserContext } from '@playwright/test';
+import type { BrowserContext, WebSocketRoute } from '@playwright/test';
 import { expect, it, vi } from 'vitest';
 import { isolateDevHotReload } from '../lib/playwright/runtime-lifecycle.ts';
 
@@ -18,4 +18,18 @@ it.each([['http:', 'ws:'], ['https:', 'wss:']])('isolates only the %s worker’s
     `${ws}//example.test:8171/_next/webpack-hmr`,
   ];
   expect(targets.filter(target => matches(new URL(target)))).toEqual(targets.slice(0, 2));
+});
+
+it('connects to the dev server and passes through hydration and diagnostics', async () => {
+  const routeWebSocket = vi.fn<BrowserContext['routeWebSocket']>();
+  await isolateDevHotReload({ routeWebSocket }, 'http://localhost:8171');
+  const handler = routeWebSocket.mock.calls[0]![1];
+  const onMessage = vi.fn<WebSocketRoute['onMessage']>();
+  const client = { connectToServer: () => ({ onMessage }), send: vi.fn() };
+  await handler(client as unknown as WebSocketRoute);
+  const receive = onMessage.mock.calls[0]![0];
+  const forwarded = ['{"type":"sync","hash":"abc"}', Buffer.from([3, 17, 0]), '{"type":"errors"}', 'unrecognized frame'];
+  receive('{"type":"serverComponentChanges","hash":"abc"}');
+  for (const frame of forwarded) receive(frame);
+  expect(client.send.mock.calls).toEqual(forwarded.map(frame => [frame]));
 });
