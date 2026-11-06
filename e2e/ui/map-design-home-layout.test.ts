@@ -1,4 +1,5 @@
 import { routeMapSourceFixtures } from '../lib/playwright/map-source-fixtures.ts';
+import { warmPlaywrightWebRuntime } from '../lib/playwright/runtime-lifecycle.ts';
 import { readFile } from 'node:fs/promises';
 import { PNG } from 'pngjs';
 
@@ -124,7 +125,7 @@ test('[P2] Home keyboard order reaches creation after shell navigation', async (
     } });
   });
 
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await warmPlaywrightWebRuntime(page, toolsDev.url.web('/'), { timeoutMs: T.long });
   await expect(page.getByRole('heading', { name: 'MapDesign workbench' })).toBeVisible();
 
   const mapDesignHome = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Home', exact: true });
