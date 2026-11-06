@@ -180,8 +180,7 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
   expect(capture.filter((event) => event.type === 'map-mcp-server' || event.type === 'map-cli-invocation')).toEqual([]);
   const runtimeEvents = (await readFakeCapture(toolsDev.fakeMapAcp.capturePath)).slice(captureOffset);
   expect(runtimeEvents).not.toContainEqual(expect.objectContaining({ type: 'unsupported-run-spawn', agentId: 'claude' }));
-  expect(consoleErrors).toEqual([]);
-  expect(networkErrors).toEqual([]);
+  expect({ networkErrors, consoleErrors }).toEqual({ networkErrors: [], consoleErrors: [] });
 });
 
 for (const [agentId, adapter, sessionId] of [

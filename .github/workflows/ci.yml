@@ -282,8 +282,8 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
 
-      - name: Windows launcher payload archive tests
-        run: pnpm --filter @mapseekai/tools-pack exec vitest run tests/launcher-payload.test.ts
+      - name: Windows packaged app and portable archive tests
+        run: pnpm --filter @mapseekai/tools-pack exec vitest run tests/win-builder.test.ts tests/win-resources.test.ts tests/win-prebundle.test.ts tests/win-portable-zip.test.ts
 
   web_workspace_tests:
     name: Web workspace tests (${{ matrix.shard }}/2)
