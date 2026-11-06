@@ -1,5 +1,8 @@
 import { Button, Textarea } from '@mapseekai/components';
-import { ListOrdered, Paperclip, Pencil, X } from 'lucide-react';
+import { mapScreenshotUrl, mapTextAttachmentUrl } from '@mapseekai/contracts';
+import { attachmentsCopy } from '../../i18n/locales/attachments';
+import { screenshotCopy } from '../../i18n/locales/screenshots';
+import { FileText, ListOrdered, Paperclip, Pencil, X } from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 import { useI18n } from '../../i18n';
@@ -19,6 +22,7 @@ interface MessageQueueProps {
   onSave(id: string, prompt: string): void;
   onCancelEdit(): void;
   onRemove(id: string): void;
+  onRemoveAttachment?(id: string, attachmentId: string): void;
   onResume(): void;
 }
 
@@ -37,12 +41,12 @@ export function MapDesignMessageQueue(props: MessageQueueProps) {
     <ol className="max-h-60 overflow-y-auto overscroll-contain border-t">
       {props.items.map((item, index) => <QueueRow key={item.id} item={item} position={format.format(index + 1)} copy={copy}
         editing={props.editingId === item.id} submitting={props.submittingId === item.id} disabled={props.disabled}
-        onEdit={props.onEdit} onSave={props.onSave} onCancelEdit={props.onCancelEdit} onRemove={props.onRemove} />)}
+        onEdit={props.onEdit} onSave={props.onSave} onCancelEdit={props.onCancelEdit} onRemove={props.onRemove} onRemoveAttachment={props.onRemoveAttachment} />)}
     </ol>
   </section>;
 }
 
-interface QueueRowProps extends Pick<MessageQueueProps, 'disabled' | 'onEdit' | 'onSave' | 'onCancelEdit' | 'onRemove'> {
+interface QueueRowProps extends Pick<MessageQueueProps, 'disabled' | 'onEdit' | 'onSave' | 'onCancelEdit' | 'onRemove' | 'onRemoveAttachment'> {
   readonly item: PendingMapMessage;
   readonly position: string;
   readonly copy: QueueCopy;
@@ -50,7 +54,10 @@ interface QueueRowProps extends Pick<MessageQueueProps, 'disabled' | 'onEdit' | 
   readonly submitting: boolean;
 }
 
-function QueueRow({ item, position, copy, editing, submitting, disabled, onEdit, onSave, onCancelEdit, onRemove }: QueueRowProps) {
+function QueueRow({ item, position, copy, editing, submitting, disabled, onEdit, onSave, onCancelEdit, onRemove, onRemoveAttachment }: QueueRowProps) {
+  const { locale } = useI18n();
+  const imagesCopy = screenshotCopy[locale];
+  const filesCopy = attachmentsCopy[locale];
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(editing);
   useLayoutEffect(() => {
@@ -73,6 +80,20 @@ function QueueRow({ item, position, copy, editing, submitting, disabled, onEdit,
       {attachmentCount ? <p className="flex items-center gap-1 text-xs text-muted-foreground" title={item.attachments.map(({ fileName }) => fileName).join(', ')}>
         <Paperclip aria-hidden="true" className="size-3 shrink-0" />{copy.attachments.replace('{count}', String(attachmentCount))}
       </p> : null}
+      {attachmentCount ? <div className="flex flex-wrap items-start gap-2 py-1">
+        {item.screenshots.map(screenshot => <div key={screenshot.id} className="relative overflow-hidden rounded-md border">
+          <a href={mapScreenshotUrl(screenshot)} target="_blank" rel="noreferrer"><img src={mapScreenshotUrl(screenshot)} alt={imagesCopy.image} className="h-20 w-28 object-cover" /></a>
+          {editing && onRemoveAttachment ? <Button type="button" className="absolute end-0 top-0" size="icon-xs" variant="secondary" aria-label={imagesCopy.remove} disabled={locked}
+            onClick={() => onRemoveAttachment(item.id, screenshot.id)}><X aria-hidden="true" /></Button> : null}
+        </div>)}
+        {item.attachments.map(file => <div key={file.id} className="flex min-w-0 max-w-full items-center gap-1">
+          <Button nativeButton={false} role="link" variant="outline" size="sm" className="min-w-0" render={<a href={mapTextAttachmentUrl(file)} target="_blank" rel="noreferrer" title={file.fileName} />}>
+            <FileText aria-hidden="true" /><span className="max-w-40 truncate">{file.fileName}</span>
+          </Button>
+          {editing && onRemoveAttachment ? <Button type="button" size="icon-xs" variant="ghost" disabled={locked} aria-label={filesCopy.remove.replace('{file}', file.fileName)}
+            onClick={() => onRemoveAttachment(item.id, file.id)}><X aria-hidden="true" /></Button> : null}
+        </div>)}
+      </div> : null}
       {submitting ? <p role="status" className="text-xs text-muted-foreground">{copy.submitting}</p> : null}
     </div>
   </li>;

@@ -26,6 +26,7 @@ export const tr: Dict = {
   'mapDesign.preview.idle': "Haritayı otomatik yüklemek için herkese açık bir MapLibre Style URL’si girin.",
   'mapDesign.preview.invalidUrl': "Kullanıcı adı, parola veya parça içermeyen geçerli bir HTTP(S) URL’si girin.",
   'mapDesign.preview.loadError': "Önizleme tamamen yüklenemedi. Stil biçimini, ağı veya CORS erişimini kontrol edin. Yine de proje oluşturabilirsiniz.",
+  'mapDesign.preview.webglUnavailable': "Harita önizlemesi bu tarayıcıda kullanılamayan WebGL2 gerektirir. Grafik hızlandırmayı etkinleştirin veya uyumlu bir tarayıcı kullanın, ardından önizlemeyi yeniden yükleyin. Projeyi yine de oluşturabilirsiniz.",
   'mapDesign.preview.resourceError': "Bazı harita kaynakları yüklenemedi. Yine de proje oluşturabilirsiniz.",
   'mapDesign.preview.retry': "Önizlemeyi yeniden yükle",
   'mapDesign.preview.hint': "Önizleme MapLibre Style URL’si kullanır. GeoJSON, TileJSON ve PMTiles proje oluşturulurken içe aktarılır.",

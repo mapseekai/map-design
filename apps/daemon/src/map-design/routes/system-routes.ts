@@ -4,6 +4,7 @@ import { Router, json, type RequestHandler } from 'express';
 import type { MapDesignAppConfig, UpdateMapDesignAppConfigRequest } from '@mapseekai/contracts';
 import { MapDesignConfigValidationError, type MapDesignConfigStore } from '../storage/config-store.js';
 import type { MapDesignLocalAgentRegistry } from '../application/local-agent-registry.js';
+import { apiKeyForProviderUpdate } from '../application/provider-credentials.js';
 
 const REDACTED = '[REDACTED]';
 
@@ -22,9 +23,9 @@ function mergeConfigPatch(current: MapDesignAppConfig, patch: unknown): UpdateMa
         ? provider as Record<string, unknown>
         : null;
       if (providerRecord && Object.hasOwn(providerRecord, 'connectionTest')) throw new MapDesignConfigValidationError('Invalid byokProviders');
-      if (providerRecord?.apiKey === REDACTED) throw new MapDesignConfigValidationError('Invalid byokProviders');
+      if (typeof providerRecord?.apiKey === 'string' && providerRecord.apiKey.trim() === REDACTED) throw new MapDesignConfigValidationError('Invalid byokProviders');
       if (Object.hasOwn(providerRecord ?? {}, 'apiKey')
-        && (typeof providerRecord?.apiKey !== 'string' || providerRecord.apiKey.length === 0)) {
+        && (typeof providerRecord?.apiKey !== 'string' || providerRecord.apiKey.trim().length === 0)) {
         throw new MapDesignConfigValidationError('Invalid byokProviders');
       }
       const merged: Record<string, unknown> = {
@@ -33,6 +34,17 @@ function mergeConfigPatch(current: MapDesignAppConfig, patch: unknown): UpdateMa
       };
       for (const field of ['baseUrl', 'apiVersion', 'model'] as const) {
         if (providerRecord?.[field] === '') delete merged[field];
+      }
+      if (providerRecord && typeof merged.protocol === 'string'
+        && (merged.baseUrl === undefined || typeof merged.baseUrl === 'string')) {
+        const previous = current.byokProviders?.[providerId];
+        const apiKey = apiKeyForProviderUpdate(previous, {
+          protocol: merged.protocol,
+          ...(typeof merged.baseUrl === 'string' ? { baseUrl: merged.baseUrl } : {}),
+          requiresApiKey: merged.requiresApiKey !== false,
+        }, typeof providerRecord.apiKey === 'string' ? providerRecord.apiKey : undefined);
+        if (apiKey === null) throw new MapDesignConfigValidationError('API key re-entry is required for the changed endpoint.');
+        if (previous || Object.hasOwn(providerRecord, 'apiKey') || merged.requiresApiKey === false) merged.apiKey = apiKey;
       }
       if (providerRecord && Object.keys(providerRecord).some((key) => key !== 'name')) delete merged.connectionTest;
       providers[providerId] = providerRecord ? merged : provider;

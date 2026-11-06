@@ -39,12 +39,14 @@ const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.B
 
 const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Popup>, React.PropsWithoutRef<DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  closeLabel?: string
   overlayClassName?: string | undefined
   layout?: "default" | "sectioned"
 }>>(function DialogContent({
   className,
   children,
   showCloseButton = true,
+  closeLabel = "Close",
   overlayClassName,
   layout = "default",
   ...props
@@ -75,7 +77,7 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.P
           >
             <XIcon
             />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{closeLabel}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

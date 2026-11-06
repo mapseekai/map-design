@@ -104,7 +104,7 @@ function subscribe(flight: Flight, signal?: AbortSignal): Promise<PinnedFetchRes
 
 function copyResponse(response: PinnedFetchResponse): PinnedFetchResponse {
   return { ...response, requestedUrl: new URL(response.requestedUrl.href), finalUrl: new URL(response.finalUrl.href),
-    redirects: response.redirects.map((url) => new URL(url.href)), headers: { ...response.headers }, body: response.body.slice() };
+    redirects: response.redirects.map((url) => new URL(url.href)), headers: { ...response.headers }, body: new Uint8Array(response.body) };
 }
 
 function freshness(response: PinnedFetchResponse, now: number, maximum: number): number {

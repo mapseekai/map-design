@@ -80,6 +80,19 @@ describe('MapDesign preview fulfillment route', () => {
     expect(response.status).toBe(401);
     expect(getCurrent).not.toHaveBeenCalled();
   });
+
+  it('returns a conflict when the project is not ready for its current preview', async () => {
+    const { url } = await listen(createMapDesignPreviewRouter({
+      previewFulfillmentService: { fulfill: vi.fn(), getCurrent: () => {
+        throw new MapDraftError('PROJECT_NOT_READY', 'The map project is not ready.');
+      } },
+      projectReader: { getProject: async () => ({ lifecycle: 'importing' }) },
+      requireLocalDaemonRequest: (_req, _res, next) => next(),
+    }), servers);
+    const response = await fetch(`${url}/api/map-design/projects/project-1/previews/current`);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: { code: 'PROJECT_NOT_READY' } });
+  });
 });
 
 

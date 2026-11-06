@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
@@ -902,18 +902,25 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
   });
 
   it('registers the production OpenCode factory and gates it on the plugin surface probe', async () => {
+    const dataDir = await pluginRoot();
+    const stagedPaths: string[] = [];
     const server = new FakeOpenCodeProcess();
     const spawn = vi.fn((_command: string, args: string[], options: { env: NodeJS.ProcessEnv }) => {
       expect(args).toEqual(['debug', 'agent', 'build']);
       queueMicrotask(async () => {
         const config = JSON.parse(String(options.env.OPENCODE_CONFIG_CONTENT)) as { plugin: string[] };
-        const source = await readFile(fileURLToPath(config.plugin.at(-1)!), 'utf8');
+        const pluginUrl = config.plugin.at(-1);
+        if (!pluginUrl) throw new Error('Expected a staged plugin URL');
+        const pluginPath = fileURLToPath(pluginUrl);
+        stagedPaths.push(pluginPath);
+        const source = await readFile(pluginPath, 'utf8');
         await loadGeneratedPlugin({ source, env: options.env });
         server.close(0);
       });
       return server.child;
     });
     const registry = createLocalAgentRegistry({
+      dataDir,
       definitions: [{ ...opencodeAgentDef, bin: process.execPath, fallbackBins: [] }],
       nativeToolRegistry: { definitions: () => TOOLS, call: vi.fn() },
       config: { read: () => ({ agentCliEnv: { opencode: { OPENCODE_BIN: process.execPath } } }) },
@@ -925,5 +932,8 @@ describe('OpenCode run-scoped plugin Map Agent adapter', () => {
 
     expect(registry.list()).toMatchObject([{ id: 'opencode', mapDesign: { nativeMapTools: true } }]);
     expect(registry.getMapAgent?.('opencode')).toMatchObject({ id: 'opencode' });
+    expect(stagedPaths).toHaveLength(1);
+    expect(stagedPaths.every((path) => path.startsWith(`${join(dataDir, 'agent-staging', 'opencode')}${sep}`))).toBe(true);
+    for (const path of stagedPaths) await expect(stat(path)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });

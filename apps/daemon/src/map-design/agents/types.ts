@@ -20,6 +20,7 @@ export type MapRunInput = {
   conversationId: string;
   prompt: string;
   taskKind?: 'cartography';
+  apiHistory?: import('./api-context.js').ApiConversationHistory | undefined;
   cartographySources?: ReadonlyArray<{ readonly fileName: string; readonly content: string }>;
   resumePrompt: string;
   images?: Array<{ data: string; mimeType: 'image/png' }>;

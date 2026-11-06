@@ -1,3 +1,4 @@
+import { DEFAULT_MAP_DESIGN_SYSTEM_ID } from '@mapseekai/map-design-contracts';
 import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -19,6 +20,13 @@ async function fixture(content: string | Uint8Array, name = 'CARTOGRAPHY.md') {
 }
 
 describe('standard CARTOGRAPHY.md loading', () => {
+  it('loads the bundled Monet default as a valid cartography document', async () => {
+    const projectRoot = path.resolve(import.meta.dirname, '../../../../..');
+    const document = await loadMapDesignSystem({ projectRoot, designSystemId: DEFAULT_MAP_DESIGN_SYSTEM_ID });
+    expect(document).toMatchObject({ id: 'monet', name: '莫奈风格', version: '0.4.0' });
+    expect(document.source).toContain('#A9C9C5');
+  });
+
   it('uses official 0.4.1 tooling for the 0.4.0 document format', async () => {
     expect(VERSION).toBe('0.4.1');
     expect(FORMAT_VERSION).toBe('0.4.0');

@@ -476,9 +476,14 @@ function StudioRuntime({ map, projectId, data, onPreview, onReload }: {
     handleRecord: async (record: MapStudioEventRecord) => {
       await getLive().handleRecord(record);
       await previews.handleRecord(record);
-      if (record.event.type === 'revision.committed') await onReload();
+      if (record.event.type === 'draft.updated' || record.event.type === 'draft.reloaded'
+        || record.event.type === 'draft.discarded' || record.event.type === 'draft.restored'
+        || record.event.type === 'revision.committed') await onReload();
     },
-    handleGap: (gap: { oldestAvailableSequence?: number | null; latestSequence?: number | null }) => getLive().handleGap(gap),
+    handleGap: async (gap: { oldestAvailableSequence?: number | null; latestSequence?: number | null }) => {
+      await getLive().handleGap(gap);
+      await onReload();
+    },
     reload: async (reason: string) => { await getLive().reload(reason); await onReload(); },
   }), [getLive, onReload, previews.handleRecord]);
   const events = useMapDesignEvents({ projectId, controller });

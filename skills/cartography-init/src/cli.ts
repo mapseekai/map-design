@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { parseLyrx, parseStylx } from './adapters/arcgis.js';
 import { parseQgis } from './adapters/qgis.js';
 import { parseSld } from './adapters/sld.js';
@@ -20,6 +20,8 @@ interface InitArgs {
 }
 
 function parseArgs(argv: string[]): InitArgs | { checkReport: string } {
+  if (argv[0] === '--') argv = argv.slice(1);
+  const invocationDirectory = process.env.INIT_CWD || process.cwd();
   const values: Record<string, string | undefined> = {};
   const supported: Record<string, true> = {
     '--input': true,
@@ -40,15 +42,18 @@ function parseArgs(argv: string[]): InitArgs | { checkReport: string } {
   const checkReport = values['--check-report'];
   if (checkReport) {
     if (Object.keys(values).length !== 1) throw new Error(usage);
-    return { checkReport };
+    return { checkReport: resolve(invocationDirectory, checkReport) };
   }
   const input = values['--input'];
   const output = values['--output'];
   if (!input || !output) throw new Error(usage);
-  const options: InitArgs = { input, output };
+  const options: InitArgs = {
+    input: resolve(invocationDirectory, input),
+    output: resolve(invocationDirectory, output),
+  };
   if (values['--name']) options.name = values['--name'];
-  if (values['--report']) options.report = values['--report'];
-  if (values['--report-json']) options.reportJson = values['--report-json'];
+  if (values['--report']) options.report = resolve(invocationDirectory, values['--report']);
+  if (values['--report-json']) options.reportJson = resolve(invocationDirectory, values['--report-json']);
   return options;
 }
 

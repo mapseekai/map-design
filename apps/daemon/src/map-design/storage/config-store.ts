@@ -185,7 +185,7 @@ function validate(config: unknown): MapDesignAppConfig {
   }
   if (Object.hasOwn(record, 'apiExecution')) {
     try {
-      const supplied = requireRecord(record.apiExecution, 'apiExecution', 4);
+      const supplied = requireRecord(record.apiExecution, 'apiExecution', 5);
       const resolved = resolveMapApiExecutionSettings(supplied);
       sanitized.apiExecution = Object.fromEntries(Object.entries(resolved).filter(([key]) => Object.hasOwn(supplied, key)));
     }

@@ -49,20 +49,43 @@ export function useMapDesignProject(
   const [loading, setLoading] = useState(!reusableSeed);
   const [error, setError] = useState(false);
   const generationRef = useRef(0);
+  const reloadVersionRef = useRef(0);
+  const reloadPendingRef = useRef(false);
   const reloadWaitersRef = useRef<Array<{ resolve(): void; reject(error: unknown): void }>>([]);
   const projectKey = projectId;
   const reload = useCallback(() => new Promise<void>((resolve, reject) => {
     reloadWaitersRef.current.push({ resolve, reject });
-    setRevision((value) => value + 1);
+    reloadVersionRef.current += 1;
+    if (!reloadPendingRef.current) {
+      reloadPendingRef.current = true;
+      setRevision((value) => value + 1);
+    }
   }), []);
 
   useEffect(() => {
-    if (reusableSeed && revision === 0) return;
+    if (reusableSeed && revision === 0 && reloadWaitersRef.current.length === 0) {
+      reloadPendingRef.current = false;
+      return;
+    }
     const controller = new AbortController();
     const generation = ++generationRef.current;
+    const reloadVersion = reloadVersionRef.current;
+    reloadPendingRef.current = true;
     setLoading(true);
     setError(false);
     setProject((current) => current && mapDesignProjectViewKey(current.view) === viewKey ? current : null);
+    const complete = (next: MapDesignProjectData) => {
+      if (controller.signal.aborted || generation !== generationRef.current) return;
+      // Finish the current read, then coalesce intervening invalidations into one fresh read.
+      if (reloadVersion !== reloadVersionRef.current) {
+        setRevision((value) => value + 1);
+        return;
+      }
+      reloadPendingRef.current = false;
+      setProject(next);
+      setLoading(false);
+      for (const waiter of reloadWaitersRef.current.splice(0)) waiter.resolve();
+    };
     void (async () => {
       const selectedView = mapDesignProjectViewFromKey(viewKey);
       if (selectedView.kind === 'historical') {
@@ -71,8 +94,7 @@ export function useMapDesignProject(
           listMapDesignRevisions(projectId, controller.signal),
           getMapDesignRevisionSnapshot(projectId, selectedView.revision, controller.signal),
         ]);
-        if (controller.signal.aborted || generation !== generationRef.current) return;
-        setProject({
+        complete({
           view: selectedView,
           context: currentContext,
           currentContext,
@@ -81,8 +103,6 @@ export function useMapDesignProject(
           validation: snapshot.validation,
           inspect: snapshot.inspect,
         });
-        setLoading(false);
-        for (const waiter of reloadWaitersRef.current.splice(0)) waiter.resolve();
         return;
       }
       for (let attempt = 0; attempt < COHERENT_SNAPSHOT_ATTEMPTS; attempt += 1) {
@@ -100,8 +120,7 @@ export function useMapDesignProject(
             contextBefore.draftRevision !== contextAfter.draftRevision
             || contextBefore.styleHash !== contextAfter.styleHash
           ) continue;
-          if (controller.signal.aborted || generation !== generationRef.current) return;
-          setProject({
+          complete({
             view: CURRENT_MAP_DESIGN_PROJECT_VIEW,
             context: contextAfter,
             currentContext: contextAfter,
@@ -111,8 +130,6 @@ export function useMapDesignProject(
             inspect,
             preview: currentPreview.preview,
           });
-          setLoading(false);
-          for (const waiter of reloadWaitersRef.current.splice(0)) waiter.resolve();
           return;
         } catch (error) {
           const canRetry = error instanceof MapDesignClientError
@@ -124,6 +141,11 @@ export function useMapDesignProject(
       throw new Error('MapDesign project changed during reload.');
     })().catch(() => {
       if (controller.signal.aborted || generation !== generationRef.current) return;
+      if (reloadVersion !== reloadVersionRef.current) {
+        setRevision((value) => value + 1);
+        return;
+      }
+      reloadPendingRef.current = false;
       setError(true);
       setLoading(false);
       for (const waiter of reloadWaitersRef.current.splice(0)) waiter.reject(new Error('MapDesign project reload failed.'));

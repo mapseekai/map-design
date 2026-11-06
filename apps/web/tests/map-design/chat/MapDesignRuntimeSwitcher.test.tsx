@@ -192,7 +192,7 @@ describe('MapDesignRuntimeSwitcher', async () => {
       .toHaveTextContent('OpenCode · GPT 5.6 Terra · high');
   });
 
-  it('lists supported installed Agents first while retaining every Agent and exact disabled reasons', async () => {
+  it('lists only supported available Agents', async () => {
     renderSwitcher();
     fireEvent.click(screen.getByRole('button', { name: /Change runtime/iu }));
     const list = screen.getByRole('listbox', { name: 'Agents' });
@@ -201,13 +201,9 @@ describe('MapDesignRuntimeSwitcher', async () => {
     expect(options.map((option) => option.textContent)).toEqual([
       expect.stringContaining('OpenCode'),
       expect.stringContaining('Pi'),
-      expect.stringContaining('Claude Code'),
-      expect.stringContaining('Missing Agent'),
     ]);
-    expect(within(list).getByRole('option', { name: /Claude Code/iu })).toBeDisabled();
-    expect(within(list).getByText(/does not allow MapDesign MCP tools/iu)).toBeInTheDocument();
-    expect(within(list).getByRole('option', { name: /Missing Agent/iu })).toBeDisabled();
-    expect(within(list).getByText(/not installed or unavailable/iu)).toBeInTheDocument();
+    expect(within(list).queryByRole('option', { name: /Claude Code/iu })).not.toBeInTheDocument();
+    expect(within(list).queryByRole('option', { name: /Missing Agent/iu })).not.toBeInTheDocument();
   });
 
   it('searches models and exposes only the selected model reasoning and tier controls', async () => {

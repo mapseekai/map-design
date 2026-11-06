@@ -31,7 +31,28 @@ async function advance(ms = SOURCE_PREVIEW_DEBOUNCE_MS) { await act(async () => 
 beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal('fetch', vi.fn()); });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ getExtension: () => null } as unknown as WebGL2RenderingContext);
+});
+afterEach(() => vi.restoreAllMocks());
+
 describe('MapSourcePreview direct browser loading', () => {
+  it('keeps WebGL2 unavailability local and retries when support becomes available', async () => {
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValueOnce(null);
+    const h = harness();
+    render(h.ui(URL_A));
+    await advance();
+    expect(h.createMap).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Map preview requires WebGL2');
+    expect(screen.getByRole('alert')).toHaveTextContent('You can still create the project.');
+    await advance(SOURCE_PREVIEW_TIMEOUT_MS);
+    expect(screen.getByRole('alert')).toHaveTextContent('Map preview requires WebGL2');
+    fireEvent.click(screen.getByRole('button', { name: 'Reload preview' }));
+    expect(h.createMap).toHaveBeenCalledOnce();
+    act(() => h.maps[0]!.listeners.get('load')?.());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('debounces the URL and gives MapLibre the original Style without any daemon preflight or protocols', async () => {
     const h = harness();
     const view = render(h.ui(''));

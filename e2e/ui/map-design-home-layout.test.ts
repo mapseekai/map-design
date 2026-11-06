@@ -20,7 +20,33 @@ test.beforeEach(async ({ page }, testInfo) => {
   if (!testInfo.title.includes('[external]')) await routeMapSourceFixtures(page);
 });
 
-test('[P0] keeps ACP and BYOK Agents visible but blocks unsupported map work before spawn', async ({ page, toolsDev }) => {
+test('[P1] WebGL2 unavailable keeps the preview error local and project controls usable', async ({ page, toolsDev }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof getContext>) {
+      if (args[0] === 'webgl2') return null;
+      return getContext.apply(this, args);
+    } as typeof getContext;
+  });
+  await selectFakeLocalAgent(toolsDev.daemonUrl!);
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Project name').fill('Map without WebGL2');
+  await page.getByLabel('Public map URL').fill(SOURCE_URL);
+  await page.getByLabel('Design requirement').fill('Keep labels legible.');
+  await expect(page.getByRole('alert').filter({ hasText: 'Map preview requires WebGL2' })).toBeVisible();
+  await page.getByRole('button', { name: 'Reload preview' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Map preview requires WebGL2' })).toBeVisible();
+  await page.getByLabel('Project name').fill('Still editable');
+  await page.getByRole('combobox', { name: 'Local agent', exact: true }).click();
+  await page.getByRole('option', { name: /^Codex CLI(?: — .+)?$/u }).click();
+  await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeEnabled();
+  expect(errors.filter(message => /GPUInitializationError|WebGL2 is required|Uncaught/u.test(message))).toEqual([]);
+});
+
+test('[P0] hides unavailable and unsupported Agents before spawn', async ({ page, toolsDev }) => {
   const agentsResponse = await fetch(`${toolsDev.daemonUrl}/api/agents`);
   if (!agentsResponse.ok) throw new Error(`Agent catalogue request failed: ${await agentsResponse.text()}`);
   const { agents } = await agentsResponse.json() as { agents: AgentCapabilitySnapshot[] };
@@ -48,20 +74,12 @@ test('[P0] keeps ACP and BYOK Agents visible but blocks unsupported map work bef
   await page.getByLabel('Design requirement').fill('Keep labels legible.');
   const agentSelect = page.getByRole('combobox', { name: 'Local agent', exact: true });
   await agentSelect.click();
-  for (const name of ['Kimi CLI — Map editing unavailable', 'BYOK OpenCode — Map editing unavailable']) {
-    const option = page.getByRole('option', { name, exact: true });
-    await expect(option).toBeVisible();
-    await expect(option).toBeEnabled();
+  for (const agent of agents.filter(agent => !agent.available || !agent.mapDesign.nativeMapTools)) {
+    await expect(page.locator(`[role="option"][data-value="${agent.id}"]`)).toHaveCount(0);
   }
+  await expect(page.locator('[role="option"][data-value="codex"]')).toBeVisible();
   await page.keyboard.press('Escape');
-
-  for (const name of ['Kimi CLI — Map editing unavailable', 'BYOK OpenCode — Map editing unavailable']) {
-    await agentSelect.click();
-    await page.getByRole('option', { name, exact: true }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Map editing unavailable' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeDisabled();
-    await expect(page.getByRole('button', { name: 'Check source', exact: true })).toHaveCount(0);
-  }
+  await expect(page.getByRole('button', { name: 'Create map design', exact: true })).toBeDisabled();
 
   expect(blockedMutations).toEqual([]);
   expect(await unsupportedSpawnCount(toolsDev.fakeMapAcp.capturePath)).toBe(spawnCountBefore);
@@ -118,6 +136,7 @@ test('[P2] Home keyboard order reaches creation after shell navigation', async (
     page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'Settings', exact: true }),
     page.getByLabel('Project name', { exact: true }),
     page.getByLabel('Public map URL', { exact: true }),
+    page.getByRole('combobox', { name: 'Use default map', exact: true }),
     page.getByLabel('Design requirement', { exact: true }),
     page.getByRole('combobox', { name: 'Map design system', exact: true }),
     page.getByRole('region', { name: 'Source and brief', exact: true }).getByRole('button', { name: 'Design specifications', exact: true }),

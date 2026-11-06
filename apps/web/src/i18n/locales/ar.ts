@@ -26,6 +26,7 @@ export const ar: Dict = {
   'mapDesign.preview.idle': "أدخل رابط نمط MapLibre عامًا لتحميل الخريطة تلقائيًا.",
   'mapDesign.preview.invalidUrl': "أدخل رابط HTTP(S) صالحًا دون اسم مستخدم أو كلمة مرور أو جزء مرجعي.",
   'mapDesign.preview.loadError': "لم يكتمل تحميل المعاينة. تحقق من تنسيق النمط أو الشبكة أو CORS. لا يزال بإمكانك إنشاء المشروع.",
+  'mapDesign.preview.webglUnavailable': "تتطلب معاينة الخريطة WebGL2، وهو غير متاح في هذا المتصفح. فعّل تسريع الرسومات أو استخدم متصفحًا متوافقًا، ثم أعد تحميل المعاينة. لا يزال بإمكانك إنشاء المشروع.",
   'mapDesign.preview.resourceError': "تعذر تحميل بعض موارد الخريطة. لا يزال بإمكانك إنشاء المشروع.",
   'mapDesign.preview.retry': "إعادة تحميل المعاينة",
   'mapDesign.preview.hint': "تستخدم المعاينة رابط نمط MapLibre. تُستورد GeoJSON وTileJSON وPMTiles عند إنشاء المشروع.",

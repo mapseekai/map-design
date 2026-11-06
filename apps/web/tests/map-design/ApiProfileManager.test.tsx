@@ -2,9 +2,11 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiProfileManager } from '../../src/map-design/components/ApiProfileManager';
-import { I18nProvider } from '../../src/i18n';
+import { I18nProvider, useI18n } from '../../src/i18n';
 import { profilesFromConfig } from '../../src/map-design/api-profiles-client';
 import type { MapApiProfilesResponse } from '@mapseekai/contracts';
+import { LOCALES } from '../../src/i18n/types';
+function DialogLabels() { const { t } = useI18n(); return <><span data-testid="delete-label">{t('common.delete')}</span><span data-testid="close-label">{t('common.close')}</span></>; }
 const initialConfig = { byokProviders: {
   default: { name: 'Primary', protocol: 'openai' as const, apiKey: '[REDACTED]', model: 'one-model', baseUrl: 'https://one.example/v1' },
   second: { name: 'Secondary', protocol: 'openai' as const, apiKey: '[REDACTED]', model: 'two-model', baseUrl: 'https://two.example/v1' },
@@ -29,6 +31,14 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 function view() { return render(<I18nProvider initial="en"><ApiProfileManager initialConfig={initialConfig} /></I18nProvider>); }
 function card(name: string) { return screen.getByText(name).closest('[data-profile-id]') as HTMLElement; }
 describe('API profile settings', () => {
+  it.each(LOCALES)('labels the delete-dialog close action in %s', async locale => {
+    render(<I18nProvider initial={locale}><DialogLabels /><ApiProfileManager initialConfig={initialConfig} /></I18nProvider>);
+    fireEvent.click(within(card('Secondary')).getByRole('button', { name: screen.getByTestId('delete-label').textContent ?? '' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: screen.getByTestId('close-label').textContent ?? '' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(requests.filter(request => request.method === 'DELETE')).toHaveLength(0);
+  });
   it('shows saved models and key state without displaying keys or sending an automatic test', () => {
     view(); expect(screen.getByText('one-model')).toBeVisible(); expect(screen.getByText('two-model')).toBeVisible();
     expect(screen.getAllByText('Not tested')).toHaveLength(2);

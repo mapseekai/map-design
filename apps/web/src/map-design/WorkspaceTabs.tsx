@@ -37,15 +37,28 @@ export function WorkspaceTabsProvider({ route, children }: { route: MapDesignRou
   const tabs = opened && !storedTabs.some(tab => tab.id === id) ? [...storedTabs, opened] : storedTabs;
   const active = tabs.find(tab => tab.id === id);
   useLayoutEffect(() => {
-    if (opened) setTabs(current => current.some(tab => tab.id === opened.id) ? current : [...current, opened]);
+    if (opened) setTabs(current => current.some(tab => tab.id === opened.id)
+      ? current.map(tab => tab.id === opened.id && (tab.search !== opened.search || tab.hash !== opened.hash)
+        ? { ...tab, search: opened.search, hash: opened.hash } : tab)
+      : [...current, opened]);
   }, [opened]);
 
-  useEffect(() => subscribeBeforeNavigation(() => {
-    const outgoingId = buildPath(parseRoute(window.location.pathname));
-    const { search, hash } = window.location;
-    setTabs(current => current.some(tab => tab.id === outgoingId && (tab.search !== search || tab.hash !== hash))
-      ? current.map(tab => tab.id === outgoingId ? { ...tab, search, hash } : tab) : current);
-  }), []);
+  useEffect(() => {
+    const syncLocation = () => {
+      const outgoingId = buildPath(parseRoute(window.location.pathname));
+      const { search, hash } = window.location;
+      setTabs(current => current.some(tab => tab.id === outgoingId && (tab.search !== search || tab.hash !== hash))
+        ? current.map(tab => tab.id === outgoingId ? { ...tab, search, hash } : tab) : current);
+    };
+    const unsubscribe = subscribeBeforeNavigation(syncLocation);
+    window.addEventListener('popstate', syncLocation);
+    window.addEventListener('hashchange', syncLocation);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('popstate', syncLocation);
+      window.removeEventListener('hashchange', syncLocation);
+    };
+  }, []);
 
   const rename = useCallback((tabId: string, title: string) => {
     setTabs(current => current.some(tab => tab.id === tabId && tab.title !== title)

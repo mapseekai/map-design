@@ -29,6 +29,7 @@ export interface ByokProviderSelection {
 }
 
 export interface MapDesignApiExecutionSettings {
+  contextWindowTokens?: number;
   maxSteps?: number;
   maxToolCalls?: number;
   maxOutputTokens?: number;
@@ -36,10 +37,10 @@ export interface MapDesignApiExecutionSettings {
 }
 
 export const MAP_API_EXECUTION_DEFAULTS = Object.freeze({
-  maxSteps: 48, maxToolCalls: 192, maxOutputTokens: 16_384, cartographyMaxOutputTokens: 32_768,
+  contextWindowTokens: 131_072, maxSteps: 48, maxToolCalls: 192, maxOutputTokens: 16_384, cartographyMaxOutputTokens: 32_768,
 });
 export const MAP_API_EXECUTION_BOUNDS = Object.freeze({
-  maxSteps: [1, 128], maxToolCalls: [1, 512], maxOutputTokens: [256, 131_072], cartographyMaxOutputTokens: [256, 131_072],
+  contextWindowTokens: [16_384, 2_097_152], maxSteps: [1, 128], maxToolCalls: [1, 512], maxOutputTokens: [256, 131_072], cartographyMaxOutputTokens: [256, 131_072],
 } as const);
 
 export function resolveMapApiExecutionSettings(input: MapDesignApiExecutionSettings = {}): Required<MapDesignApiExecutionSettings> {

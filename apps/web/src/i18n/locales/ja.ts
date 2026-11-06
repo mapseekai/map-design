@@ -26,6 +26,7 @@ export const ja: Dict = {
   'mapDesign.preview.idle': "公開MapLibre Style URLを入力すると地図が自動的に読み込まれます。",
   'mapDesign.preview.invalidUrl': "ユーザー名、パスワード、フラグメントを含まない有効なHTTP(S) URLを入力してください。",
   'mapDesign.preview.loadError': "プレビューの読み込みが完了しませんでした。スタイル形式、ネットワーク、CORSを確認してください。プロジェクトは作成できます。",
+  'mapDesign.preview.webglUnavailable': "地図のプレビューには WebGL2 が必要ですが、このブラウザーでは利用できません。グラフィックアクセラレーションを有効にするか、対応ブラウザーでプレビューを再読み込みしてください。プロジェクトの作成は続行できます。",
   'mapDesign.preview.resourceError': "一部の地図リソースを読み込めませんでした。プロジェクトは作成できます。",
   'mapDesign.preview.retry': "プレビューを再読み込み",
   'mapDesign.preview.hint': "プレビューにはMapLibre Style URLを使用します。GeoJSON、TileJSON、PMTilesはプロジェクト作成時にインポートされます。",

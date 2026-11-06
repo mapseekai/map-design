@@ -51,7 +51,7 @@ describe('openMapDesignDatabase', () => {
     const db = openMapDesignDatabase(tempRoot());
     try {
       expect(tableNames(db)).toEqual([
-        'agent_sessions', 'cartography_documents', 'conversation_idempotency', 'conversations', 'map_design_cartography_migrations', 'map_design_cartography_snapshots', 'map_design_comments', 'map_design_event_outbox', 'map_design_event_retention',
+        'agent_sessions', 'api_context_summaries', 'cartography_documents', 'conversation_idempotency', 'conversations', 'map_design_cartography_migrations', 'map_design_cartography_snapshots', 'map_design_comments', 'map_design_event_outbox', 'map_design_event_retention',
         'map_design_idempotency', 'map_design_import_jobs', 'map_design_initial_runs', 'map_design_previews', 'map_design_projects',
         'map_design_resources', 'map_design_revisions', 'map_design_thumbnails', 'messages', 'project_cartography', 'projects', 'sqlite_sequence',
       ]);

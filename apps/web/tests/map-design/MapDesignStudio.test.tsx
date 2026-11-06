@@ -24,9 +24,10 @@ const mapCanvasMock = vi.hoisted(() => ({
   onMapReady: undefined as undefined | ((map: unknown) => void),
   canvas: null as HTMLDivElement | null,
 }));
-const eventChannel = vi.hoisted(() => ({ status: 'listening', retry: vi.fn(), controller: null as { handleRecord(record: unknown): Promise<void> } | null }));
+type EventController = { handleRecord(record: unknown): Promise<void>; handleGap(gap: { latestSequence: number }): Promise<void> };
+const eventChannel = vi.hoisted(() => ({ status: 'listening', retry: vi.fn(), controller: null as EventController | null }));
 vi.mock('../../src/map-design/hooks/useMapDesignEvents', () => ({
-  useMapDesignEvents: ({ controller }: { controller: { handleRecord(record: unknown): Promise<void> } }) => {
+  useMapDesignEvents: ({ controller }: { controller: EventController }) => {
     eventChannel.controller = controller;
     return { status: eventChannel.status, retry: eventChannel.retry };
   },
@@ -685,12 +686,15 @@ describe('MapDesignStudio', () => {
     };
     act(() => { mapCanvasMock.onMapReady?.(map); });
 
+    const commentPropsBeforeNavigation = commentTool.props;
     act(() => { emit('mousemove', { lngLat: { lat: 38.889, lng: -77.035 } }); });
     expect(screen.getByText('38.889°N, 77.035°W')).toHaveAttribute('aria-live', 'off');
+    expect(commentTool.props).toBe(commentPropsBeforeNavigation);
 
     center = { lat: 40, lng: -74 };
     act(() => { emit('move'); });
     expect(screen.getByText('38.889°N, 77.035°W')).toBeInTheDocument();
+    expect(commentTool.props).toBe(commentPropsBeforeNavigation);
 
     fireEvent.keyDown(screen.getByRole('button', { name: 'Layers' }), { key: 'ArrowRight' });
     expect(screen.getByText('38.889°N, 77.035°W')).toHaveAttribute('aria-live', 'off');
@@ -927,8 +931,11 @@ describe('MapDesignStudio', () => {
     act(() => mapCanvasMock.onMapReady?.({ triggerRepaint: vi.fn(), getCanvas: () => mapCanvasMock.canvas!,
       getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 3, getBearing: () => 0, getPitch: () => 0,
       on: vi.fn(), off: vi.fn(), jumpTo: vi.fn() }));
-    await act(async () => { await eventChannel.controller?.handleRecord({ sequence: 1,
+    let pending: Promise<void> | undefined;
+    act(() => { pending = eventChannel.controller?.handleRecord({ sequence: 1,
       event: { type: 'draft.updated', payload: { draftRevision: 4, styleHash: 'b'.repeat(64) } } }); });
+    await waitFor(() => expect(clientMocks.style).toHaveBeenCalled());
+    await pending;
     const live = handled.mock.contexts.at(-1) as LiveDraftController;
     expect(live.snapshot().sequence).toBe(1);
     handled.mockRestore();
@@ -942,19 +949,27 @@ describe('MapDesignStudio', () => {
     await waitFor(() => expect(commentTool.props).toMatchObject({ draftRevision: 6 }));
   });
 
-  it('keeps the map instance when a canonical style refresh changes its hash', async () => {
+  it.each(['draft.updated', 'draft.reloaded', 'draft.discarded', 'draft.restored', 'revision.committed', 'event-gap'])
+  ('refreshes project data without recreating the map after %s', async (type) => {
     const handleRecord = vi.spyOn(LiveDraftController.prototype, 'handleRecord').mockResolvedValue(undefined);
+    const handleGap = vi.spyOn(LiveDraftController.prototype, 'handleGap').mockResolvedValue(undefined);
     render(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} />);
     act(() => mapCanvasMock.onMapReady?.({ triggerRepaint: vi.fn(), getCanvas: () => mapCanvasMock.canvas!, getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 3, getBearing: () => 0, getPitch: () => 0, jumpTo: vi.fn(), on: vi.fn(), off: vi.fn() }));
     const mounts = mapCanvasMock.mounts;
     clientMocks.context.mockResolvedValue({ ...project.context, draftRevision: 5, styleHash: 'e'.repeat(64) });
     clientMocks.validation.mockResolvedValue({ ...project.validation, draftRevision: 5, styleHash: 'e'.repeat(64) });
     let pending: Promise<void> | undefined;
-    act(() => { pending = eventChannel.controller?.handleRecord({ event: { type: 'revision.committed' } }); });
+    act(() => { pending = type === 'event-gap' ? eventChannel.controller?.handleGap({ latestSequence: 10 })
+      : eventChannel.controller?.handleRecord({ event: { type } }); });
     await waitFor(() => expect(screen.getByText('Revision 5')).toBeInTheDocument());
     await pending;
     expect(mapCanvasMock.mounts).toBe(mounts);
+    expect(commentTool.props).toMatchObject({ draftRevision: 5, styleHash: 'e'.repeat(64) });
+    const reads = clientMocks.style.mock.calls.length;
+    await act(async () => { await eventChannel.controller?.handleRecord({ event: { type: 'validation.updated' } }); });
+    expect(clientMocks.style).toHaveBeenCalledTimes(reads);
     handleRecord.mockRestore();
+    handleGap.mockRestore();
   });
 
   it('preserves the camera when the map is explicitly recreated', () => {

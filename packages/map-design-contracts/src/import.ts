@@ -93,7 +93,7 @@ export const MapProjectRetryInputSchema = z.strictObject({
 });
 export type MapProjectRetryInput = z.infer<typeof MapProjectRetryInputSchema>;
 
-export const DEFAULT_MAP_DESIGN_SYSTEM_ID = 'quiet-atlas' as const;
+export const DEFAULT_MAP_DESIGN_SYSTEM_ID = 'monet' as const;
 
 export const MapDesignProjectSummarySchema = z.strictObject({
   projectId: MapIdentifierSchema,

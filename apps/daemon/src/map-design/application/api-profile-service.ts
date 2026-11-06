@@ -8,6 +8,7 @@ import {
 } from '@mapseekai/contracts';
 import { createApiModel, apiModelFailure } from '../agents/api-model.js';
 import type { MapDesignConfigStore } from '../storage/config-store.js';
+import { apiKeyForProviderUpdate } from './provider-credentials.js';
 
 const profileInput = z.object({
   name: z.string().trim().min(1).max(120), protocol: z.enum(['openai', 'anthropic']),
@@ -64,12 +65,13 @@ export class ApiProfileService {
     const config = this.config.read();
     const previous = Object.hasOwn(config.byokProviders ?? {}, id) ? config.byokProviders?.[id] : undefined;
     if (!previous && Object.keys(config.byokProviders ?? {}).length >= 32) throw new ApiProfileError('API_PROFILE_LIMIT');
-    if (previous?.apiKey && input.requiresApiKey && !input.apiKey && (previous.protocol !== input.protocol || safeEndpoint(previous.baseUrl) !== safeEndpoint(input.baseUrl))) {
+    const apiKey = apiKeyForProviderUpdate(previous, input, input.apiKey);
+    if (apiKey === null) {
       throw new ApiProfileError('API_KEY_REQUIRED_FOR_ENDPOINT');
     }
     const profile: ByokProviderSelection = { name: input.name, protocol: input.protocol, apiFormat: input.apiFormat,
       model: input.model, baseUrl: input.baseUrl, requiresApiKey: input.requiresApiKey,
-      apiKey: input.apiKey || (input.requiresApiKey ? previous?.apiKey ?? '' : '') };
+      apiKey };
     // Construction validates endpoint/model/key without making a network request.
     try { createApiModel(profile); } catch { throw new ApiProfileError('API_CONFIGURATION_REQUIRED'); }
     if (previous?.connectionTest && profileFingerprint(previous) === profileFingerprint(profile)) profile.connectionTest = previous.connectionTest;

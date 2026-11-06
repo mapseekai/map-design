@@ -41,6 +41,12 @@ describe('saved API model profiles', () => {
     service.save('default', { ...change, name: 'Renamed', model: 'other-model' });
     expect(config.read().byokProviders?.default?.apiKey).toBe('secret-one');
   });
+  it('retains an explicitly configured optional key when renaming its unchanged endpoint', () => {
+    const { service, config } = setup(); service.save('a', { ...input, requiresApiKey: false });
+    const { apiKey: _key, ...change } = input;
+    service.save('a', { ...change, name: 'Renamed', requiresApiKey: false });
+    expect(config.read().byokProviders?.a?.apiKey).toBe(input.apiKey);
+  });
   it('will not send a retained key to a changed host or protocol', () => {
     const { service, config } = setup(); service.save('a', input);
     const { apiKey: _key, ...change } = input;
@@ -49,6 +55,13 @@ describe('saved API model profiles', () => {
     expect(() => service.save('a', { ...change, protocol: 'anthropic' })).toThrow('API_KEY_REQUIRED_FOR_ENDPOINT');
     expect(config.read().byokProviders?.a?.apiKey).toBe('secret-one');
   });
+  it.each(['https://user:pass@one.example/v1', 'https://one.example/v1?target=other', 'https://one.example/v1#other'])
+    ('does not treat an unsafe endpoint as the retained credential target: %s', baseUrl => {
+      const { service, config } = setup(); service.save('a', input);
+      const { apiKey: _key, ...change } = input;
+      expect(() => service.save('a', { ...change, baseUrl })).toThrow('API_KEY_REQUIRED_FOR_ENDPOINT');
+      expect(config.read().byokProviders?.a?.baseUrl).toBe(input.baseUrl);
+    });
   it('rejects unsafe IDs, malformed input, and redacted key placeholders', () => {
     const { service } = setup();
     for (const id of ['__proto__', 'constructor', '../a', 'prototype']) expect(() => service.save(id, input)).toThrow();

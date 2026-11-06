@@ -11,6 +11,14 @@ import { sha256CanonicalJson } from 'maplibre-style-tools/bridge';
 import { MapDesignConversationService } from '../../../src/map-design/application/conversation-service.js';
 import { MapDesignQueryService } from '../../../src/map-design/application/query-service.js';
 import { MapDesignProjectService } from '../../../src/map-design/application/project-service.js';
+import { createMapDesignRuntimeCatalog, type MapDesignRuntimeCatalog } from '../../../src/map-design/application/runtime-catalog.js';
+import { apiAgentDef } from '../../../src/runtimes/defs/api.js';
+import { apiProfileModelId, type MapDesignAppConfig } from '@mapseekai/contracts';
+import { resolveApiProfile } from '../../../src/map-design/application/api-profile-service.js';
+import express from 'express';
+import { createMapDesignProjectRouter } from '../../../src/map-design/routes/project-routes.js';
+import { requireLocalDaemonRequest } from '../../../src/http/local-daemon-request.js';
+import { runMapDesignProjectCli } from '../../../src/tools-map-design-project-cli.js';
 import { MapDraftError } from '../../../src/map-design/application/errors.js';
 import { createMapDesignBlobStore } from '../../../src/map-design/storage/blob-store.js';
 import { openMapDesignDatabase, closeMapDesignDatabase } from '../../../src/map-design/storage/database.js';
@@ -29,7 +37,7 @@ function importing(projectId: string): MapDesignProjectRead {
   return { projectId, lifecycle: 'importing', sourceKind: null, designSystemId: 'quiet-atlas', designSystemDigest: 'a'.repeat(64), draftRevision: 0, committedRevision: null, failure: null, createdAt: NOW, updatedAt: NOW };
 }
 
-function openFixture(options: { enqueue?: () => boolean; verifyWorkingDirectoryGrant?: () => Promise<string>; prepare?: (db: Database.Database, projectId: string) => MapDesignProjectRead } = {}) {
+function openFixture(options: { runtimeCatalog?: Pick<MapDesignRuntimeCatalog, 'validate'>; enqueue?: () => boolean; verifyWorkingDirectoryGrant?: () => Promise<string>; prepare?: (db: Database.Database, projectId: string) => MapDesignProjectRead } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'map-project-service-'));
   roots.push(root);
   const db = openMapDesignDatabase(root);
@@ -48,6 +56,7 @@ function openFixture(options: { enqueue?: () => boolean; verifyWorkingDirectoryG
   const queryService = { getProject: vi.fn() };
   const service = new MapDesignProjectService({
     store,
+    ...(options.runtimeCatalog ? { runtimeCatalog: options.runtimeCatalog } : {}),
     sourceImportService: { prepareImportInTransaction: prepare } as never,
     importJobRunner: { enqueue: options.enqueue ?? vi.fn(() => true) },
     queryService,
@@ -58,6 +67,107 @@ function openFixture(options: { enqueue?: () => boolean; verifyWorkingDirectoryG
 }
 
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
+
+function apiCatalogFixture() {
+  const config: MapDesignAppConfig = { activeApiProfileId: 'a', byokProviders: {
+    a: { protocol: 'openai', model: 'model-a', baseUrl: 'https://a.example/v1', apiKey: 'key-a' },
+    b: { protocol: 'openai', model: 'model-b', baseUrl: 'https://b.example/v1', apiKey: 'key-b' },
+  } };
+  const catalog = createMapDesignRuntimeCatalog({ definitions: [apiAgentDef], apiConfig: () => config,
+    inspect: definition => ({ definition, available: true, environment: {},
+      mapDesign: { nativeMapTools: true, publicReasoningSummary: true } }),
+  });
+  return { config, catalog };
+}
+
+it.each([undefined, 'default'])('pins the API profile when creating with model %s and replays after the default changes', async (model) => {
+  // Given: A is the default API account.
+  const { config, catalog } = apiCatalogFixture();
+  const { db, service } = openFixture({ runtimeCatalog: catalog });
+  const input = { ...project(), runtime: { agentId: 'api', ...(model === undefined ? {} : { model }) } };
+  try {
+    // When: the project is created, then the global default changes to B.
+    const created = await service.create(input);
+    config.activeApiProfileId = 'b';
+    // Then: the saved conversation still resolves to A, and replay returns its receipt.
+    const saved = createMapDesignLocalStore(db).getConversationRuntime('conversation-1');
+    expect(created.runtime).toEqual({ agentId: 'api', model: apiProfileModelId('a') });
+    expect(saved?.model).toBe(apiProfileModelId('a'));
+    expect(resolveApiProfile(config, saved?.model)).toMatchObject({ baseUrl: 'https://a.example/v1', apiKey: 'key-a' });
+    config.byokProviders = {};
+    expect(await service.create(input)).toEqual(created);
+    await expect(service.create({ ...input, runtime: { agentId: 'api', model: apiProfileModelId('b') } }))
+      .rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
+  } finally { closeMapDesignDatabase(db); }
+});
+
+it.each(['api-profile:missing', 'unknown-model'])('rejects invalid API model %s before project persistence', async (model) => {
+  // Given: the requested profile or remote model does not exist.
+  const { catalog } = apiCatalogFixture();
+  const { db, service, prepare } = openFixture({ runtimeCatalog: catalog });
+  try {
+    // When: creating a project with an invalid explicit selection.
+    await expect(service.create({ ...project(), runtime: { agentId: 'api', model } }))
+      .rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    // Then: no project or import is created.
+    expect(db.prepare('SELECT COUNT(*) AS count FROM projects').get()).toEqual({ count: 0 });
+    expect(prepare).not.toHaveBeenCalled();
+  } finally { closeMapDesignDatabase(db); }
+});
+
+it.each([true, false])('preserves local agent creation when catalog availability is %s', async (available) => {
+  const definition = { ...apiAgentDef, id: 'local', fallbackModels: [{ id: 'local-model', label: 'Local' }] };
+  const catalog = createMapDesignRuntimeCatalog({ definitions: [definition],
+    inspect: agent => ({ definition: agent, available, environment: {},
+      mapDesign: { nativeMapTools: true, publicReasoningSummary: true } }),
+  });
+  const { db, service } = openFixture({ runtimeCatalog: catalog });
+  const runtime = { agentId: 'local', model: 'local-model' };
+  try {
+    const created = await service.create({ ...project(), runtime });
+    expect(created.runtime).toEqual(runtime);
+    expect(createMapDesignLocalStore(db).getConversationRuntime('conversation-1')).toMatchObject(runtime);
+  } finally { closeMapDesignDatabase(db); }
+});
+
+it('pins CLI API project creation through the HTTP router and rejects an invalid explicit profile', async () => {
+  const { config, catalog } = apiCatalogFixture();
+  const { db, service } = openFixture({ runtimeCatalog: catalog });
+  const unused = async (): Promise<never> => { throw new Error('Unexpected map read'); };
+  const app = express();
+  app.use(createMapDesignProjectRouter({ projectService: service, requireLocalDaemonRequest,
+    queryService: { getContext: unused, inspect: unused, searchLayers: unused, getStyle: unused,
+      getSemantics: unused, listRevisions: unused }, validationService: { validate: unused },
+  }));
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('Server did not listen');
+  const output: string[] = [];
+  const errors: string[] = [];
+  let sequence = 0;
+  const args = ['create', '--name', 'CLI map', '--source-url', 'https://example.com/style.json',
+    '--runtime', 'api', '--prompt-file', '-'];
+  const io = { env: { MAP_DESIGN_DAEMON_URL: `http://127.0.0.1:${address.port}` },
+    stdout: { write: (value: string) => output.push(value) },
+    stderr: { write: (value: string) => errors.push(value) },
+    stdin: { async *[Symbol.asyncIterator]() { yield 'Make it clear'; } },
+    randomId: () => `cli-${++sequence}`,
+  };
+  try {
+    expect(await runMapDesignProjectCli(args, io)).toBe(0);
+    config.activeApiProfileId = 'b';
+    const conversation = service.getConversation('cli-1');
+    expect(createMapDesignLocalStore(db).getConversationRuntime(conversation.id)?.model).toBe(apiProfileModelId('a'));
+    expect(JSON.parse(output.join('')).runtime).toEqual({ agentId: 'api', model: apiProfileModelId('a') });
+    expect(await runMapDesignProjectCli([...args, '--model', apiProfileModelId('missing'), '--json'], io)).toBe(1);
+    expect(JSON.parse(errors.join('')).code).toBe('INVALID_INPUT');
+    expect(service.list().projects).toHaveLength(1);
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    closeMapDesignDatabase(db);
+  }
+});
 
 it('binds an imported CARTOGRAPHY.md atomically and preserves it on replay and reopen', async () => {
   const { db, service, queryService } = openFixture();

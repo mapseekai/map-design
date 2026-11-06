@@ -1,6 +1,6 @@
 # 真实样式导入样例
 
-最初四份文件由用户提供，2026-09-29 从本机下载目录原样复制，用于手动导入演示和自动回归测试。保留原文件名及内容；来源文件的版权与许可归原权利人，本目录不另行授予许可。2026-09-30 新增的 QGIS 官方工程采用下文单独标明的原许可。
+最初四份文件由用户提供，2026-09-29 从本机下载目录原样复制，用于手动导入演示和自动回归测试。保留原文件名及内容；来源文件的版权与许可归原权利人，本目录不另行授予许可。
 
 | 文件 | 大小 | 回归场景 | 当前提取结果 |
 | --- | ---: | --- | --- |
@@ -30,28 +30,55 @@ pnpm --filter @cartographymd/init-skill exec vitest run tests/import-samples.tes
 
 `style-v8.json`（23277 字节）同样由用户提供并原样复制，包含 48 个图层。当前转换得到 48 个元素、55 个颜色项和 46 条跳过说明。其旧式 `stops` 缩放函数及部分动态虚线参数没有转换成静态值，原表达式保留在 INIT_REPORT.json 中。导入设计规范不需要请求原文件引用的瓦片、字体和精灵服务。
 
-## QGIS 官方真实工程
 
-两份工程来自 QGIS 官方仓库的实际测试工程，原始字节完整保留（仅调整本目录文件名），不是针对本适配器编造的最小 XML。固定来源提交为 `20dc5867eb89838f87b789ad4c4c9f07575009b8`。
+## QGIS 官方训练工程（2026-09-30）
 
-| 文件 | 大小 | 回归场景 | 当前实际提取结果 |
+以下两份文件来自 [QGIS/QGIS-Training-Data](https://github.com/qgis/QGIS-Training-Data)，用于真实工程格式回归；没有删减 XML，也没有在测试中重新打包 QGZ。固定上游提交为 `fd26dd88e39b9aec550eea450cec18d02b1de3b5`。
+
+上游提供 [GNU GPL version 2](https://github.com/qgis/QGIS-Training-Data/blob/fd26dd88e39b9aec550eea450cec18d02b1de3b5/LICENSE.md)，许可副本为本目录的 [QGIS-Training-Data.LICENSE.txt](QGIS-Training-Data.LICENSE.txt)。这两份第三方工程及其归档内原有文件保留上游许可和作者信息，不另行授权；它们是独立测试数据，不是本项目代码的许可证声明。QGZ 是 QGIS 原生可编辑工程归档，包含 XML 和样式库，未包含可执行程序。
+
+| 文件 / 固定原始地址 | 字节数 | 真实特性 | 当前回归基线 |
 | --- | ---: | --- | --- |
-| `qgis-quickapp.qgs` | 43779 字节 | 3 个分类渲染图层、旧版 `prop` 属性、SVG 标记、RGBA 透明色、毫米单位 | 4 个元素、6 个颜色项、19 条跳过说明 |
-| `qgis-selective-masking.qgs` | 234251 字节 | 7 个图层、分类渲染、两层线符号、MarkerLine/SVG、普通和规则式标注、文字遮罩、MM/Point 单位、栅格渲染器 | 9 个元素、9 个颜色项、61 条跳过说明 |
+| [selective_masking.qgs](https://raw.githubusercontent.com/qgis/QGIS-Training-Data/fd26dd88e39b9aec550eea450cec18d02b1de3b5/exercise_data/masking/selective_masking.qgs) | 127069 | QGIS 3.37；`Class` 分类、3 个 SvgMarker、双 SimpleLine、SimpleFill、Sans 标注、MM/Point、扩展 RGB 颜色 | 4 元素、4 颜色 token、14 skipped |
+| [network.qgz](https://raw.githubusercontent.com/qgis/QGIS-Training-Data/fd26dd88e39b9aec550eea450cec18d02b1de3b5/exercise_data/network_analysis/network.qgz) | 14465 | QGIS 3.28.7；3 条 `RuleRenderer` 规则、双 SimpleLine 和 MarkerLine、点符号、`speed` 标注、MM/Point | 5 元素、8 颜色 token、16 skipped |
 
-### 来源、校验与许可
+SHA-256（测试自动验证，`.gitattributes` 禁止这些原始文件的换行转换）：
 
-- QuickApp：[固定原文件](https://raw.githubusercontent.com/qgis/QGIS/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/quickapp_project.qgs)。SHA-256：`f1a7c68cdd5de3e5061f3e589db34893316a472ca85b10f7563315c1f8b84c3b`。
-- Selective Masking：[固定原文件](https://raw.githubusercontent.com/qgis/QGIS/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/selective_masking.qgs)。SHA-256：`b0a3f607a59ffaabc2f40ff9b083c91196bedba86975a7f3fb86a2f130ebdba1`。
-- 原作者/来源：QGIS Development Team 与 QGIS 项目贡献者；Selective Masking 工程原始保存信息为 Julien Cabieces，信息保留在文件中。
-- 两份工程按 QGIS 仓库的 [COPYING](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/COPYING) 分发，完整原文随附为 `QGIS-COPYING`（GNU GPL v2，含 QGIS 附加说明）。它们作为独立测试数据保留原许可，不重新许可为本仓库许可证。QGS 即原始可编辑 XML；本次没有提交二进制或工程引用的数据、SVG、字体。
+```text
+a43f23b25cd0e456bf49c23702aff456a928f8828b8abefa89f4170d2af80e8e  selective_masking.qgs
+43cbad6404801e95dc2572423f815218c11975270d405ee2aa0a2c35363ca666  network.qgz
+dba313854f65a8d41b1777cf9d6cb5ddf692792be04d808b82c86c63909fbdf0  QGIS-Training-Data.LICENSE.txt
+```
 
-测试固定输入 SHA-256、完整适配器 IR、完整 JSON 报告，以及生成草稿的 SHA-256。`*.qgs.baseline.json` 是经过检查的提取事实，不由测试自动更新；修改适配器后应逐项审查差异，再更新基线。相同真实工程另经 ZIP 打包走完整 `.qgz` 导入路径，检查其结果与 `.qgs` 相同；该打包检查不冒充上游原生 QGZ 样例。
+### 基线含义与转换限制
 
-### 基线含义与报告
+- 统计来自完整 `initializeCartography` 流程，生成的文档通过 `verifyDocument`，并限制在 64 KiB 内。颜色数是生成的 token 数，不能当作不同 RGB 值的数量。
+- 规则工程保留 `"direction" = 0/1/2` 过滤表达式；分类工程保留分类字段 `Class` 及 `B52`、`Biplane`、`Jet` 的值。`Heading`、`Name`、`speed` 标注字段进入 bindings，需要后续分诊，未变成静态标签内容。
+- SimpleLine 多层叠加尚未等价转换：相同核心属性沿用最后一个可提取值，早期图层的颜色和宽度事实仍被收集，叠加限制进入 skipped。测试固定 `3.26/1.86mm` 及 `1.06/0.86mm`，避免只检测最后一层而遗漏外描边事实。
+- `SvgMarker`、`MarkerLine` 不生成虚假的可用符号。分类工程的三个 SVG 符号被明确跳过；规则工程的四个 MarkerLine 也明确报告。
+- 标注当前保留 Sans 和 `10pt/32pt` 字号；`text-buffer`、`text-mask`、文字颜色、排布等未映射配置均写入 skipped（报告包括默认或未启用设置，不表示这些效果全部处于启用状态）。`points` 的 `labelsEnabled=0` 也明确说明；现有导入语义保留配置定义，并不保证可见性一致。
+- QGZ 原有 `ctLXeg_styles.db` 随归档原样保留，当前只读 `network.qgs`，附属样式库未读取也进入 skipped。
+- 不随工程复制 shapefile、GeoPackage、SVG 等外部资源，也不访问工程中的 datasource。路径仅进入 report；这些样例验证样式提取，不保证在 QGIS 中直接打开后即可渲染完整地图。
+- 不支持的渲染器、符号类型和嵌套规则会报告跳过。当前支持这里的平级 RuleRenderer 规则，不宣称支持全部 QGIS 功能。
 
-当前多层线符号按原顺序覆盖核心属性，例如黑色 `3.26mm` 加黄色 `1.86mm` 的两层线，输出元素保持黄色 `1.86mm`；原始两层颜色和宽度仍在 IR/Token 基线中，叠加语义进入 skipped。分类字段/条件、未转换的符号属性（含线型）、SVG、MarkerLine、栅格渲染器同样有明确跳过说明。
+### 离线回归与手动验证
 
-Selective Masking 保留 `Sans` 与 `16pt/10pt/32pt` 字号的当前提取结果。标注文字颜色、字段、buffer/mask/background/shadow/placement、规则式标注条件及额外 text-style 进入 skipped/report；`labelsEnabled=0` 的标注仍按现有提取逻辑生成，并在报告中明确指出启用状态尚未应用。QuickApp 的 `labelsEnabled=1` 没有相应 labeling 设置，也明确记录。报告 detail 是最多 200 字符的原始片段摘要，完整原值可在哈希固定的工程 XML 中追溯。
+工程和许可均已包含在仓库中，正常测试不需要网络、QGIS 安装或下载脚本。从仓库根目录运行：
 
-这些回归验证的是“实际提取事实 + 明确的转换边界”，不代表 QGIS 画面的完整视觉复现。测试只读取工程样式，不请求工程里的相对路径、WMS/瓦片或字体服务。
+```sh
+pnpm --filter @cartographymd/init-skill exec vitest run tests/import-samples.test.ts tests/adapter-qgis.test.ts
+pnpm --filter @cartographymd/init-skill run init -- --input skills/cartography-init/fixtures/import-samples/network.qgz --output /tmp/QGIS-CARTOGRAPHY.md --report /tmp/QGIS-INIT_REPORT.md --report-json /tmp/QGIS-INIT_REPORT.json
+```
+
+Windows 上请把 `/tmp/` 改为已存在的临时目录。替换样例时需一起核对固定提交、许可、原始 hash、属性断言和统计，不能只更新数量使测试通过。
+
+## QGIS 官方测试工程
+
+下面两份工程取自 QGIS 项目的同一提交。文件保留了上游的原始字节和作者信息，测试会校验 SHA-256。上游的 COPYING 与本目录已有的许可副本逐字相同。[QGIS COPYING](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/COPYING) · [本地许可副本](QGIS-Training-Data.LICENSE.txt)
+
+| 文件和上游来源 | 验证的导入结果 | SHA-256 |
+| --- | --- | --- |
+| [qgis-quickapp.qgs](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/quickapp_project.qgs) | 4 个元素、6 个颜色项、16 条跳过说明。Roads、Planes、Land 启用了标注但缺少标注定义，报告逐层指出。 | `f1a7c68cdd5de3e5061f3e589db34893316a472ca85b10f7563315c1f8b84c3b` |
+| [qgis-selective-masking.qgs](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/selective_masking.qgs) | 9 个元素、9 个颜色项、27 条跳过说明。JSON 报告记录了栅格渲染器 `multibandcolor` 以及标注条件 `ELSE` 和 `Name='Dam'`。 | `b0a3f607a59ffaabc2f40ff9b083c91196bedba86975a7f3fb86a2f130ebdba1` |
+
+草稿沿用可提取的符号和字体。对分类、分级、符号透明度、禁用的符号图层及标注规则，请查看 `INIT_REPORT.md` 中对应图层的跳过说明。`INIT_REPORT.json` 的 `detail` 可提供区间端点、过滤表达式或渲染器类型的最多 200 个字符。

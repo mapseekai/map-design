@@ -11,8 +11,8 @@ export interface MapLoadingProps {
 // Keep the illustration and its styles in the same chunk, including the first-paint fallback.
 const loadingStyles = `
 .map-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; color:var(--muted-foreground); text-align:center; }
-.map-loading[data-variant="screen"] { min-height:100dvh; background:var(--background); gap:16px; }
-.map-loading[data-variant="panel"] { min-height:160px; }
+.map-loading[data-variant="screen"] { min-height:calc(100dvh - var(--app-titlebar-height, 0px)); background:var(--background); gap:16px; }
+.map-loading[data-variant="panel"] { min-height:160px; flex:1; align-self:stretch; width:100%; }
 .map-loading__art { width:144px; height:108px; flex:none; }
 .map-loading[data-variant="screen"] .map-loading__art { width:180px; height:135px; max-width:80vw; }
 .map-loading__copy { display:flex; flex-direction:column; gap:8px; }
@@ -25,7 +25,7 @@ const loadingStyles = `
 .map-loading__swatch-primary { fill:var(--primary); }
 .map-loading__swatch-muted { fill:var(--muted-foreground); }
 .map-loading__swatch-accent { fill:var(--success,var(--primary)); }
-.map-loading[data-variant="inline"] { display:inline-flex; flex-direction:row; gap:8px; padding:0; text-align:start; vertical-align:middle; }
+.map-loading[data-variant="inline"] { display:flex; width:100%; flex-direction:row; gap:8px; padding:0; text-align:start; vertical-align:middle; }
 .map-loading[data-variant="inline"] .map-loading__art { width:32px; height:24px; }
 @keyframes map-style-color { 0%,100% { stroke:var(--primary); } 50% { stroke:var(--success,var(--primary)); } }
 @media(prefers-reduced-motion:reduce) { .map-loading__road { animation:none; } }

@@ -170,7 +170,7 @@ export class LiveDraftController {
       };
       return;
     }
-    if (event.type === 'draft.reloaded' || event.type === 'draft.discarded' || event.type === 'revision.committed') {
+    if (event.type === 'draft.reloaded' || event.type === 'draft.discarded' || event.type === 'draft.restored' || event.type === 'revision.committed') {
       await this.#reload(event.type, record.sequence, generation);
       return;
     }

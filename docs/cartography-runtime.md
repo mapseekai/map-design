@@ -5,7 +5,8 @@
 MapDesign uses the published `@mapseekai/cartography.md` **0.4.1** parser and
 linter. Its document format version is **0.4.0**; these two versions are not
 interchangeable. The default document is
-`design-systems/quiet-atlas/CARTOGRAPHY.md`, copied without modification from
+`design-systems/monet/CARTOGRAPHY.md`, based on the saved 莫奈风格 specification.
+The retained Quiet Atlas example at `design-systems/quiet-atlas/CARTOGRAPHY.md` was copied without modification from
 `mapseekai/cartography.md` commit
 `85b9661ea1ee6de16d50cded8ac2d1d29ff5ab50`,
 `examples/quiet-atlas/CARTOGRAPHY.md` (Apache-2.0).
@@ -40,7 +41,7 @@ with no blocking structural errors still requires rendered visual review.
 ## One project, one pinned source
 
 Creating a project uses its explicitly selected library document. If none is
-selected, it uses the bundled Quiet Atlas default. The bundled default is registered as a read-only-deletion preset in the document
+selected, it uses the bundled Monet default. The bundled default is registered as a read-only-deletion preset in the document
 library, so its project reference can also be opened in the editor. Existing
 identical user imports retain their original classification. Deletion checks both
 explicit library associations and active pinned sources, including default bindings
@@ -106,7 +107,7 @@ replace a stored digest with an unrelated value or delete project data.
 
 ```bash
 nvm use
-pnpm --filter @mapseekai/daemon exec cartographymd lint ../../design-systems/quiet-atlas/CARTOGRAPHY.md --strict
+pnpm --filter @mapseekai/daemon exec cartographymd lint ../../design-systems/monet/CARTOGRAPHY.md --strict
 pnpm --filter @mapseekai/daemon exec vitest run tests/map-design/validation tests/map-design/storage/cartography-bindings.test.ts tests/map-design/application/revision-service.test.ts
 pnpm guard
 pnpm typecheck

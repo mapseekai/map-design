@@ -26,6 +26,7 @@ export const ko: Dict = {
   'mapDesign.preview.idle': "공개 MapLibre Style URL을 입력하면 지도가 자동으로 로드됩니다.",
   'mapDesign.preview.invalidUrl': "사용자 이름, 비밀번호 또는 프래그먼트가 없는 유효한 HTTP(S) URL을 입력하세요.",
   'mapDesign.preview.loadError': "미리보기를 완전히 로드하지 못했습니다. 스타일 형식, 네트워크 또는 CORS를 확인하세요. 프로젝트는 계속 만들 수 있습니다.",
+  'mapDesign.preview.webglUnavailable': "지도 미리보기에는 WebGL2가 필요하지만 현재 브라우저에서는 사용할 수 없습니다. 그래픽 가속을 켜거나 호환되는 브라우저에서 미리보기를 다시 불러오세요. 프로젝트는 계속 만들 수 있습니다.",
   'mapDesign.preview.resourceError': "일부 지도 리소스를 로드하지 못했습니다. 프로젝트는 계속 만들 수 있습니다.",
   'mapDesign.preview.retry': "미리보기 다시 로드",
   'mapDesign.preview.hint': "미리보기는 MapLibre Style URL을 사용합니다. GeoJSON, TileJSON, PMTiles는 프로젝트 생성 시 가져옵니다.",

@@ -70,12 +70,12 @@ export function LocalRuntimeManager({ agents, config, onAgentsChange, onConfigCh
           <Field><FieldLabel htmlFor="runtime-model-search">{t('mapDesign.runtime.searchModels')}</FieldLabel>
             <Input id="runtime-model-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></Field>
           <p className="text-xs text-muted-foreground">{api.cost}</p>
-          <div className="grid max-h-[32rem] min-w-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-x-hidden overflow-y-auto">
+          <div className="grid max-h-[32rem] min-w-0 grid-cols-[minmax(0,1fr)] gap-3 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]">
             {models.map(model => {
               const enabled = !preference(active.id).disabledModels?.includes(model.id);
               const key = JSON.stringify([active.id, model.id]);
               const check = checks[key];
-              return <div key={model.id} className="grid min-w-0 gap-2 border-b border-border" style={{ paddingBlockEnd: '1rem' }}>
+              return <div key={model.id} className="grid min-w-0 gap-2 border-b border-border" style={{ paddingBlockEnd: '1rem', paddingInlineEnd: '1.5rem' }}>
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium [overflow-wrap:anywhere]">{model.label}</p>
                     {model.id !== model.label ? <p className="break-all text-xs text-muted-foreground">{model.id}</p> : null}</div>

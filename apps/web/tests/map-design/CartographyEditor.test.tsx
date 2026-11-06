@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { ApiClientError } from '../../src/api/request';
 import type { ReactNode } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -68,19 +69,20 @@ it('prefills the initial prompt and waits for the author to edit and send it', a
 it('updates the document and conversation after the agent finishes, then saves explicitly', async () => {
   const completed: CartographyEditSession = { ...running, status: 'idle', revision: 1, source: `${source}\n\n## Scale guidance\nKeep label hierarchy.`, messages: [...running.messages, { id: '22345678-1234-4234-8234-123456789abc', role: 'assistant', content: 'Added scale guidance.', createdAt: session.createdAt }] };
   vi.mocked(client.getCartographyEdit).mockResolvedValueOnce(running).mockResolvedValue(completed);
-  vi.mocked(client.saveCartographyEdit).mockResolvedValue({ session: { ...completed, savedId: 'a'.repeat(64), savedRevision: 1 }, document: { id: 'a'.repeat(64), name: 'Atlas', version: '0.4.0', description: '' } });
+  vi.mocked(client.saveCartographyEdit).mockResolvedValue({ session: { ...completed, savedId: 'a'.repeat(64), savedRevision: 1, canOverwrite: true }, document: { id: 'a'.repeat(64), name: 'Atlas', version: '0.4.0', description: '' } });
   render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
   expect(await screen.findByRole('heading', { name: 'Scale guidance' })).toBeInTheDocument();
   expect(api.getMapDesignConversation).toHaveBeenCalled();
   expect(client.saveCartographyEdit).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Sample map' }));
   expect(await screen.findByText('Example map')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Save as new specification' }));
-  const saveDialog = await screen.findByRole('dialog');
-  fireEvent.change(within(saveDialog).getByRole('textbox'), { target: { value: 'Atlas copy' } });
-  fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save as new specification' }));
+  expect(screen.queryByRole('button', { name: 'Save as new specification' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
-  expect(client.saveCartographyEdit).toHaveBeenCalledWith(session.id, { expectedRevision: 1, mode: 'new', name: 'Atlas copy' });
+  expect(client.saveCartographyEdit).toHaveBeenCalledWith(session.id, { expectedRevision: 1, mode: 'new', name: 'Atlas' });
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Save as new specification' })).toBeEnabled();
 });
 
 it('overwrites the current specification explicitly and still allows saving a copy', async () => {
@@ -90,16 +92,17 @@ it('overwrites the current specification explicitly and still allows saving a co
   vi.mocked(client.saveCartographyEdit).mockResolvedValue({ session: { ...edited, savedId: edited.sourceDocumentId, savedRevision: 1 }, document: { id: edited.sourceDocumentId, name: 'Atlas', version: '0.4.0', description: '' } });
   render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
   // When the author saves over the current specification.
-  fireEvent.click(await screen.findByRole('button', { name: 'Overwrite specification' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
   // Then the overwrite request is explicit and save-as remains available.
   await waitFor(() => expect(client.saveCartographyEdit).toHaveBeenCalledWith(session.id, { expectedRevision: 1, mode: 'overwrite' }));
   expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Overwrite specification' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Save as new specification' })).toBeEnabled();
 });
 
 it('keeps the copy name and draft visible when saving fails', async () => {
-  // Given a draft whose library save fails.
+  // Given an existing specification whose save-as fails.
+  vi.mocked(client.getCartographyEdit).mockResolvedValue({ ...session, sourceDocumentId: 'b'.repeat(64), canOverwrite: true });
   vi.mocked(client.saveCartographyEdit).mockRejectedValue(new Error('offline'));
   render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
   fireEvent.click(await screen.findByRole('button', { name: 'Save as new specification' }));
@@ -173,4 +176,18 @@ it('creates and deletes discussions through the same conversation menu as map pr
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete conversation' }));
   await waitFor(() => expect(api.deleteMapDesignConversation).toHaveBeenCalledWith(session.id, created.conversationId, expect.any(AbortSignal)));
   expect(screen.getByText('Original guidance.')).toBeInTheDocument();
+});
+
+it('allows renaming a new specification only when the initial save conflicts', async () => {
+  vi.mocked(client.saveCartographyEdit).mockRejectedValueOnce(new ApiClientError({ message: 'Exists', details: { reason: 'CARTOGRAPHY_EXISTS' } }))
+    .mockResolvedValue({ session: { ...session, savedId: 'a'.repeat(64), savedRevision: 0, canOverwrite: true }, document: { id: 'a'.repeat(64), name: 'New Atlas', version: '0.4.0', description: '' } });
+  render(<I18nProvider><CartographyEditor sessionId={session.id} /></I18nProvider>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByRole('textbox')).toHaveValue('Atlas');
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('already exists');
+  fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'New Atlas' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+  await waitFor(() => expect(client.saveCartographyEdit).toHaveBeenLastCalledWith(session.id, { expectedRevision: 0, mode: 'new', name: 'New Atlas' }));
+  expect(await screen.findByText('Saved to library.')).toBeInTheDocument();
 });

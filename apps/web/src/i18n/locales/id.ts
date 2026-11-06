@@ -26,6 +26,7 @@ export const id: Dict = {
   'mapDesign.preview.idle': "Masukkan URL Style MapLibre publik untuk memuat peta secara otomatis.",
   'mapDesign.preview.invalidUrl': "Masukkan URL HTTP(S) valid tanpa nama pengguna, kata sandi, atau fragmen.",
   'mapDesign.preview.loadError': "Pratinjau belum selesai dimuat. Periksa format Style, jaringan, atau CORS. Proyek tetap dapat dibuat.",
+  'mapDesign.preview.webglUnavailable': "Pratinjau peta memerlukan WebGL2, yang tidak tersedia di browser ini. Aktifkan akselerasi grafis atau gunakan browser yang kompatibel, lalu muat ulang pratinjau. Anda tetap dapat membuat proyek.",
   'mapDesign.preview.resourceError': "Beberapa sumber daya peta gagal dimuat. Proyek tetap dapat dibuat.",
   'mapDesign.preview.retry': "Muat ulang pratinjau",
   'mapDesign.preview.hint': "Pratinjau memakai URL Style MapLibre. GeoJSON, TileJSON, dan PMTiles diimpor saat proyek dibuat.",

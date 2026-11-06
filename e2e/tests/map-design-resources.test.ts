@@ -13,6 +13,7 @@ describe('MapDesign resource boundary', () => {
     for (const required of [
       'skills/map-design/SKILL.md',
       'design-systems/quiet-atlas/CARTOGRAPHY.md',
+      'design-systems/monet/CARTOGRAPHY.md',
       'assets/brand/map-design.svg',
     ]) {
       expect(existsSync(fromRoot(required)), required + ' must remain').toBe(true);

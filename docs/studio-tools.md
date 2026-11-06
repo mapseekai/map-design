@@ -1,6 +1,6 @@
 # Studio screenshots and direct style editing
 
-The camera button above the map adds a PNG of the current rendered viewport to the selected conversation. Add a message, remove unwanted thumbnails, then send. Up to four screenshots can accompany a message. Capture records the map revision, style hash and viewport, while the PNG stays in project-owned local storage. Accepted messages keep their screenshots after reload; rejected sends keep them in the composer.
+The camera button above the map adds a PNG of the current rendered viewport to the selected conversation. Add a message, remove unwanted thumbnails, then send. Up to four screenshots can accompany a message. Capture records the map revision, style hash and viewport, while the PNG stays in project-owned local storage. Accepted messages keep their screenshots after reload. Rejected sends remain in the paused queue with screenshot previews and text-file links. Edit the queued message to change its text or remove individual attachments, then continue the queue. New unsent composer content stays separate and is preserved.
 
 The pencil button enters direct style editing. Click a rendered feature (or focus the map and press Enter); choose a candidate if several overlap. Set the scope to the feature, features matching one of its properties, or the entire style layer. Color, opacity, line width, circle radius and text size controls depend on the layer type. Expression-backed fields display a dash until edited; changing one control preserves the others. Color swatches preserve an existing alpha component.
 

@@ -26,6 +26,7 @@ export const fr: Dict = {
   'mapDesign.preview.idle': "Saisissez une URL publique de style MapLibre pour charger automatiquement la carte.",
   'mapDesign.preview.invalidUrl': "Saisissez une URL HTTP(S) valide, sans identifiant, mot de passe ni fragment.",
   'mapDesign.preview.loadError': "Aperçu incomplet. Vérifiez le format du style, le réseau ou les accès CORS. Vous pouvez toujours créer le projet.",
+  'mapDesign.preview.webglUnavailable': "L’aperçu nécessite WebGL2, indisponible dans ce navigateur. Activez l’accélération graphique ou utilisez un navigateur compatible, puis rechargez l’aperçu. Vous pouvez toujours créer le projet.",
   'mapDesign.preview.resourceError': "Certaines ressources ne sont pas chargées. Vous pouvez toujours créer le projet.",
   'mapDesign.preview.retry': "Recharger l’aperçu",
   'mapDesign.preview.hint': "L’aperçu utilise une URL de style MapLibre. GeoJSON, TileJSON et PMTiles sont importés à la création du projet.",

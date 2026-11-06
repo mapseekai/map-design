@@ -1,3 +1,4 @@
+import { apiConversationHistory } from '../storage/api-context.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -218,6 +219,7 @@ export class CartographyEditService {
       const reply = CartographyEditReplySchema.parse(await (this.deps.generate ?? generateCartographyEdit)({
         source: session.source, sourceFile: session.sourceFile, reportMarkdown: session.reportMarkdown, prompt: request.prompt, sampleBindings: session.sampleBindings,
         history: history.map(({ role, content }) => ({ role, content })), runtime,
+        apiHistory: this.deps.store ? apiConversationHistory(this.deps.store, job.conversationId, history) : { messages: history },
         sessionId: session.id, conversationId: job.conversationId, runId: request.requestId,
         onEvent: (event) => {
           if (event.kind === 'text' || event.kind === 'run_finished' || !this.deps.store || !job.events.apply(event) || job.timer) return;

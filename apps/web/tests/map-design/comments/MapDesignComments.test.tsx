@@ -95,6 +95,24 @@ describe('MapDesignComments', () => {
     expect(screen.queryByRole('button', { name: /^1\. roads/ })).not.toBeInTheDocument();
   });
 
+  it('does not overlap slow comment polls and aborts the pending request on unmount', async () => {
+    const interval = vi.spyOn(window, 'setInterval');
+    client.list.mockResolvedValue([comment({ status: 'submitted' })]);
+    const view = render(<MapDesignComments projectId="project-1" map={null} draftRevision={3} styleHash="hash-1" readOnly={false} submissionDisabled={false} onSubmit={vi.fn()} />);
+    await waitFor(() => expect(interval.mock.calls.some(([, ms]) => ms === 1500)).toBe(true));
+    const poll = interval.mock.calls.find(([, ms]) => ms === 1500)![0] as () => Promise<void>;
+    let finish!: (comments: MapComment[]) => void;
+    client.list.mockImplementationOnce(() => new Promise<MapComment[]>(resolve => { finish = resolve; }));
+    const pending = poll();
+    await poll();
+    expect(client.list).toHaveBeenCalledTimes(2);
+    const signal = client.list.mock.calls[1]![1] as AbortSignal;
+    view.unmount();
+    expect(signal.aborted).toBe(true);
+    finish([]); await pending;
+    interval.mockRestore();
+  });
+
   it('clears successful comments from markers, list, count and open popover while keeping retries', async () => {
     const interval = vi.spyOn(window, 'setInterval');
     const submitted = comment({ status: 'submitted' });

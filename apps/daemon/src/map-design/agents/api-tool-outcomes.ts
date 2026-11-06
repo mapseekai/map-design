@@ -6,6 +6,7 @@ type Failure = { name: string; fingerprint: string | null; retryOf?: string };
 export class ApiToolOutcomes {
   private readonly failures = new Map<string, Failure>();
   private readonly repeated = new Map<string, number>();
+  get unresolvedCallIds(): string[] { return [...this.failures.keys()]; }
   get unresolved(): number { return this.failures.size; }
   get looping(): boolean { return [...this.repeated.values()].some((count) => count >= 3); }
 

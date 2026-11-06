@@ -1,3 +1,4 @@
+import { isSelectableAgent } from './agent-availability';
 import { MapLoading, Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@mapseekai/components';
 import { Plus, BookOpen, ExternalLink, Trash2, LoaderCircle, Pencil } from 'lucide-react';
 import { projectRenameCopy } from '../i18n/locales/project-rename';
@@ -30,7 +31,7 @@ export function CartographyManager() {
   const [generationAgent, setGenerationAgent] = useState('');
   const [generationModel, setGenerationModel] = useState('');
   const generationRuntime = generationAgent === 'codex' ? 'codex' : 'api';
-  const selectedAgent = agents.find(agent => agent.id === generationAgent && agent.available && agent.enabled !== false);
+  const selectedAgent = agents.find(agent => agent.id === generationAgent && isSelectableAgent(agent));
   const apiModels = selectedAgent?.models?.filter(model => model.enabled) ?? [];
   const selectedModel = generationModel ? apiModels.find(model => model.id === generationModel) : apiModels.find(model => model.default) ?? apiModels[0];
   const hasSelectableModel = selectedAgent?.models?.length ? Boolean(selectedModel) : generationAgent !== 'api';

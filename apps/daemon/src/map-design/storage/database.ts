@@ -136,6 +136,11 @@ function createLocalTables(db: Database.Database): void {
       runtime_json TEXT,
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS api_context_summaries (
+      conversation_id TEXT PRIMARY KEY REFERENCES conversations(id) ON DELETE CASCADE,
+      through_message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      digest TEXT NOT NULL, summary TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS agent_sessions (
       conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, agent_id TEXT NOT NULL,
       session_id TEXT NOT NULL, stable_prompt_hash TEXT, model TEXT, cwd TEXT, last_message_id TEXT,

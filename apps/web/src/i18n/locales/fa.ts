@@ -26,6 +26,7 @@ export const fa: Dict = {
   'mapDesign.preview.idle': "برای بارگیری خودکار نقشه، نشانی عمومی سبک MapLibre را وارد کنید.",
   'mapDesign.preview.invalidUrl': "یک نشانی معتبر HTTP(S) بدون نام کاربری، گذرواژه یا بخش fragment وارد کنید.",
   'mapDesign.preview.loadError': "بارگیری پیش‌نمایش کامل نشد. قالب سبک، شبکه یا CORS را بررسی کنید. همچنان می‌توانید پروژه بسازید.",
+  'mapDesign.preview.webglUnavailable': "پیش‌نمایش نقشه به WebGL2 نیاز دارد که در این مرورگر در دسترس نیست. شتاب‌دهی گرافیکی را فعال کنید یا از مرورگر سازگار استفاده کنید و پیش‌نمایش را دوباره بارگیری کنید. همچنان می‌توانید پروژه را ایجاد کنید.",
   'mapDesign.preview.resourceError': "برخی منابع نقشه بارگیری نشدند. همچنان می‌توانید پروژه بسازید.",
   'mapDesign.preview.retry': "بارگیری دوباره پیش‌نمایش",
   'mapDesign.preview.hint': "پیش‌نمایش از نشانی سبک MapLibre استفاده می‌کند. GeoJSON، TileJSON و PMTiles هنگام ساخت پروژه وارد می‌شوند.",

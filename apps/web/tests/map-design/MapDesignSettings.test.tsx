@@ -114,9 +114,10 @@ it('saves API budgets from the online tab without sending stored secrets', async
   render(<MapDesignSettings />);
   fireEvent.click(await screen.findByRole('tab', { name: 'Model providers' }));
   fireEvent.change(screen.getByLabelText(/Maximum model steps/), { target: { value: '64' } });
+  fireEvent.change(screen.getByLabelText(/Context window tokens/), { target: { value: '65536' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
   await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
-  expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body))).toEqual({ apiExecution: { maxSteps: 64 } });
+  expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body))).toEqual({ apiExecution: { contextWindowTokens: 65536, maxSteps: 64 } });
 });
 
 it('restores automatic output budgeting when an explicit limit is cleared', async () => {

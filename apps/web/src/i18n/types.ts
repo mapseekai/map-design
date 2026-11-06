@@ -81,6 +81,7 @@ export interface Dict {
   'mapDesign.preview.idle': string;
   'mapDesign.preview.invalidUrl': string;
   'mapDesign.preview.loadError': string;
+  'mapDesign.preview.webglUnavailable': string;
   'mapDesign.preview.resourceError': string;
   'mapDesign.preview.retry': string;
   'mapDesign.preview.hint': string;

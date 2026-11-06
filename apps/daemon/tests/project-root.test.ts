@@ -1,3 +1,4 @@
+import { DEFAULT_MAP_DESIGN_SYSTEM_ID } from '@mapseekai/map-design-contracts';
 import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -31,8 +32,8 @@ describe('daemon resource root', () => {
       vi.stubEnv('MAP_DESIGN_RESOURCE_ROOT', resources);
       for (const resolveRoot of [resolveProjectRoot, resolveProjectRootFromNestedModule]) {
         expect(resolveRoot(chunks)).toBe(resources);
-        await expect(loadMapDesignSystem({ projectRoot: resolveRoot(chunks), designSystemId: 'quiet-atlas' }))
-          .resolves.toMatchObject({ id: 'quiet-atlas', name: 'Quiet Atlas' });
+        await expect(loadMapDesignSystem({ projectRoot: resolveRoot(chunks), designSystemId: DEFAULT_MAP_DESIGN_SYSTEM_ID }))
+          .resolves.toMatchObject({ id: 'monet', name: '莫奈风格' });
       }
     } finally {
       await rm(root, { recursive: true, force: true });

@@ -45,6 +45,32 @@ function updated(sequence = 2, draftRevision = 2, styleHash = HASH_B): MapStudio
 }
 
 describe('LiveDraftController', () => {
+  it('acknowledges an external restore only after canonical application succeeds, and can retry failures', async () => {
+    let complete!: () => void;
+    const applyCanonicalStyle = vi.fn()
+      .mockRejectedValueOnce(new Error('map unavailable'))
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { complete = resolve; }));
+    const loadCanonical = vi.fn(async () => ({ context: { draftRevision: 3, styleHash: HASH_C }, style: BASE_STYLE }));
+    const controller = new LiveDraftController({ map: {}, projectId: 'project-a',
+      initialContext: { draftRevision: 2, styleHash: HASH_B, sequence: 10 },
+      loadCanonical, applyCanonicalStyle, hashStyle: async () => HASH_C });
+    const record = MapStudioEventRecordSchema.parse({ sequence: 11, event: {
+      type: 'draft.restored', occurredAt: '2026-09-30T00:00:00.000Z',
+      payload: { draftRevision: 3, restoredRevision: 1, styleHash: HASH_C },
+    } });
+    try {
+      await expect(controller.handleRecord(record)).rejects.toThrow('map unavailable');
+      expect(controller.snapshot()).toEqual({ draftRevision: 2, styleHash: HASH_B, sequence: 10 });
+      const pending = controller.handleRecord(record);
+      await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
+      expect(controller.snapshot().sequence).toBe(10);
+      complete();
+      await pending;
+      expect(loadCanonical).toHaveBeenCalledWith('draft.restored', expect.any(AbortSignal));
+      expect(controller.snapshot()).toEqual({ draftRevision: 3, styleHash: HASH_C, sequence: 11 });
+    } finally { controller.close(); }
+  });
+
   it('recovers a transaction whose MapLibre style expands URLs and omits inert canonical fields', async () => {
     vi.stubGlobal('location', { origin: ORIGIN });
     const relativeNext = { ...RELATIVE_RESOURCE_STYLE, metadata: { revision: 2 } };

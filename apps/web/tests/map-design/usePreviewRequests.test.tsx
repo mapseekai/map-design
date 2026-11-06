@@ -122,4 +122,14 @@ describe('usePreviewRequests', () => {
     view.unmount();
     expect(signal?.aborted).toBe(true);
   });
+
+  it('ignores expired replay requests without replacing the last preview status', async () => {
+    const renderPreview = vi.fn(async () => ({ ...terminalOutput('current'), status: 'succeeded' as const }));
+    const view = renderHook(() => usePreviewRequests({ renderPreview }));
+    await view.result.current.handleRecord(requested('current'));
+    await waitFor(() => expect(view.result.current.status).toBe('succeeded'));
+    await view.result.current.handleRecord(requested('expired', new Date(Date.now() - 1_000).toISOString()));
+    expect(renderPreview).toHaveBeenCalledOnce();
+    expect(view.result.current.status).toBe('succeeded');
+  });
 });

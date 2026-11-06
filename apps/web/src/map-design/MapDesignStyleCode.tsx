@@ -2,7 +2,7 @@ import { Button } from '@mapseekai/components';
 import { JsonEditor } from '@mapseekai/components/json-editor';
 import { MAP_STYLE_DOCUMENT_MAX_BYTES, type MapStyleDocumentInput } from '@mapseekai/map-design-contracts';
 import { validateStyleDocument } from 'maplibre-style-tools/core';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiClientError } from '../api/request';
 import { useI18n } from '../i18n';
 import { styleCodeCopy } from '../i18n/locales/style-code';
@@ -33,7 +33,8 @@ export function MapDesignStyleCode({ projectId, style, draftRevision, styleHash,
   const [cycle, setCycle] = useState(0);
   const [saving, setSaving] = useState(false);
   const [diagnostic, setDiagnostic] = useState('');
-  const base = useRef({ draftRevision, styleHash, canonical: canonical(style) });
+  const canonicalStyle = useMemo(() => canonical(style), [style]);
+  const base = useRef({ draftRevision, styleHash, canonical: canonicalStyle });
   const inFlight = useRef(false);
   const mounted = useRef(true);
   const latestText = useRef(text);
@@ -49,14 +50,14 @@ export function MapDesignStyleCode({ projectId, style, draftRevision, styleHash,
     if (inFlight.current || draftRevision < base.current.draftRevision) return;
     if (draftRevision === base.current.draftRevision && styleHash === base.current.styleHash) return;
     if (!textMatches(latestText.current, base.current.canonical)) { setConflict(true); return; }
-    base.current = { draftRevision, styleHash, canonical: canonical(style) };
+    base.current = { draftRevision, styleHash, canonical: canonicalStyle };
     setText(JSON.stringify(style, null, 2)); setStatus('ready'); retry.current = null;
-  }, [draftRevision, styleHash, style, saving]);
+  }, [draftRevision, styleHash, style, canonicalStyle, saving]);
 
   useEffect(() => {
     if (readOnly || conflict || inFlight.current) return;
-    if (textMatches(text, base.current.canonical)) { setStatus('ready'); return; }
     const timer = window.setTimeout(() => {
+      if (textMatches(text, base.current.canonical)) { setStatus('ready'); return; }
       let value: unknown;
       try { value = JSON.parse(text); }
       catch { setStatus('invalid'); setDiagnostic(''); return; }
@@ -94,7 +95,7 @@ export function MapDesignStyleCode({ projectId, style, draftRevision, styleHash,
   }, [text, readOnly, conflict, cycle, projectId]);
 
   const reload = () => {
-    base.current = { draftRevision, styleHash, canonical: canonical(style) };
+    base.current = { draftRevision, styleHash, canonical: canonicalStyle };
     retry.current = null; setText(JSON.stringify(style, null, 2)); setConflict(false); setStatus('ready'); setDiagnostic('');
     void Promise.resolve(onSavedRef.current()).catch(() => undefined);
   };

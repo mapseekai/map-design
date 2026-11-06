@@ -1,6 +1,6 @@
 {
   "name": "@mapseekai/contracts",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "Shared pure TypeScript contracts for the MapDesign web/daemon boundary.",

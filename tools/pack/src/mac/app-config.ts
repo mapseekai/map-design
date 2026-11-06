@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 
@@ -16,10 +16,10 @@ export function resolveSeededAppConfigPaths(config: ToolPackConfig): SeededAppCo
   const configuredDataDir = process.env.MAP_DESIGN_DATA_DIR?.trim();
   const sourceDataDir = configuredDataDir
     ? resolveProjectRelativePath(configuredDataDir, config.workspaceRoot)
-    : join(config.workspaceRoot, ".md");
+    : join(config.workspaceRoot, ".map-design");
   return {
-    sourcePath: join(sourceDataDir, "app-config.json"),
-    targetPath: join(config.roots.runtime.namespaceRoot, "data", "app-config.json"),
+    sourcePath: join(sourceDataDir, "map-design-config.json"),
+    targetPath: join(config.roots.runtime.namespaceRoot, "data", "map-design-config.json"),
   };
 }
 
@@ -36,7 +36,9 @@ export async function seedPackagedAppConfig(config: ToolPackConfig): Promise<voi
   }
 
   await mkdir(dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+  if (await pathExists(targetPath)) await chmod(targetPath, 0o600);
+  await writeFile(targetPath, `${JSON.stringify(parsed, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  await chmod(targetPath, 0o600);
 }
 
 export async function writeLaunchPackagedConfig(config: ToolPackConfig, appPath: string): Promise<string> {

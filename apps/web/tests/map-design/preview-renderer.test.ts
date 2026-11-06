@@ -6,6 +6,89 @@ const HASH = 'b'.repeat(64);
 const DIGEST = 'd'.repeat(64);
 
 describe('renderMapDesignPreview', () => {
+  it.each(['success', 'center', 'zoom', 'bearing', 'pitch', 'wrapped-angles', 'abort', 'restore-error'])
+  ('protects interaction and checks the camera in the capture frame: %s', async (scenario) => {
+    const original = { center: [0, 0] as [number, number], zoom: 1, bearing: 0, pitch: 0 };
+    let camera = { ...original };
+    let idle: (() => void) | undefined;
+    let loaded = false;
+    const handler = (enabled: boolean) => ({
+      isEnabled: () => enabled,
+      disable: vi.fn(() => { enabled = false; }),
+      enable: vi.fn(() => { enabled = true; }),
+    });
+    const dragPan = handler(true), keyboard = handler(true), scrollZoom = handler(false);
+    const capture = vi.fn(() => 'data:image/png;base64,iVBORw0KGgo=');
+    const controller = new AbortController();
+    const map = {
+      dragPan, keyboard, scrollZoom,
+      getCenter: () => ({ lng: camera.center[0], lat: camera.center[1] }), getZoom: () => camera.zoom,
+      getBearing: () => camera.bearing, getPitch: () => camera.pitch,
+      jumpTo: vi.fn((next: typeof camera) => { camera = next; }),
+      resize: vi.fn(), isStyleLoaded: () => true, areTilesLoaded: () => loaded, isMoving: () => false,
+      once: (name: string, callback: () => void) => {
+        if (name === 'idle') { idle = callback; return; }
+        queueMicrotask(() => {
+          // A control or another consumer may change the camera even with gestures disabled.
+          if (scenario === 'center') camera.center = [110, 40];
+          if (scenario === 'zoom') camera.zoom += 1;
+          if (scenario === 'bearing') camera.bearing += 30;
+          if (scenario === 'pitch') camera.pitch += 10;
+          if (scenario === 'wrapped-angles') { camera.center[0] += 360; camera.bearing -= 360; }
+          callback();
+        });
+      },
+      off: vi.fn(), getCanvas: () => ({ toDataURL: capture }),
+    };
+    const fulfill = vi.fn(async (body) => body);
+    const pending = renderMapDesignPreview({ map, signal: controller.signal,
+      request: { previewId: 'camera', draftRevision: 1, styleHash: HASH,
+        expiresAt: new Date(Date.now() + 10_000).toISOString(),
+        viewport: { center: [10, 20], zoom: 3, bearing: 4, pitch: 5, width: 320, height: 240, pixelRatio: 1 } },
+      snapshot: () => ({ draftRevision: 1, styleHash: HASH }), loadCanonical: vi.fn(), validationDigest: DIGEST, fulfill,
+    });
+    expect(dragPan.isEnabled()).toBe(false);
+    expect(keyboard.isEnabled()).toBe(false);
+    expect(scrollZoom.disable).not.toHaveBeenCalled();
+    if (scenario === 'abort') {
+      controller.abort(new DOMException('Stopped', 'AbortError'));
+      await expect(pending).rejects.toThrow('Stopped');
+      expect(fulfill).not.toHaveBeenCalled();
+    } else {
+      if (scenario === 'restore-error') map.resize.mockImplementation(() => { throw new Error('restore failed'); });
+      loaded = true;
+      idle?.();
+      if (scenario === 'restore-error') await expect(pending).rejects.toThrow('restore failed');
+      else await expect(pending).resolves.toMatchObject({ status: ['success', 'wrapped-angles'].includes(scenario) ? 'succeeded' : 'failed' });
+    }
+    if (['center', 'zoom', 'bearing', 'pitch', 'abort'].includes(scenario)) expect(capture).not.toHaveBeenCalled();
+    expect(camera).toEqual(original);
+    expect(dragPan.isEnabled()).toBe(true);
+    expect(keyboard.isEnabled()).toBe(true);
+    expect(scrollZoom.enable).not.toHaveBeenCalled();
+  });
+
+  it.each(['invalid-expiry', 'restore-failed'])('does not retain the abort listener after %s', async (failure) => {
+    const controller = new AbortController();
+    const add = vi.spyOn(controller.signal, 'addEventListener');
+    const remove = vi.spyOn(controller.signal, 'removeEventListener');
+    const map = {
+      getCenter: () => ({ lng: 0, lat: 0 }), getZoom: () => 1, getBearing: () => 0, getPitch: () => 0,
+      setPixelRatio: vi.fn().mockImplementationOnce(() => {}).mockImplementation(() => { throw new Error('restore failed'); }),
+      jumpTo: vi.fn(), resize: vi.fn(), isStyleLoaded: () => true, areTilesLoaded: () => true, isMoving: () => false,
+      once: vi.fn(), off: vi.fn(), getCanvas: () => ({ toDataURL: () => 'data:image/png;base64,iVBORw0KGgo=' }),
+    };
+    await expect(renderMapDesignPreview({
+      map: withRenderFrame(map), signal: controller.signal,
+      request: { previewId: 'cleanup', draftRevision: 1, styleHash: HASH,
+        expiresAt: failure === 'invalid-expiry' ? 'invalid' : new Date(Date.now() + 60_000).toISOString(),
+        viewport: { center: [0, 0], zoom: 1, bearing: 0, pitch: 0, width: 320, height: 240, pixelRatio: 1 } },
+      snapshot: () => ({ draftRevision: 1, styleHash: HASH }), loadCanonical: vi.fn(), validationDigest: DIGEST,
+      fulfill: async body => body,
+    })).rejects.toThrow(failure === 'invalid-expiry' ? 'expiry is invalid' : 'restore failed');
+    for (const [type, listener] of add.mock.calls) expect(remove).toHaveBeenCalledWith(type, listener);
+  });
+
   it.each([
     { width: 1280, height: 720, captureFails: false },
     { width: 320, height: 240, captureFails: false },
@@ -47,10 +130,12 @@ describe('renderMapDesignPreview', () => {
   it('reloads stale canonical state, renders the bounded viewport at its device ratio, and restores the map', async () => {
     const order: string[] = [];
     let idle: (() => void) | undefined;
+    let camera = { center: [12, 34] as [number, number], zoom: 7, bearing: 8, pitch: 9 };
     const map = {
-      getCenter: () => ({ lng: 12, lat: 34 }), getZoom: () => 7, getBearing: () => 8, getPitch: () => 9,
+      getCenter: () => ({ lng: camera.center[0], lat: camera.center[1] }),
+      getZoom: () => camera.zoom, getBearing: () => camera.bearing, getPitch: () => camera.pitch,
       getPixelRatio: () => 1, setPixelRatio: vi.fn((value: number) => order.push(`ratio:${value}`)),
-      jumpTo: vi.fn((value: unknown) => order.push(`jump:${JSON.stringify(value)}`)),
+      jumpTo: vi.fn((value: typeof camera) => { camera = value; order.push(`jump:${JSON.stringify(value)}`); }),
       resize: vi.fn(() => order.push('resize')), isStyleLoaded: () => true, areTilesLoaded: () => true,
       isMoving: () => true,
       once: vi.fn((name: string, callback: () => void) => { expect(name).toBe('idle'); idle = callback; }),

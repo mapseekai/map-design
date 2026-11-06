@@ -11,6 +11,8 @@ import { createMapDesignProjectServices } from '../../../src/server-context.js';
 import { openMapDesignDatabase } from '../../../src/map-design/storage/database.js';
 import { createMapDesignLocalStore } from '../../../src/map-design/storage/local-store.js';
 import { MapDesignProjectService } from '../../../src/map-design/application/project-service.js';
+import { createMapDesignRuntimeCatalog } from '../../../src/map-design/application/runtime-catalog.js';
+import { apiAgentDef } from '../../../src/runtimes/defs/api.js';
 import { testDesignSystem } from '../../fixtures/map-design/test-design-system.js';
 
 it('creates, imports and reopens a real gzip HTTP Style using an isolated local source server', async () => {
@@ -34,11 +36,21 @@ it('creates, imports and reopens a real gzip HTTP Style using an isolated local 
   });
   const services = createMapDesignProjectServices({ db, dataRoot: root, projectRoot: root, designSystem: testDesignSystem(), transport });
   const store = createMapDesignLocalStore(db);
+  const runtimeCatalog = createMapDesignRuntimeCatalog({
+    definitions: [apiAgentDef],
+    apiConfig: () => ({ activeApiProfileId: 'test', byokProviders: {
+      test: { protocol: 'openai', model: 'test-model', baseUrl: 'https://api.example.com/v1', apiKey: 'test-key' },
+    } }),
+    inspect: definition => ({ definition, available: true, environment: {},
+      mapDesign: { nativeMapTools: true, publicReasoningSummary: true } }),
+  });
   const projects = new MapDesignProjectService({ store, sourceImportService: services.sourceImportService,
+    runtimeCatalog,
     importJobRunner: services.importJobRunner, queryService: services.queryService, verifyWorkingDirectoryGrant: async () => { throw new Error('No directory grant requested'); } });
   try {
     const input = { projectId: 'local-http-map', title: 'Local HTTP map', source: { url: `http://maps.example.com:${port}/style.json` }, runtime: { agentId: 'api' }, designRequirement: 'Keep terrain', idempotencyKey: 'fixed-source' };
     const created = await projects.create(input); expect(created.project.lifecycle).toBe('importing');
+    expect(created.runtime).toEqual({ agentId: 'api', model: 'api-profile:test' });
     await expect.poll(async () => (await projects.get(input.projectId)).project.lifecycle).toBe('ready');
     expect((await projects.get(input.projectId)).project.failure).toBeNull(); expect(received).toEqual(['/style.json']);
     expect(await services.queryService.getStyle(input.projectId)).toEqual(document);

@@ -17,6 +17,8 @@ const MAX_EVENT_TEXT_CODE_POINTS = 8_192;
 const MAX_THINKING_CODE_POINTS = 2_048;
 const MAX_TOOL_NAME_CODE_POINTS = 160;
 const MAX_TOOL_SUMMARY_BYTES = 8_192;
+const MAX_TRACKED_TOOL_IDS = 1_024;
+const MAX_RUN_CONTENT_CODE_POINTS = 65_536;
 const OMITTED_TOOL_ID = 'tools-omitted';
 
 export class RunEventAccumulator {
@@ -38,9 +40,11 @@ export class RunEventAccumulator {
           'Summary unavailable.',
           MAX_THINKING_CODE_POINTS,
         );
+        boundSnapshot(this.events, true);
         return true;
       }
       this.events.push(sanitized);
+      boundSnapshot(this.events, true);
       return true;
     }
     if (sanitized.kind === 'text') {
@@ -52,22 +56,33 @@ export class RunEventAccumulator {
           'Content unavailable.',
           MAX_EVENT_TEXT_CODE_POINTS,
         );
+        boundSnapshot(this.events, true);
         return true;
       }
       this.events.push(sanitized);
+      boundSnapshot(this.events, true);
       return true;
     }
 
     if (sanitized.kind === 'tool_use') {
+      if (this.terminalToolIds.has(sanitized.id)) return false;
       if (this.events.some((candidate) => candidate.kind === 'tool_use' && candidate.id === sanitized.id)) return false;
+      // ponytail: retain up to 1,024 unfinished calls; persist overflow if providers need more concurrency.
+      const pendingCount = this.events.filter((candidate) => candidate.kind === 'tool_use'
+        && candidate.id !== OMITTED_TOOL_ID && !this.terminalToolIds.has(candidate.id)).length;
+      if (pendingCount >= MAX_TRACKED_TOOL_IDS) return false;
     } else if (sanitized.kind === 'tool_result') {
       if (this.terminalToolIds.has(sanitized.toolUseId)) return false;
       if (!this.events.some((candidate) => candidate.kind === 'tool_use' && candidate.id === sanitized.toolUseId)) return false;
       this.terminalToolIds.add(sanitized.toolUseId);
+      if (this.terminalToolIds.size > MAX_TRACKED_TOOL_IDS) {
+        this.terminalToolIds.delete(this.terminalToolIds.values().next().value!);
+      }
     } else if (sanitized.kind === 'run_finished') {
       this.finished = true;
     }
     this.events.push(sanitized);
+    boundSnapshot(this.events, true);
     return true;
   }
 
@@ -82,12 +97,14 @@ export class RunEventAccumulator {
   }
 
   snapshot(): PersistedMapAgentEvent[] {
-    const events = this.events
-      .map((event) => sanitizeRunEvent(event))
-      .filter((event): event is PersistedMapAgentEvent => event !== null);
+    const events = structuredClone(this.events);
     boundSnapshot(events);
     return PersistedMapAgentEventsSchema.parse(events);
   }
+}
+
+export function appendRunContent(current: string, delta: string): string {
+  return truncateCodePoints(`${current}${delta}`, MAX_RUN_CONTENT_CODE_POINTS);
 }
 
 export function fitMapDesignMessageToBudget(message: MapDesignMessage): MapDesignMessage {
@@ -188,7 +205,8 @@ function sanitizeSummary(value: SafeToolSummary): SafeToolSummary {
   return bounded;
 }
 
-function boundSnapshot(events: PersistedMapAgentEvent[]): void {
+function boundSnapshot(events: PersistedMapAgentEvent[], preservePending = false): void {
+  if (events.length <= MAX_EVENT_ENTRIES && serializedBytes(events) <= MAX_EVENT_BYTES) return;
   const latestTerminalToolId = [...events]
     .reverse()
     .find((event): event is Extract<PersistedMapAgentEvent, { kind: 'tool_result' }> => event.kind === 'tool_result')
@@ -196,6 +214,16 @@ function boundSnapshot(events: PersistedMapAgentEvent[]): void {
   let omitted = 0;
   let omittedFailures = 0;
   let aggregateIndex = events.length;
+  const previousAggregate = events.findIndex((event) => event.kind === 'tool_use' && event.id === OMITTED_TOOL_ID);
+  if (previousAggregate >= 0) {
+    const result = events.find((event) => event.kind === 'tool_result' && event.toolUseId === OMITTED_TOOL_ID);
+    if (result?.kind === 'tool_result') {
+      omitted = Number(result.summary.omitted) || 0;
+      omittedFailures = Number(result.summary.failures) || 0;
+    }
+    aggregateIndex = previousAggregate;
+    removeEventEvidence(events, previousAggregate);
+  }
 
   while (snapshotExceedsBounds(events, omitted)) {
     const pair = firstCollapsibleToolPair(events, latestTerminalToolId);
@@ -214,13 +242,15 @@ function boundSnapshot(events: PersistedMapAgentEvent[]): void {
   }
 
   while (events.length > MAX_EVENT_ENTRIES || serializedBytes(events) > MAX_EVENT_BYTES) {
+    const completedToolIds = new Set(events.flatMap((event) => event.kind === 'tool_result' ? [event.toolUseId] : []));
     const removable = events.findIndex((event) => (
       event.kind !== 'run_finished'
+      && !(preservePending && event.kind === 'tool_use' && !completedToolIds.has(event.id))
       && !(event.kind === 'tool_use' && (event.id === latestTerminalToolId || event.id === OMITTED_TOOL_ID))
       && !(event.kind === 'tool_result' && (event.toolUseId === latestTerminalToolId || event.toolUseId === OMITTED_TOOL_ID))
     ));
     if (removable < 0) break;
-    events.splice(removable, 1);
+    removeEventEvidence(events, removable);
   }
 }
 
