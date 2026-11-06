@@ -5,6 +5,7 @@ import { expect, test as base } from '@playwright/test';
 
 import {
   PLAYWRIGHT_TOOLS_DEV_FIXTURE_TIMEOUT_MS,
+  isolateDevHotReload,
   warmPlaywrightDaemonRuntime,
   warmPlaywrightWebRuntime,
 } from './runtime-lifecycle.ts';
@@ -54,6 +55,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
         await warmPlaywrightDaemonRuntime(toolsDev.url.daemon('/api/health'));
         const context = await browser.newContext();
         try {
+          await isolateDevHotReload(context, toolsDev.url.web());
           const page = await context.newPage();
           await warmPlaywrightWebRuntime(page, toolsDev.url.web('/'));
         } finally {
@@ -78,6 +80,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker', timeout: PLAYWRIGHT_TOOLS_DEV_FIXTURE_TIMEOUT_MS },
   ],
   baseURL: async ({ toolsDev }, use) => await use(toolsDev.url.web()),
+  context: async ({ context, toolsDev }, use) => {
+    await isolateDevHotReload(context, toolsDev.url.web());
+    await use(context);
+  },
   _toolsDevFailureTracker: [
     async ({ toolsDev }, use, testInfo) => {
       await use(undefined);
