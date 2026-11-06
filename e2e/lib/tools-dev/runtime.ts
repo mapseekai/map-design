@@ -58,6 +58,7 @@ export function createToolsDevSuite(
   }
 
   async function startWeb(env: Record<string, string | undefined> = {}): Promise<ToolsDevStartResult> {
+    const production = (env.MAP_DESIGN_WEB_PROD ?? process.env.MAP_DESIGN_WEB_PROD) === '1';
     if (spec.ownerPid != null) {
       // A Playwright replacement worker reuses the same logical parallel slot.
       // Clear any previous incarnation before allocating ports or starting new
@@ -88,6 +89,7 @@ export function createToolsDevSuite(
         if (spec.ownerPid != null) {
           args.push('--parent-pid', String(spec.ownerPid));
         }
+        if (production) args.push('--prod');
         const result = await command<ToolsDevStartResult>(args, env, {
           timeoutMs: TOOLS_DEV_START_TIMEOUT_MS,
         });

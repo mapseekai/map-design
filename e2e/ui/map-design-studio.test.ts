@@ -166,10 +166,9 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
 
   await runtimeChip.click();
   const runtimeDialog = page.getByRole('dialog', { name: 'Runtime settings', exact: true });
-  const claude = runtimeDialog.getByRole('option', { name: /Claude Code/u });
-  await expect(claude).toBeVisible();
-  await expect(claude).toBeDisabled();
-  await expect(claude).toContainText('Claude Code policy does not allow MapDesign MCP tools.');
+  await expect(runtimeDialog.getByRole('option', { name: /^Codex(?:\s|$)/u })).toHaveAttribute('aria-selected', 'true');
+  await expect(runtimeDialog.getByRole('option', { name: /^OpenCode(?:\s|$)/u })).toBeEnabled();
+  await expect(runtimeDialog.getByRole('option', { name: /Claude Code/u })).toHaveCount(0);
   await runtimeDialog.getByRole('button', { name: 'Close', exact: true }).click();
 
   await openRevisionInspector(page);
@@ -179,6 +178,8 @@ test('[P0] switches Codex to OpenCode and back with isolated sessions, provenanc
   await expect(runtimeChip).toBeDisabled();
 
   expect(capture.filter((event) => event.type === 'map-mcp-server' || event.type === 'map-cli-invocation')).toEqual([]);
+  const runtimeEvents = (await readFakeCapture(toolsDev.fakeMapAcp.capturePath)).slice(captureOffset);
+  expect(runtimeEvents).not.toContainEqual(expect.objectContaining({ type: 'unsupported-run-spawn', agentId: 'claude' }));
   expect(consoleErrors).toEqual([]);
   expect(networkErrors).toEqual([]);
 });

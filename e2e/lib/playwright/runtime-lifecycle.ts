@@ -1,4 +1,4 @@
-import type { BrowserContext, ConsoleMessage, Page, Request, Response as PlaywrightResponse } from '@playwright/test';
+import type { ConsoleMessage, Page, Request, Response as PlaywrightResponse } from '@playwright/test';
 
 // Reserve an extra minute beyond start + web/daemon warmup + stop budgets so
 // Playwright can finish fixture bookkeeping without cutting teardown short.
@@ -28,30 +28,6 @@ type WebWarmupSnapshot = {
 };
 
 type WebWarmupPhase = 'navigation' | 'mount';
-
-export async function isolateDevHotReload(context: Pick<BrowserContext, 'routeWebSocket'>, webUrl: string): Promise<void> {
-  const hmrUrl = new URL('/_next/webpack-hmr', webUrl);
-  hmrUrl.protocol = hmrUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-  await context.routeWebSocket(
-    url => url.origin === hmrUrl.origin && url.pathname === hmrUrl.pathname,
-    client => {
-      const server = client.connectToServer();
-      server.onMessage(message => {
-        // The dev handshake carries React's hydration stream. Only source-edit refreshes race the cold router.
-        if (!isServerComponentRefresh(message)) client.send(message);
-      });
-    },
-  );
-}
-
-function isServerComponentRefresh(message: string | Buffer): boolean {
-  if (typeof message !== 'string') return false;
-  try {
-    return JSON.parse(message)?.type === 'serverComponentChanges';
-  } catch {
-    return false;
-  }
-}
 
 export async function warmPlaywrightWebRuntime(
   page: Page,

@@ -5,7 +5,6 @@ import { expect, test as base } from '@playwright/test';
 
 import {
   PLAYWRIGHT_TOOLS_DEV_FIXTURE_TIMEOUT_MS,
-  isolateDevHotReload,
   warmPlaywrightDaemonRuntime,
   warmPlaywrightWebRuntime,
 } from './runtime-lifecycle.ts';
@@ -48,14 +47,15 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
           AMR_HOME: join(toolsDev.root, 'scratch', 'amr-home'),
           MAP_DESIGN_BIN: join(e2eWorkspaceRoot(), 'apps', 'daemon', 'dist', 'cli.js'),
           MAP_DESIGN_NODE_BIN: process.execPath,
-          MAP_DESIGN_WEB_DIST_DIR: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'next'),
-          MAP_DESIGN_WEB_TSCONFIG_PATH: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'tsconfig.json'),
+          ...(process.env.MAP_DESIGN_WEB_PROD === '1' ? {} : {
+            MAP_DESIGN_WEB_DIST_DIR: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'next'),
+            MAP_DESIGN_WEB_TSCONFIG_PATH: join(toolsDev.toolsDevRoot, toolsDev.namespace, 'web', 'tsconfig.json'),
+          }),
           ...fakeMapAcp.env,
         });
         await warmPlaywrightDaemonRuntime(toolsDev.url.daemon('/api/health'));
         const context = await browser.newContext();
         try {
-          await isolateDevHotReload(context, toolsDev.url.web());
           const page = await context.newPage();
           await warmPlaywrightWebRuntime(page, toolsDev.url.web('/'));
         } finally {
@@ -80,10 +80,6 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker', timeout: PLAYWRIGHT_TOOLS_DEV_FIXTURE_TIMEOUT_MS },
   ],
   baseURL: async ({ toolsDev }, use) => await use(toolsDev.url.web()),
-  context: async ({ context, toolsDev }, use) => {
-    await isolateDevHotReload(context, toolsDev.url.web());
-    await use(context);
-  },
   _toolsDevFailureTracker: [
     async ({ toolsDev }, use, testInfo) => {
       await use(undefined);

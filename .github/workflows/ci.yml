@@ -349,6 +349,8 @@ jobs:
     needs: [scopes]
     if: ${{ needs.scopes.outputs.run_playwright_critical == 'true' }}
     runs-on: ubuntu-24.04
+    env:
+      MAP_DESIGN_WEB_PROD: "1"
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -379,6 +381,9 @@ jobs:
           pnpm --filter @mapseekai/desktop build
           pnpm --filter @mapseekai/web build:sidecar
 
+      - name: Build production web server for browser tests
+        run: MAP_DESIGN_WEB_OUTPUT_MODE=server pnpm --filter @mapseekai/web build
+
       - name: Clean Playwright state
         run: pnpm -C e2e exec tsx scripts/playwright.ts clean
 
@@ -392,6 +397,8 @@ jobs:
     needs: [scopes]
     if: ${{ needs.scopes.outputs.run_ui_p0 == 'true' }}
     runs-on: ubuntu-24.04
+    env:
+      MAP_DESIGN_WEB_PROD: "1"
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -420,6 +427,9 @@ jobs:
           pnpm --filter @mapseekai/desktop build
           pnpm --filter @mapseekai/web build:sidecar
 
+      - name: Build production web server for browser tests
+        run: MAP_DESIGN_WEB_OUTPUT_MODE=server pnpm --filter @mapseekai/web build
+
       - name: Clean Playwright state
         run: pnpm -C e2e exec tsx scripts/playwright.ts clean
 
@@ -444,6 +454,8 @@ jobs:
     needs: [scopes]
     if: ${{ needs.scopes.outputs.run_playwright_visual == 'true' }}
     runs-on: ubuntu-24.04
+    env:
+      MAP_DESIGN_WEB_PROD: "1"
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -471,6 +483,9 @@ jobs:
           pnpm --filter @mapseekai/daemon build
           pnpm --filter @mapseekai/desktop build
           pnpm --filter @mapseekai/web build:sidecar
+
+      - name: Build production web server for browser tests
+        run: MAP_DESIGN_WEB_OUTPUT_MODE=server pnpm --filter @mapseekai/web build
 
       - name: Run MapDesign layout suite
         id: visual
