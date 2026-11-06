@@ -81,4 +81,4 @@ Windows 上请把 `/tmp/` 改为已存在的临时目录。替换样例时需一
 | [qgis-quickapp.qgs](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/quickapp_project.qgs) | 4 个元素、6 个颜色项、16 条跳过说明。Roads、Planes、Land 启用了标注但缺少标注定义，报告逐层指出。 | `f1a7c68cdd5de3e5061f3e589db34893316a472ca85b10f7563315c1f8b84c3b` |
 | [qgis-selective-masking.qgs](https://github.com/qgis/QGIS/blob/20dc5867eb89838f87b789ad4c4c9f07575009b8/tests/testdata/selective_masking.qgs) | 9 个元素、9 个颜色项、27 条跳过说明。JSON 报告记录了栅格渲染器 `multibandcolor` 以及标注条件 `ELSE` 和 `Name='Dam'`。 | `b0a3f607a59ffaabc2f40ff9b083c91196bedba86975a7f3fb86a2f130ebdba1` |
 
-草稿沿用可提取的符号和字体。对分类、分级、符号透明度、禁用的符号图层及标注规则，请查看 `INIT_REPORT.md` 中对应图层的跳过说明。`INIT_REPORT.json` 的 `detail` 可提供区间端点、过滤表达式或渲染器类型的最多 200 个字符。
+草稿沿用可提取的符号和字体。对分类、分级、符号透明度、禁用的符号图层及标注规则，请查看 `INIT_REPORT.md` 中对应图层的跳过说明。`INIT_REPORT.json` 的 `detail` 可提供区间端点、过滤表达式或渲染器类型的最多 200 个字符。这些转换提示按工程保留前 100 条明细，超过时会列出省略数和总数。

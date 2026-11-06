@@ -124,4 +124,34 @@ describe('parseQgis', () => {
     ]);
     for (const item of report.skipped) expect(result.reportMarkdown).toContain(item.reason);
   });
+
+  it.each([
+    ['key="id" description="always" active="1" scalemindenom="0" scalemaxdenom="0"', []],
+    ['scalemindenom="500" scalemaxdenom="2500"', ['scalemindenom=500, scalemaxdenom=2500']],
+    ['active="0"', ['active=0']],
+  ] as const)('only reports effective conditions on a label rule with %s', (attributes, expected) => {
+    const xml = `<qgis><maplayer><layername>labels</layername><labeling type="rule-based"><rules>
+      <rule ${attributes}><rule><settings><text-style fontFamily="Sans" fontSize="12"/></settings></rule></rule>
+      </rules></labeling></maplayer></qgis>`;
+    const ir = parseQgis(Buffer.from(xml), 'conditions.qgs');
+    expect(ir.elements).toHaveLength(1);
+    expect(ir.skipped.map(item => item.detail)).toEqual(expected);
+  });
+
+  it('keeps large QGZ rule reports within the draft response limit and counts omitted details', () => {
+    const rules = Array.from({ length: 10_000 }, (_, i) =>
+      `<rule filter="id=${i}"><settings><text-style fontSize="12" fontFamily="Sans"/></settings></rule>`);
+    const xml = `<qgis><maplayer><layername>places</layername><labeling type="rule-based"><rules>${rules.join('')}</rules></labeling></maplayer></qgis>`;
+    const archive = Buffer.from(zipSync({ 'places.qgs': Buffer.from(xml) }));
+    const draft = initializeCartography(archive, 'places.qgz', 'Places');
+    const report = JSON.parse(draft.reportJson);
+    expect(report.statistics.elements).toBe(1);
+    const summary = '另有 9900 条转换提示已省略（共 10000 条）';
+    expect(report.skipped).toContainEqual({ source: 'qgis', reason: summary });
+    expect(report.skipped).toContainEqual(expect.objectContaining({ detail: 'id=99' }));
+    expect(draft.reportMarkdown).toContain(summary);
+    expect(draft.reportMarkdown).not.toContain('undefined');
+    expect(draft.reportJson.length).toBeLessThan(2 * 1024 * 1024);
+    expect(draft.reportMarkdown.length).toBeLessThan(2 * 1024 * 1024);
+  });
 });

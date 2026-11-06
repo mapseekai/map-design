@@ -12,6 +12,8 @@ import {
 } from '../ir.js';
 
 type XmlNode = Record<string, unknown>;
+type ReportLoss = (layer: string, reason: string, detail?: string) => void;
+const MAX_LOSS_DETAILS = 100;
 
 const units: Readonly<Record<string, DimensionUnit>> = {
   MM: 'mm', Point: 'pt', Points: 'pt', Pixels: 'px', Inches: 'in',
@@ -32,7 +34,16 @@ export function parseQgis(buffer: Buffer, fileName: string): ExtractedStyle {
   );
   if (!isNode(parsed)) return extracted;
 
-  for (const mapLayer of findNodes(parsed, 'maplayer')) extractMapLayer(mapLayer, extracted);
+  let losses = 0;
+  const reportLoss: ReportLoss = (layer, reason, detail) => {
+    if (++losses <= MAX_LOSS_DETAILS) {
+      extracted.skipped.push({ source: 'qgis', layer: layer.slice(0, 200), reason, ...(detail ? { detail: detail.slice(0, 200) } : {}) });
+    }
+  };
+  for (const mapLayer of findNodes(parsed, 'maplayer')) extractMapLayer(mapLayer, extracted, reportLoss);
+  if (losses > MAX_LOSS_DETAILS) {
+    extracted.skipped.push({ source: 'qgis', reason: `另有 ${losses - MAX_LOSS_DETAILS} 条转换提示已省略（共 ${losses} 条）` });
+  }
   return extracted;
 }
 
@@ -49,7 +60,7 @@ function qgsXml(buffer: Buffer, extracted: ExtractedStyle): string {
   return buffer.toString('utf8');
 }
 
-function extractMapLayer(mapLayer: XmlNode, extracted: ExtractedStyle): void {
+function extractMapLayer(mapLayer: XmlNode, extracted: ExtractedStyle, reportLoss: ReportLoss): void {
   const layerName = textOf(mapLayer.layername) ?? 'Unnamed layer';
   const provider = textOf(mapLayer.provider);
   const datasource = textOf(mapLayer.datasource);
@@ -58,41 +69,39 @@ function extractMapLayer(mapLayer: XmlNode, extracted: ExtractedStyle): void {
   }
 
   const renderer = firstNode(mapLayer['renderer-v2']);
-  if (renderer) extractRenderer(renderer, layerName, extracted);
+  if (renderer) extractRenderer(renderer, layerName, extracted, reportLoss);
   const raster = firstNode(firstNode(mapLayer.pipe)?.rasterrenderer) ?? firstNode(mapLayer.rasterrenderer);
-  if (raster) skip(extracted, layerName, '栅格渲染器未转换', attribute(raster, 'type'));
+  if (raster) reportLoss(layerName, '栅格渲染器未转换', attribute(raster, 'type'));
 
   const labeling = firstNode(mapLayer.labeling);
   const enabled = attribute(mapLayer, 'labelsEnabled');
   if (labeling) {
-    extractLabeling(labeling, layerName, extracted);
-    if (enabled === '0' || enabled === 'false') skip(extracted, layerName, 'labelsEnabled=0：保留标注样式定义，未转换启用状态');
+    extractLabeling(labeling, layerName, extracted, reportLoss);
+    if (enabled === '0' || enabled === 'false') {
+      extracted.skipped.push({ source: 'qgis', layer: layerName, reason: 'labelsEnabled=0：保留标注样式定义，未转换启用状态' });
+    }
   } else if (enabled === '1' || enabled === 'true') {
-    skip(extracted, layerName, '已启用标注但缺少 labeling 定义');
+    reportLoss(layerName, '已启用标注但缺少 labeling 定义');
   }
   const legacy = nodesOf(firstNode(mapLayer.customproperties)?.property);
   if (legacy.some(prop => /^labeling(?:\/|$)/.test(attribute(prop, 'key') ?? ''))) {
-    skip(extracted, layerName, '旧版 customproperties 标注配置未转换');
+    reportLoss(layerName, '旧版 customproperties 标注配置未转换');
   }
 }
 
-function skip(extracted: ExtractedStyle, layer: string, reason: string, detail?: string): void {
-  extracted.skipped.push({ source: 'qgis', layer, reason, ...(detail ? { detail: detail.slice(0, 200) } : {}) });
-}
-
-function extractRenderer(renderer: XmlNode, layerName: string, extracted: ExtractedStyle): void {
+function extractRenderer(renderer: XmlNode, layerName: string, extracted: ExtractedStyle, reportLoss: ReportLoss): void {
   const type = attribute(renderer, 'type');
   const symbols = new Map(nodesOf(firstNode(renderer.symbols)?.symbol).map((symbol) => [attribute(symbol, 'name') ?? '', symbol]));
   if (type === 'singleSymbol') {
     const symbol = symbols.values().next().value as XmlNode | undefined;
-    if (symbol) extractSymbol(symbol, layerName, undefined, undefined, extracted);
-    else skip(extracted, layerName, 'singleSymbol 缺少符号定义');
+    if (symbol) extractSymbol(symbol, layerName, undefined, undefined, extracted, reportLoss);
+    else reportLoss(layerName, 'singleSymbol 缺少符号定义');
     return;
   }
 
   const field = attribute(renderer, 'attr');
   if (field) extracted.bindings.push({ source: 'qgis', layer: layerName, kind: 'field-ref', expression: field });
-  if (type === 'categorizedSymbol') skip(extracted, layerName, '分类条件未应用到草稿', field);
+  if (type === 'categorizedSymbol') reportLoss(layerName, '分类条件未应用到草稿', field);
   if (!['RuleBased', 'RuleRenderer', 'categorizedSymbol', 'graduatedSymbol'].includes(type ?? '')) {
     extracted.skipped.push({ source: 'qgis', layer: layerName, reason: `不支持的渲染器: ${type ?? 'unknown'}` });
     return;
@@ -114,7 +123,7 @@ function extractRenderer(renderer: XmlNode, layerName: string, extracted: Extrac
           const lower = attribute(range, 'lower');
           const upper = attribute(range, 'upper');
           const name = attribute(range, 'label') ?? layerName;
-          skip(extracted, layerName, `第 ${index + 1} 个分级区间未应用到草稿`, `lower=${lower ?? '?'}, upper=${upper ?? '?'}`);
+          reportLoss(layerName, `第 ${index + 1} 个分级区间未应用到草稿`, `lower=${lower ?? '?'}, upper=${upper ?? '?'}`);
           return { symbol: attribute(range, 'symbol'), name, filter: undefined, value: lower ?? upper };
         })
         : [];
@@ -122,18 +131,18 @@ function extractRenderer(renderer: XmlNode, layerName: string, extracted: Extrac
   for (const [index, entry] of entries.entries()) {
     const symbol = entry.symbol ? symbols.get(entry.symbol) : undefined;
     if (!symbol) {
-      if (entry.symbol) skip(extracted, layerName, '引用的符号未找到', entry.symbol);
-      else if (type === 'categorizedSymbol' || type === 'graduatedSymbol') skip(extracted, layerName, '分类或区间缺少符号引用', entry.name);
+      if (entry.symbol) reportLoss(layerName, '引用的符号未找到', entry.symbol);
+      else if (type === 'categorizedSymbol' || type === 'graduatedSymbol') reportLoss(layerName, '分类或区间缺少符号引用', entry.name);
       continue;
     }
-    const element = extractSymbol(symbol, entry.name, layerName, roleFor(index), extracted);
+    const element = extractSymbol(symbol, entry.name, layerName, roleFor(index), extracted, reportLoss);
     if (!element) continue;
     if (entry.filter) extracted.bindings.push({ source: 'qgis', layer: entry.name, family: layerName, kind: 'filter', expression: entry.filter });
     if (entry.value) extracted.bindings.push({ source: 'qgis', layer: entry.name, family: layerName, kind: 'field-ref', expression: entry.value });
   }
 }
 
-function extractSymbol(symbol: XmlNode, name: string, family: string | undefined, roleHint: ExtractedElement['roleHint'] | undefined, extracted: ExtractedStyle): ExtractedElement | undefined {
+function extractSymbol(symbol: XmlNode, name: string, family: string | undefined, roleHint: ExtractedElement['roleHint'] | undefined, extracted: ExtractedStyle, reportLoss: ReportLoss): ExtractedElement | undefined {
   const geometry = geometryFor(attribute(symbol, 'type'));
   if (!geometry) {
     extracted.skipped.push({ source: 'qgis', layer: name, reason: `不支持的符号类型: ${attribute(symbol, 'type') ?? 'unknown'}` });
@@ -144,22 +153,22 @@ function extractSymbol(symbol: XmlNode, name: string, family: string | undefined
   if (family) element.family = family;
   if (roleHint) element.roleHint = roleHint;
   const alpha = attribute(symbol, 'alpha');
-  if (alpha !== undefined && Number(alpha) !== 1) skip(extracted, name, '符号透明度 alpha 未应用', alpha);
+  if (alpha !== undefined && Number(alpha) !== 1) reportLoss(name, '符号透明度 alpha 未应用', alpha);
 
   const layers = nodesOf(symbol.layer);
   if (layers.length > 1) extracted.skipped.push({ source: 'qgis', layer: name,
     reason: `多个符号图层的叠加效果未转换（${layers.map(layer => attribute(layer, 'class')).join(', ')}）；同名核心属性保留最后一个可提取值` });
-  for (const layer of layers) extractSymbolLayer(layer, style, name, extracted, family);
+  for (const layer of layers) extractSymbolLayer(layer, style, name, extracted, reportLoss, family);
   if (Object.keys(style).length) extracted.elements.push(element);
   else extracted.skipped.push({ source: 'qgis', layer: name, reason: '未提取到可表示的核心样式属性，省略空符号' });
   return element;
 }
 
-function extractSymbolLayer(layer: XmlNode, style: CoreStyleProps, name: string, extracted: ExtractedStyle, family?: string): void {
+function extractSymbolLayer(layer: XmlNode, style: CoreStyleProps, name: string, extracted: ExtractedStyle, reportLoss: ReportLoss, family?: string): void {
   const props = properties(layer);
   const className = attribute(layer, 'class');
   const enabled = attribute(layer, 'enabled');
-  if (enabled === '0' || enabled === 'false') skip(extracted, name, '已禁用符号图层，提取时未应用启用状态', className);
+  if (enabled === '0' || enabled === 'false') reportLoss(name, '已禁用符号图层，提取时未应用启用状态', className);
   const unit = unitFor(props.get('line_width_unit') ?? props.get('outline_width_unit') ?? props.get('size_unit'), name, extracted);
   if (className === 'SimpleLine') {
     setColor(props.get('line_color'), 'strokeColor', style, name, extracted);
@@ -189,16 +198,25 @@ function extractSymbolLayer(layer: XmlNode, style: CoreStyleProps, name: string,
   extractDataDefined(firstNode(layer.data_defined_properties), name, family, extracted);
 }
 
-function extractLabeling(labeling: XmlNode, layerName: string, extracted: ExtractedStyle): void {
-  if (attribute(labeling, 'type') === 'rule-based') {
-    for (const [index, rule] of findNodes(labeling.rules, 'rule').entries()) {
-      skip(extracted, layerName, `规则式标注条件未应用到草稿（规则 ${index + 1}）`, attribute(rule, 'filter'));
-    }
+function reportLabelRule(rule: XmlNode, layerName: string, reportLoss: ReportLoss): void {
+  const filter = attribute(rule, 'filter');
+  const conditions = filter ? [filter] : [];
+  for (const key of ['scalemindenom', 'scalemaxdenom']) {
+    const scale = attribute(rule, key);
+    if (scale && Number(scale) > 0) conditions.push(`${key}=${scale}`);
   }
+  if (attribute(rule, 'active') === '0') conditions.push('active=0');
+  if (conditions.length) reportLoss(layerName, '规则式标注条件未应用到草稿', conditions.join(', '));
+  for (const child of nodesOf(rule.rule)) reportLabelRule(child, layerName, reportLoss);
+}
+
+function extractLabeling(labeling: XmlNode, layerName: string, extracted: ExtractedStyle, reportLoss: ReportLoss): void {
+  const rules = firstNode(labeling.rules);
+  if (attribute(labeling, 'type') === 'rule-based' && rules) reportLabelRule(rules, layerName, reportLoss);
   const textStyles = findNodes(labeling, 'text-style');
   const textStyle = textStyles[0];
   if (!textStyle) {
-    skip(extracted, layerName, '标注缺少 text-style，未生成标注');
+    reportLoss(layerName, '标注缺少 text-style，未生成标注');
     return;
   }
   const props = attributesAndProperties(textStyle);
@@ -213,12 +231,12 @@ function extractLabeling(labeling: XmlNode, layerName: string, extracted: Extrac
   ];
   if (remaining.length || sections.length) extracted.skipped.push({ source: 'qgis', layer: layerName,
     reason: `未转换的标注配置（含默认或未启用设置）: ${[...new Set([...remaining, ...sections])].sort().join(', ')}` });
-  if (textStyles.length > 1) skip(extracted, layerName, '多个标注样式仅提取第一个，其余标注规则未转换');
+  if (textStyles.length > 1) extracted.skipped.push({ source: 'qgis', layer: layerName, reason: '多个标注样式仅提取第一个，其余标注规则未转换' });
   const family = props.get('fontFamily') ?? props.get('font-family');
   const size = numberOf(props.get('fontSize') ?? props.get('font-size'));
   const unit = unitFor(props.get('fontSizeUnit') ?? props.get('font-size-unit'), layerName, extracted);
   if (!family || size === undefined || !unit) {
-    skip(extracted, layerName, '标注缺少可转换的字体、字号或单位');
+    reportLoss(layerName, '标注缺少可转换的字体、字号或单位');
     return;
   }
   const rawTypography: ExtractedType = { fontFamily: [family], fontSize: dimension(size, unit), nameHint: layerName, usedBy: [layerName] };
