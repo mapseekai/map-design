@@ -14,6 +14,7 @@ import {
 type XmlNode = Record<string, unknown>;
 type ReportLoss = (layer: string, reason: string, detail?: string) => void;
 const MAX_LOSS_DETAILS = 100;
+const MAX_LOSS_TEXT = 64 * 1024;
 
 const units: Readonly<Record<string, DimensionUnit>> = {
   MM: 'mm', Point: 'pt', Points: 'pt', Pixels: 'px', Inches: 'in',
@@ -34,15 +35,23 @@ export function parseQgis(buffer: Buffer, fileName: string): ExtractedStyle {
   );
   if (!isNode(parsed)) return extracted;
 
-  let losses = 0;
+  let retained = 0;
+  let omitted = 0;
+  let remainingText = MAX_LOSS_TEXT;
   const reportLoss: ReportLoss = (layer, reason, detail) => {
-    if (++losses <= MAX_LOSS_DETAILS) {
-      extracted.skipped.push({ source: 'qgis', layer: layer.slice(0, 200), reason, ...(detail ? { detail: detail.slice(0, 200) } : {}) });
+    const snippet = detail?.slice(0, 200);
+    const length = layer.length + reason.length + (snippet?.length ?? 0);
+    if (retained >= MAX_LOSS_DETAILS || length > remainingText) {
+      omitted++;
+      return;
     }
+    retained++;
+    remainingText -= length;
+    extracted.skipped.push({ source: 'qgis', layer, reason, ...(snippet ? { detail: snippet } : {}) });
   };
   for (const mapLayer of findNodes(parsed, 'maplayer')) extractMapLayer(mapLayer, extracted, reportLoss);
-  if (losses > MAX_LOSS_DETAILS) {
-    extracted.skipped.push({ source: 'qgis', reason: `另有 ${losses - MAX_LOSS_DETAILS} 条转换提示已省略（共 ${losses} 条）` });
+  if (omitted) {
+    extracted.skipped.push({ source: 'qgis', reason: `另有 ${omitted} 条转换提示已省略（共 ${retained + omitted} 条）` });
   }
   return extracted;
 }

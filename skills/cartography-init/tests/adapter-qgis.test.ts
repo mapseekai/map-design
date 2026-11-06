@@ -154,4 +154,13 @@ describe('parseQgis', () => {
     expect(draft.reportJson.length).toBeLessThan(2 * 1024 * 1024);
     expect(draft.reportMarkdown.length).toBeLessThan(2 * 1024 * 1024);
   });
+
+  it('keeps distinct source layer names intact and counts oversized diagnostics', () => {
+    const prefix = 'a'.repeat(200);
+    const names = [prefix + 'roads', 'x'.repeat(65_536), prefix + 'sites'];
+    const xml = `<qgis>${names.map(name => `<maplayer labelsEnabled="1"><layername>${name}</layername></maplayer>`).join('')}</qgis>`;
+    const ir = parseQgis(Buffer.from(xml), 'names.qgs');
+    expect(ir.skipped.map(item => item.layer)).toEqual([names[0], names[2], undefined]);
+    expect(ir.skipped.at(-1)?.reason).toBe('另有 1 条转换提示已省略（共 3 条）');
+  });
 });
