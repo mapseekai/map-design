@@ -16,7 +16,6 @@ import {
   inspectMapDesignProject,
   listMapDesignRevisions,
   MapDesignClientError,
-  validateMapDesignProject,
 } from '../client';
 
 const COHERENT_SNAPSHOT_ATTEMPTS = 3;
@@ -31,7 +30,8 @@ export interface MapDesignProjectData {
   context: MapGetContextOutput;
   currentContext: MapGetContextOutput;
   style: StyleSpecification;
-  validation: MapValidateOutput;
+  /** Historical snapshots include full findings. Current drafts expose their status through context. */
+  validation?: MapValidateOutput;
   revisions: MapRevisionHistoryOutput;
   inspect: MapInspectOutput;
   preview?: MapRenderPreviewOutput | null;
@@ -108,11 +108,10 @@ export function useMapDesignProject(
       for (let attempt = 0; attempt < COHERENT_SNAPSHOT_ATTEMPTS; attempt += 1) {
         try {
           const contextBefore = await getMapDesignContext(projectId, controller.signal);
-          const [style, revisions, currentPreview, validation, inspect] = await Promise.all([
+          const [style, revisions, currentPreview, inspect] = await Promise.all([
             getMapDesignStyle(projectId, controller.signal),
             listMapDesignRevisions(projectId, controller.signal),
             getCurrentMapDesignPreview(projectId, controller.signal),
-            validateMapDesignProject(projectId, contextBefore.draftRevision, controller.signal),
             inspectMapDesignProject(projectId, controller.signal),
           ]);
           const contextAfter = await getMapDesignContext(projectId, controller.signal);
@@ -126,7 +125,6 @@ export function useMapDesignProject(
             currentContext: contextAfter,
             style,
             revisions,
-            validation,
             inspect,
             preview: currentPreview.preview,
           });

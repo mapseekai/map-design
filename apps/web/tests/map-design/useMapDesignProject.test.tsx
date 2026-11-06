@@ -159,7 +159,6 @@ function mockSuccessfulSecondStage() {
   clientMocks.style.mockResolvedValue(STYLE);
   clientMocks.revisions.mockResolvedValue(REVISIONS);
   clientMocks.currentPreview.mockResolvedValue(CURRENT_PREVIEW);
-  clientMocks.validation.mockImplementation(async (_projectId, draftRevision) => ({ draftRevision }));
   clientMocks.inspect.mockResolvedValue(INSPECT);
 }
 
@@ -374,7 +373,7 @@ describe('useMapDesignProject', () => {
 
   it('retries revision and style hash changes and returns the newest stable context', async () => {
     mockSuccessfulSecondStage();
-    const newestContext = context(2, HASH_B);
+    const newestContext = { ...context(2, HASH_B), validationStatus: 'invalid' };
     clientMocks.context
       .mockResolvedValueOnce(context(1, HASH_A))
       .mockResolvedValueOnce(context(2, HASH_A))
@@ -388,7 +387,7 @@ describe('useMapDesignProject', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(clientMocks.context).toHaveBeenCalledTimes(6);
-    expect(clientMocks.validation.mock.calls.map(([, revision]) => revision)).toEqual([1, 2, 2]);
+    expect(clientMocks.validation).not.toHaveBeenCalled();
     expect(clientMocks.inspect).toHaveBeenCalledTimes(3);
     expect(clientMocks.inspect).toHaveBeenNthCalledWith(
       1,
@@ -398,14 +397,14 @@ describe('useMapDesignProject', () => {
     expect(result.current.project?.context).toBe(newestContext);
     expect(result.current.project?.currentContext).toBe(newestContext);
     expect(result.current.project?.view).toEqual(CURRENT_VIEW);
-    expect(result.current.project?.validation).toEqual({ draftRevision: 2 });
+    expect(result.current.project?.context.validationStatus).toBe('invalid');
     expect(result.current.error).toBe(false);
   });
 
   it('bounds revision-conflict retries to three coherent snapshot attempts', async () => {
     mockSuccessfulSecondStage();
     clientMocks.context.mockResolvedValue(context(7, HASH_A));
-    clientMocks.validation.mockRejectedValue(new MapDesignClientError({
+    clientMocks.inspect.mockRejectedValue(new MapDesignClientError({
       code: 'REVISION_CONFLICT',
       message: 'The draft changed during the snapshot load.',
       retryable: true,
@@ -419,7 +418,6 @@ describe('useMapDesignProject', () => {
     expect(clientMocks.style).toHaveBeenCalledTimes(3);
     expect(clientMocks.revisions).toHaveBeenCalledTimes(3);
     expect(clientMocks.currentPreview).toHaveBeenCalledTimes(3);
-    expect(clientMocks.validation).toHaveBeenCalledTimes(3);
     expect(clientMocks.inspect).toHaveBeenCalledTimes(3);
     expect(result.current.project).toBeNull();
   });
@@ -443,7 +441,6 @@ describe('useMapDesignProject', () => {
     await waitFor(() => {
       expect(clientMocks.context).toHaveBeenCalledOnce();
       expect(finalRead).toHaveBeenCalledOnce();
-      expect(clientMocks.validation).toHaveBeenCalledOnce();
       expect(clientMocks.inspect).toHaveBeenCalledOnce();
     });
     expect(clientMocks.context).toHaveBeenCalledOnce();

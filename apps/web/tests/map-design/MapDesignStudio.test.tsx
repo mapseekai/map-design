@@ -889,6 +889,14 @@ describe('MapDesignStudio', () => {
     expect(screen.getByRole('button', { name: 'Commit revision' })).toBeEnabled();
   });
 
+  it.each(['invalid', 'unknown'] as const)('disables Commit when current validation is %s despite a passed preview', (validationStatus) => {
+    const currentContext = { ...project.context, validationStatus };
+    render(<MapDesignStudio projectId="map-project" title="Transit atlas"
+      project={{ ...project, context: currentContext, currentContext }} preview={passedPreview} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Versions' }));
+    expect(screen.getByRole('button', { name: 'Commit revision' })).toBeDisabled();
+  });
+
   it('coalesces same-tick Commit clicks and aborts the request on unmount', async () => {
     let finish: (() => void) | undefined;
     clientMocks.commitFromPreview.mockImplementationOnce((_projectId, _input, signal: AbortSignal) =>
@@ -944,7 +952,6 @@ describe('MapDesignStudio', () => {
   it('refreshes the canonical draft after a run ends without a successful preview', async () => {
     const view = render(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} mapEditingDisabled />);
     clientMocks.context.mockResolvedValue({ ...project.context, draftRevision: 6 });
-    clientMocks.validation.mockResolvedValue({ ...project.validation, draftRevision: 6 });
     view.rerender(<MapDesignStudio projectId="map-project" title="Transit atlas" project={project} mapEditingDisabled={false} />);
     await waitFor(() => expect(commentTool.props).toMatchObject({ draftRevision: 6 }));
   });
@@ -957,7 +964,6 @@ describe('MapDesignStudio', () => {
     act(() => mapCanvasMock.onMapReady?.({ triggerRepaint: vi.fn(), getCanvas: () => mapCanvasMock.canvas!, getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 3, getBearing: () => 0, getPitch: () => 0, jumpTo: vi.fn(), on: vi.fn(), off: vi.fn() }));
     const mounts = mapCanvasMock.mounts;
     clientMocks.context.mockResolvedValue({ ...project.context, draftRevision: 5, styleHash: 'e'.repeat(64) });
-    clientMocks.validation.mockResolvedValue({ ...project.validation, draftRevision: 5, styleHash: 'e'.repeat(64) });
     let pending: Promise<void> | undefined;
     act(() => { pending = type === 'event-gap' ? eventChannel.controller?.handleGap({ latestSequence: 10 })
       : eventChannel.controller?.handleRecord({ event: { type } }); });

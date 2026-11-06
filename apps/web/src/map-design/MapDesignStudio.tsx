@@ -311,7 +311,7 @@ export function MapDesignStudio({ projectId, title, view = { kind: 'current' }, 
   const canCommit = view.kind === 'current'
     && preview?.status === 'succeeded'
     && preview.draftRevision === data.context.draftRevision && preview.styleHash === data.context.styleHash
-    && data.validation.summary.status === 'valid'
+    && data.context.validationStatus === 'valid'
     && !data.revisions.revisions.some((revision) => revision.previewId === preview.previewId);
 
   const inspector = <MapDesignInspectorPanel id={inspectorId} placement={presentedInspectorPlacement} closing={drawerClosing} width={resolvedInspectorWidth}
