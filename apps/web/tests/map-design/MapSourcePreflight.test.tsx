@@ -32,9 +32,11 @@ describe('MapSourcePreflight map preview', () => {
   afterEach(() => {
     cleanup();
     resetMapDesignProtocolsForTests();
+    vi.restoreAllMocks();
   });
 
   it('loads the same-origin preview Style and reports idle and error for the exact preview', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ getExtension: () => null } as unknown as WebGL2RenderingContext);
     const listeners = new Map<string, () => void>();
     const map = {
       remove: vi.fn(),

@@ -1,5 +1,5 @@
-import { openSelect, selectValue } from '../helpers/select';
 // @vitest-environment jsdom
+import { openSelect } from '../helpers/select';
 
 vi.mock('../../src/map-design/client', async (original) => ({
   ...await original<typeof import('../../src/map-design/client')>(),
@@ -84,7 +84,8 @@ describe('MapDesignHome', () => {
       '/api/map-design/projects',
     ]);
     openSelect(screen.getByLabelText(/local agent/i));
-    expect(screen.getByRole('option', { name: /Missing CLI/i })).toHaveAttribute('aria-disabled', 'true');
+    expect(await screen.findByRole('option', { name: /Codex/i })).toBeVisible();
+    expect(screen.queryByRole('option', { name: /Missing CLI/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('workspace-switcher')).toBeNull();
     expect(screen.queryByText(/sign in|template|media/i)).toBeNull();
     expect(screen.getByLabelText('Map design system')).toBeInTheDocument();
